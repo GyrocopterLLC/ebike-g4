@@ -50,7 +50,7 @@ uint8_t data_out;
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
 PID_Float_Type Id_control, Iq_control;
-Biquad_Float_Type Throttle_filt;
+Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
 float Throttle_cmd;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -353,7 +353,8 @@ void User_PWMTIM_IRQ(void)
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// DAC debugging outputs
-	DAC->DHR12L1 = HallSensor_Get_Angle();
+	DAC->DHR12L1 = (uint16_t)(Throttle_filt.Y * 16384.0f); // Displays 1-4 volts
+	//DAC->DHR12L1 = HallSensor_Get_Angle();
 	DAC->DHR12L2 = HallSensor_Get_Speed()>>8;
 	// USB debugging outputs
 	usbdac1val = g_rampAngle;
