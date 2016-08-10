@@ -587,12 +587,32 @@ void User_PWMTIM_IRQ(void)
 // Simple application timer (1kHz)
 void User_BasicTIM_IRQ(void)
 {
-	// Read and filter throttle
+	//*****STARTUP SEQUENCE*****
+	// For the first Throttle Startup period, input is ignored
+	// This allows the Biquad filter to stabilize
+	// After this period, the value of the biquad filter output is
+	// selected as the minimum throttle position.
+	static uint32_t basicTimStartupCount = 0;
+	static float throttle_min;
+
+	// Read and filter throttle, regardless if in startup or not
 	Throttle_filt.X = adcGetThrottle();
 	dfsl_biquadf(&Throttle_filt);
 
-	// Convert throttle to percent
-	Throttle_cmd = (Throttle_filt.Y - THROTTLE_MIN) * THROTTLE_SCALE;
+	if(basicTimStartupCount < THROTTLE_STARTUP_COUNT)
+	{
+		basicTimStartupCount++;
+		Throttle_cmd = 0.0f;
+		// End of startup period, save the throttle position as the
+		// minimum of the throttle scale
+		if(basicTimStartupCount == THROTTLE_STARTUP_COUNT)
+			throttle_min = Throttle_filt.Y;
+	}
+	else
+	{
+		// Convert throttle to percent
+		Throttle_cmd = (Throttle_filt.Y - throttle_min) * THROTTLE_SCALE;
+	}
 
 	// Is throttle at zero? Motor off
 	if(Throttle_cmd <= 0.0f)
