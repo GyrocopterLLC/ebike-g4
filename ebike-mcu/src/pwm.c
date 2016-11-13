@@ -136,16 +136,29 @@ void PWM_MotorON(void)
 	PWM_TIMER->BDTR |= TIM_BDTR_MOE;
 }
 
+/* Changed so that tA->CCR3, tC->CCR1. tB unchanged (tB->CCR2)
+ * The implemented pinout on the STM32F4x5 is TIM1_CH1 -> PA8,
+ * TIM1_CH2 -> PA9, and TIM1_CH3 -> PA10. However, the board
+ * design has (PWMA+) -> PA10, (PWMB+) -> PA9, and (PWMC+) -> PA8.
+ * Since the 1st and 3rd channels are swapped in hardware, here
+ * I'm swapping them in software to match.
+ *
+ * The negative versions of these signals are likewise swapped.
+ * E.G., TIM1_CH1N -> PB13, TIM1_CH2N -> PB14, TIM1_CH3N -> PB15
+ * but... (PWMA-) -> PB15, (PWMB-) -> PB14, (PWMC-) -> PB13
+ */
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC)
 {
 	// scale from 65536 to the maximum counter value, PWM_PERIOD
 	uint32_t temp;
 	temp = tA * PWM_PERIOD / 65536;
-	PWM_TIMER->CCR1 = temp;
+	//PWM_TIMER->CCR1 = temp;
+	PWM_TIMER->CCR3 = temp;
 	temp = tB * PWM_PERIOD / 65536;
 	PWM_TIMER->CCR2 = temp;
 	temp = tC * PWM_PERIOD / 65536;
-	PWM_TIMER->CCR3 = temp;
+	//PWM_TIMER->CCR3 = temp;
+	PWM_TIMER->CCR1 = temp;
 }
 
 void PWM_SetDutyF(float tA, float tB, float tC)
