@@ -50,7 +50,7 @@ uint8_t data_out;
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
 PID_Float_Type Id_control, Iq_control;
-Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
+//Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
 float Throttle_cmd;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -353,7 +353,7 @@ void User_PWMTIM_IRQ(void)
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// DAC debugging outputs
-	DAC->DHR12L1 = (uint16_t)(Throttle_filt.Y * 16384.0f); // Displays 1-4 volts
+	DAC->DHR12L1 = (uint16_t)(Throttle_cmd * 16384.0f); // Displays 1-4 volts
 	//DAC->DHR12L1 = HallSensor_Get_Angle();
 	DAC->DHR12L2 = HallSensor_Get_Speed()>>8;
 	// USB debugging outputs
@@ -587,32 +587,7 @@ void User_PWMTIM_IRQ(void)
 // Simple application timer (1kHz)
 void User_BasicTIM_IRQ(void)
 {
-	//*****STARTUP SEQUENCE*****
-	// For the first Throttle Startup period, input is ignored
-	// This allows the Biquad filter to stabilize
-	// After this period, the value of the biquad filter output is
-	// selected as the minimum throttle position.
-	static uint32_t basicTimStartupCount = 0;
-	static float throttle_min;
-
-	// Read and filter throttle, regardless if in startup or not
-	Throttle_filt.X = adcGetThrottle();
-	dfsl_biquadf(&Throttle_filt);
-
-	if(basicTimStartupCount < THROTTLE_STARTUP_COUNT)
-	{
-		basicTimStartupCount++;
-		Throttle_cmd = 0.0f;
-		// End of startup period, save the throttle position as the
-		// minimum of the throttle scale
-		if(basicTimStartupCount == THROTTLE_STARTUP_COUNT)
-			throttle_min = Throttle_filt.Y;
-	}
-	else
-	{
-		// Convert throttle to percent
-		Throttle_cmd = (Throttle_filt.Y - throttle_min) * THROTTLE_SCALE;
-	}
+	Throttle_cmd = throttle_process(adcGetThrottle());
 
 	// Is throttle at zero? Motor off
 	if(Throttle_cmd <= 0.0f)
@@ -623,7 +598,7 @@ void User_BasicTIM_IRQ(void)
 	if(Throttle_cmd > 0.0f)
 	{
 		PWM_MotorON();
-		if(Throttle_cmd > 1.0f)
+		if(Throttle_cmd >= 1.0f)
 			Throttle_cmd = 0.99f;
 	}
 

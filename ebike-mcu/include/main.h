@@ -53,6 +53,7 @@
 #include "hallSensor.h"
 #include "adc.h"
 #include "pwm.h"
+#include "throttle.h"
 #include "pinconfig.h"
 
 #include <stdio.h>

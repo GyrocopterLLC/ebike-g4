@@ -11,6 +11,9 @@ May 20, 2014
 
 */
 
+#ifndef _DAVIDS_FOC_LIB_H_
+#define _DAVIDS_FOC_LIB_H_
+
 #include "stm32f4xx_hal.h"
 #include "arm_math.h"
 
@@ -95,3 +98,5 @@ void dfsl_clarke(int32_t A, int32_t B, int32_t* Alpha, int32_t* Beta);
 void dfsl_clarkef(float A, float B, float* Alpha, float* Beta);
 void dfsl_park(int32_t Alpha, int32_t Beta, int16_t Angle, int16_t* D, int16_t* Q);
 void dfsl_parkf(float Alpha, float Beta, float Angle, float* D, float* Q);
+
+#endif //_DAVIDS_FOC_LIB_H_
