@@ -280,6 +280,11 @@ float adcGetVbus(void)
 	return temp_vbus;
 }
 
+float adcGetVref(void)
+{
+	return adc_vref;
+}
+
 #if defined(USING_OLD_ADC_VER)
 
 /**

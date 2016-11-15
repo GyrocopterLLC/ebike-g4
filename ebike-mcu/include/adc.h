@@ -82,6 +82,7 @@ float adcGetCurrent(uint8_t which_cur);
 float adcConvertToAmps(int32_t rawCurrentReading);
 float adcGetThrottle(void);
 float adcGetVbus(void);
+float adcGetVref(void);
 
 #if defined(USING_OLD_ADC_VER)
 void ADC_Init_OldVer(void);

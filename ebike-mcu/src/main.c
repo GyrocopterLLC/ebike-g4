@@ -52,6 +52,7 @@ uint8_t data_out;
 PID_Float_Type Id_control, Iq_control;
 //Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
 float Throttle_cmd;
+float raw_throttle;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
@@ -353,7 +354,7 @@ void User_PWMTIM_IRQ(void)
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// DAC debugging outputs
-	DAC->DHR12L1 = (uint16_t)(Throttle_cmd * 16384.0f); // Displays 1-4 volts
+	DAC->DHR12L1 = (uint16_t)(Throttle_cmd * 65536.0f); // Displays 0-1 volts
 	//DAC->DHR12L1 = HallSensor_Get_Angle();
 	DAC->DHR12L2 = HallSensor_Get_Speed()>>8;
 	// USB debugging outputs
@@ -587,7 +588,8 @@ void User_PWMTIM_IRQ(void)
 // Simple application timer (1kHz)
 void User_BasicTIM_IRQ(void)
 {
-	Throttle_cmd = throttle_process(adcGetThrottle());
+	raw_throttle = adcGetThrottle();
+	Throttle_cmd = throttle_process(raw_throttle);
 
 	// Is throttle at zero? Motor off
 	if(Throttle_cmd <= 0.0f)
