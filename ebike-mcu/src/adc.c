@@ -205,6 +205,18 @@ static void adcAverageInitialValue(void)
 	uint32_t ib_sum = 0;
 	uint32_t ic_sum = 0;
 
+	float vrefint = 0.0f;
+	uint16_t* vrefcal = ((uint16_t*)0x1FFF7A2A); // From STM32F4 datasheet
+
+	if((*vrefcal >= VREFINTCAL_MIN) && (*vrefcal <= VREFINTCAL_MAX)) // Between 1.13V and 1.29V (should be around 1.21V)
+	{
+		vrefint = (3.30f)*((float)(*vrefcal))/MAXCOUNTF;
+	}
+	else // Default to the regular value of 1.21V
+	{
+		vrefint = VREFINTDEFAULT;
+	}
+
 	ADC->CCR |= ADC_CCR_TSVREFE; // Turn on the Vrefint and Temp sensor channels
 
 	// Loop and average
@@ -236,7 +248,7 @@ static void adcAverageInitialValue(void)
 		ia_sum += ADC1->DR;
 	}
 
-	adc_vref = VREFINT / ((float)(ia_sum/128) / 4096.0f);
+	adc_vref = vrefint / ((float)(ia_sum/128) / MAXCOUNTF);
 	// Switch it back to Ia channel
 	ADC1->SQR3 = ADC_IA_CH;
 }
@@ -246,7 +258,7 @@ float adcConvertToAmps(int32_t rawCurrentReading)
 	// Assume null point has already been subtracted.
 	// The raw reading is a 12-bit number
 	//float temp_current = ((float)rawCurrentReading)*0.000244140625f; // inverse of 4096
-	float temp_current = ((float)rawCurrentReading)/4096.0f;
+	float temp_current = ((float)rawCurrentReading)/MAXCOUNTF;
 	// Convert to volts
 	temp_current *= adc_vref;
 	// Convert to amps
@@ -263,7 +275,7 @@ float adcGetCurrent(uint8_t which_cur)
 float adcGetThrottle(void)
 {
 	// Convert 12-bit adc result to floating point
-	float temp_throttle = ((float)adc_conv[ADC_THR1])/4096.0f;
+	float temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;
 	// Convert to volts using reference measurement
 	temp_throttle *= adc_vref;
 	return temp_throttle;
@@ -272,7 +284,7 @@ float adcGetThrottle(void)
 float adcGetVbus(void)
 {
 	// Convert 12-bit to float
-	float temp_vbus = ((float)adc_conv[ADC_VBUS])/4096.0f;
+	float temp_vbus = ((float)adc_conv[ADC_VBUS])/MAXCOUNTF;
 	// Convert to volts from reference
 	temp_vbus *= adc_vref;
 	// Convert to real measurement from resistor divider ratio

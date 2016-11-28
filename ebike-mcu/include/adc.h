@@ -10,6 +10,9 @@
 
 #include "stm32f4xx_hal.h"
 
+#define MAXCOUNT		(4095)
+#define MAXCOUNTF		(4095.0f)
+
 #define NUM_ADC_CH			7
 
 #define ADC_IA_PIN		0
@@ -35,7 +38,9 @@
 #define ADC_THR2_CH		8
 #define VREFINT_CH		17
 
-#define VREFINT			(1.21f) // From the STM32F4 spec sheet
+#define VREFINTDEFAULT	(1.21f) // From the STM32F4 spec sheet
+#define VREFINTCAL_MIN	(1400) // Approximately 1.13V. Spec sheet minimum is 1.18V
+#define VREFINTCAL_MAX	(1600) // Approximately 1.29V. Spec sheet minimum is 1.24V
 #define RSHUNT_INV		(1000.0f) // Inverse of 0.001 Ohms
 #define INAGAIN_INV		(0.02f) // Inverse of 50x gain (INA213 current amplifier)
 #define VBUS_RESISTOR_RATIO	(33.36246f) // Inverse of resistor gain (3.09 / 103.09)
