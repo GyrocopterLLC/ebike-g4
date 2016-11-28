@@ -35,6 +35,18 @@
 #define PWM_TIM_CLK_ENABLE()		__HAL_RCC_TIM1_CLK_ENABLE()
 #define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				4199.0f
+// Dead time calculation rules:
+// If DTG[7] = 0:
+// --- Dead time is DTG[6:0]*(t_DTS)
+// If DTG[7:6] = 10
+// --- Dead time is (DTG[5:0]+64)*(2*t_DTS)
+// If DTG[7:5] = 110
+// --- Dead time is (DTG[4:0]+32)*(8*t_DTS)
+// If DTG[7:5] = 111
+// --- Dead time is (DTG[4:0]+32)*(16*t_DTS)
+
+// Since f_DTS is 168MHz (same as clock input), setting DTG = 01010100 gives us
+// Dead time = t_DTS * DTG[6:0] = (1/168MHz) * 84 = 5.95ns * 84 = 500ns
 #define PWM_DEAD_TIME				(TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/

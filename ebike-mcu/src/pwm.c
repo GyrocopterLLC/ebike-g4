@@ -11,9 +11,10 @@
 
 TIM_HandleTypeDef hpwm;
 
-/** Enables the three-phase complementary PWM channels
- *
- */
+
+/***** Not using this version, using the non-HAL version below.
+
+// Enables the three-phase complementary PWM channels
 void PWM_Init(void)
 {
 	TIM_OC_InitTypeDef ocInit;
@@ -79,6 +80,8 @@ void PWM_Init(void)
 	PWM_TIMER->EGR |= TIM_EGR_UG;
 }
 
+ */
+
 void PWM_Init_NoHal(void)
 {
 	GPIO_Clk(PWM_HI_PORT);
@@ -107,7 +110,8 @@ void PWM_Init_NoHal(void)
 	PWM_TIMER->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC4PE;
 	PWM_TIMER->CCER = TIM_CCER_CC1E | TIM_CCER_CC1NE | TIM_CCER_CC2E | TIM_CCER_CC2NE |
 			TIM_CCER_CC3E | TIM_CCER_CC3NE;
-	PWM_TIMER->BDTR = PWM_DEAD_TIME;
+	PWM_TIMER->BDTR = PWM_DEAD_TIME | TIM_BDTR_OSSI; // Dead time selection, and drive outputs low when
+													// Motor Enable (MOE) bit is zero
 
 	PWM_TIMER->CCR1 = PWM_PERIOD/2 + 1;
 	PWM_TIMER->CCR2 = PWM_PERIOD/2 + 1;
