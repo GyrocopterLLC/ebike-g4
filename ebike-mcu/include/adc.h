@@ -10,8 +10,8 @@
 
 #include "stm32f4xx_hal.h"
 
-#define MAXCOUNT		(4095)
-#define MAXCOUNTF		(4095.0f)
+#define MAXCOUNT		(4096)
+#define MAXCOUNTF		(4096.0f)
 
 #define NUM_ADC_CH			7
 
@@ -84,6 +84,7 @@ typedef enum
 void adcConvComplete(void);
 void adcInit(void);
 float adcGetCurrent(uint8_t which_cur);
+uint16_t adcRawCurrent(uint8_t which_cur);
 float adcConvertToAmps(int32_t rawCurrentReading);
 float adcGetThrottle(void);
 float adcGetVbus(void);

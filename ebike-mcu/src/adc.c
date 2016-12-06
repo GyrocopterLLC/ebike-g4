@@ -272,6 +272,11 @@ float adcGetCurrent(uint8_t which_cur)
 	return adcConvertToAmps((int32_t)(adc_conv[which_cur]) - (int32_t)(adc_current_null[which_cur]));
 }
 
+uint16_t adcRawCurrent(uint8_t which_cur)
+{
+	return adc_conv[which_cur];
+}
+
 float adcGetThrottle(void)
 {
 	// Convert 12-bit adc result to floating point

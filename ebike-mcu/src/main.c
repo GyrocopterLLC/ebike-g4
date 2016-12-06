@@ -74,7 +74,7 @@ int main(void)
 	char byte;
 	char string[32];
 	User_PB_Init();
-	Throttle_cmd = 0.75f;
+	Throttle_cmd = 0.0f;
 	data_out = 0;
 	//if(HAL_GPIO_ReadPin(PB_PORT, PB_PIN) == GPIO_PIN_RESET)
 	if((PB_PORT->IDR & (1<<PB_PIN)) == 0)
@@ -151,7 +151,7 @@ int main(void)
   USBD_Start(&USBD_Device);
   
   /* Initialize ramp angle increment */
-  g_rampInc = dfsl_rampctrl(20000, 2);
+  g_rampInc = dfsl_rampctrl(20000, 5);
 
   /* Initialize PID controllers */
   dfsl_pid_defaultsf(&Id_control);
@@ -380,7 +380,7 @@ void User_PWMTIM_IRQ(void)
 	 */
 	float fangle, ipark_a, ipark_b;
 	float tAf, tBf, tCf;
-	int16_t tA, tB, tC;
+	uint16_t tA, tB, tC;
 	float Ia, Ib, Ic;
 	float clarke_alpha, clarke_beta;
 	float park_d, park_q;
@@ -392,9 +392,9 @@ void User_PWMTIM_IRQ(void)
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
-	tA = (int16_t)(tAf*65535.0f);
-	tB = (int16_t)(tBf*65535.0f);
-	tC = (int16_t)(tCf*65535.0f);
+	tA = (uint16_t)(tAf*65535.0f);
+	tB = (uint16_t)(tBf*65535.0f);
+	tC = (uint16_t)(tCf*65535.0f);
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// Transform sensor readings
@@ -405,14 +405,14 @@ void User_PWMTIM_IRQ(void)
 	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
 
 	// DAC debugging outputs
-	DAC->DHR12L1 = adc_conv[ADC_IA]<<4;
-	DAC->DHR12L2 = adc_conv[ADC_IB]<<4;
+	DAC->DHR12L1 = adcRawCurrent(ADC_IA)<<4;
+	DAC->DHR12L2 = adcRawCurrent(ADC_IB)<<4;
 	// USB debugging outputs
 	usbdac1val = g_rampAngle;
 	usbdac2val = tA;
-	usbdac3val = adc_conv[ADC_IA]<<4;
-	usbdac4val = adc_conv[ADC_IB]<<4;
-	usbdac5val = (uint16_t)(6553.60f*((Ia) + 5.0f));
+	usbdac3val = (uint32_t)((Ia+5.0f)*6553.6f);
+	usbdac4val = (uint32_t)((Ib+5.0f)*6553.6f);
+	usbdac5val = (uint32_t)((Ic+5.0f)*6553.6f);
 #endif
 #if PHASE == 3
 	/* Phase three connections
