@@ -78,21 +78,30 @@ uint8_t HallSensor_Get_State(void)
 #endif
 }
 
-/** HallSensor_Get_Angle
- * Retrieves the motor electrical angle as a function of the Hall state.
- * First, the raw Hall state is used to determine the closest 60° sector.
- * Then, the speed and timing information is used to interpolate the
- * angle within that sector.
+/** HallSensor_Inc_Angle
+ * Speed and timing info, plus hall state at the last captured edge,
+ * are used to interpolate the angle within a 60° sector.
  */
-uint16_t HallSensor_Get_Angle(void)
+void HallSensor_Inc_Angle(void)
 {
 	// Increment the angle by the pre-calculated increment amount
 	HallSensor.Angle += HallSensor.AngleIncrement;
 #if defined(USE_FLOATING_POINT)
+	// Wraparound for floating point. Fixed point simply overflows the 16 bit variable.
 	if(HallSensor.Angle > 1.0f)
 		HallSensor.Angle -= 1.0f;
 	if(HallSensor.Angle < 0.0f)
 		HallSensor.Angle += 1.0f;
+#endif
+}
+
+/** HallSensor_Get_Angle
+ * Retrieves the motor electrical angle as a function of the Hall state.
+ */
+uint16_t HallSensor_Get_Angle(void)
+{
+
+#if defined(USE_FLOATING_POINT)
 	return (uint16_t)(HallSensor.Angle * 65536.0f);
 #else
 	return HallSensor.Angle;

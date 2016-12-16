@@ -32,7 +32,15 @@
 #define PWM_LO_PORT		GPIOB
 #define PWM_AF			GPIO_AF1_TIM1
 
-
+// UART
+#define HBD_UART_TX_PIN	10
+#define HBD_UART_RX_PIN	11
+#define HBD_UART_PORT	GPIOB
+#define HBD_UART_AF		GPIO_AF7_USART3
+#define BMS_UART_TX_PIN	2
+#define BMS_UART_RX_PIN	3
+#define BMS_UART_PORT	GPIOA
+#define BMS_UART_AF		GPIO_AF7_USART2
 
 
 #endif //__PINCONFIG_H

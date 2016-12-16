@@ -39,8 +39,23 @@ uint16_t g_rampAngle;
 uint16_t g_rampInc;
 uint32_t g_ledcount;
 
-
-uint32_t usbdac1val, usbdac2val, usbdac3val, usbdac4val, usbdac5val;
+/** Debugging outputs **
+ *
+ * 0 - Ia
+ * 1 - Ib
+ * 2 - Ic
+ * 3 - Ta
+ * 4 - Tb
+ * 5 - Tc
+ * 6 - Throttle
+ * 7 - Ramp Angle
+ * 8 - Hall Angle
+ * 9 - Hall Speed
+ *
+ */
+#define MAX_USB_VALS	16
+uint32_t usbdacvals[MAX_USB_VALS];
+uint8_t usbdacassignments[MAX_USB_VALS];
 
 uint32_t systick_debounce_counter;
 uint8_t debounce_integrator;
@@ -73,6 +88,7 @@ int main(void)
 {
 	char byte;
 	char string[32];
+	char usbstring[64];
 	User_PB_Init();
 	Throttle_cmd = 0.0f;
 	data_out = 0;
@@ -157,6 +173,17 @@ int main(void)
   dfsl_pid_defaultsf(&Id_control);
   dfsl_pid_defaultsf(&Iq_control);
 
+  /* Default USB debugging outputs */
+  for(uint8_t i = 0; i < MAX_USB_VALS; i++)
+  {
+	  usbdacassignments[i] = 0;
+  }
+  usbdacassignments[0] = 1; // Ia
+  usbdacassignments[1] = 2; // Ib
+  usbdacassignments[2] = 3; // Ic
+  usbdacassignments[6] = 4; // Throttle
+  usbdacassignments[8] = 5; // Hall angle
+
   /* Run Application (Interrupt mode) */
   while (1)
   {
@@ -183,9 +210,24 @@ int main(void)
     }
     if(data_out != 0)
     {
-    	sprintf(string,"%d %d %d %d %d\r\n",(int)usbdac1val,(int)usbdac2val,(int)usbdac3val,(int)usbdac4val,(int)usbdac5val);
-    	//sprintf(string,"%d\r\n",(int)usbdac5val);
-    	VCP_write(string,strlen(string));
+    	usbstring[0] = 0;
+    	for(uint8_t i = 1; i < MAX_USB_VALS; i++)
+    	{
+    		for(uint8_t j = 0; j < MAX_USB_VALS; j++)
+    		{
+    			if(usbdacassignments[j] == i)
+    			{
+    				sprintf(string,"%d ",(int)usbdacvals[j]);
+    				//VCP_write(string,strlen(string));
+    				strcat(usbstring,string);
+    			}
+    		}
+    	}
+
+    	strcat(usbstring,"\r\n");
+
+    	VCP_write(usbstring,strlen(usbstring));
+
     	HAL_Delay(20);
     }
   }
@@ -328,7 +370,18 @@ void User_HallTIM_IRQ(void)
 // TIM1 overflow / update IRQ (20kHz)
 void User_PWMTIM_IRQ(void)
 {
+	float fangle, ipark_a, ipark_b;
+	float tAf, tBf, tCf;
+	int16_t tA, tB, tC;
+	float Ia, Ib, Ic;
+	float clarke_alpha, clarke_beta;
+	float park_d, park_q;
 
+	// For all build phases
+	// Generate ramp angle
+	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// Update Hall sensor angle
+	HallSensor_Inc_Angle();
 #if PHASE == 1
 	/* Phase one connections
 	 * Ramp Generator->Ipark
@@ -337,11 +390,7 @@ void User_PWMTIM_IRQ(void)
 	 *
 	 * No current feedback, no ADCs, no motor connected!
 	 */
-	float fangle, ipark_a, ipark_b;
-	float tAf, tBf, tCf;
-	uint16_t tA, tB, tC;
-	// Generate ramp angle
-	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// Rotor angle comes from ramp generator
 	fangle = ((float)g_rampAngle)/65536.0f;
 	// Feed ramp angle with fixed throttle to inverse Park
 	dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
@@ -357,12 +406,7 @@ void User_PWMTIM_IRQ(void)
 	DAC->DHR12L1 = (uint16_t)(Throttle_cmd * 65536.0f); // Displays 0-1 volts
 	//DAC->DHR12L1 = HallSensor_Get_Angle();
 	DAC->DHR12L2 = HallSensor_Get_Speed()>>8;
-	// USB debugging outputs
-	usbdac1val = g_rampAngle;
-	usbdac2val = tA;
-	usbdac3val = tB;
-	usbdac4val = tC;
-	usbdac5val = DAC->DHR12L1;
+
 #endif
 #if PHASE == 2
 	/* Phase two connections
@@ -378,14 +422,7 @@ void User_PWMTIM_IRQ(void)
 	 * Place series power resistors!
 	 * Heatsinks on the power FETs!
 	 */
-	float fangle, ipark_a, ipark_b;
-	float tAf, tBf, tCf;
-	uint16_t tA, tB, tC;
-	float Ia, Ib, Ic;
-	float clarke_alpha, clarke_beta;
-	float park_d, park_q;
-	// Generate ramp angle
-	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// Rotor angle comes from ramp generator
 	fangle = ((float)g_rampAngle)/65536.0f;
 	// Feed ramp angle with fixed throttle to inverse Park
 	dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
@@ -407,12 +444,7 @@ void User_PWMTIM_IRQ(void)
 	// DAC debugging outputs
 	DAC->DHR12L1 = adcRawCurrent(ADC_IA)<<4;
 	DAC->DHR12L2 = adcRawCurrent(ADC_IB)<<4;
-	// USB debugging outputs
-	usbdac1val = g_rampAngle;
-	usbdac2val = tA;
-	usbdac3val = (uint32_t)((Ia+5.0f)*6553.6f);
-	usbdac4val = (uint32_t)((Ib+5.0f)*6553.6f);
-	usbdac5val = (uint32_t)((Ic+5.0f)*6553.6f);
+
 #endif
 #if PHASE == 3
 	/* Phase three connections
@@ -428,14 +460,7 @@ void User_PWMTIM_IRQ(void)
 	 * Place series power resistors!
 	 * Heatsinks on the power FETs!
 	 */
-	float fangle, ipark_a, ipark_b;
-	float tAf, tBf, tCf;
-	int16_t tA, tB, tC;
-	float Ia, Ib, Ic;
-	float clarke_alpha, clarke_beta;
-	float park_d, park_q;
-	// Generate ramp angle
-	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// Rotor angle comes from ramp generator
 	fangle = ((float)g_rampAngle)/65536.0f;
 	// Feed ramp angle with feedback to inverse Park
 	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
@@ -462,12 +487,7 @@ void User_PWMTIM_IRQ(void)
 	// DAC debugging outputs
 	DAC->DHR12L1 = (uint16_t)(6553.60f*((park_d) + 5.0f));
 	DAC->DHR12L2 = (uint16_t)(6553.60f*((park_q) + 5.0f));
-	// USB debugging outputs
-	usbdac1val = g_rampAngle;
-	usbdac2val = tA;
-	usbdac3val = (uint16_t)(6553.60f*((park_d) + 5.0f));
-	usbdac4val = (uint16_t)(6553.60f*((park_q) + 5.0f));
-	usbdac5val = (uint16_t)(6553.60f*((Ia) + 5.0f));
+
 #endif
 #if PHASE == 4
 	/* Phase four connections
@@ -483,14 +503,7 @@ void User_PWMTIM_IRQ(void)
 	 * Place series power resistors!
 	 * Heatsinks on the power FETs!
 	 */
-	float fangle, ipark_a, ipark_b;
-	float tAf, tBf, tCf;
-	int16_t tA, tB, tC;
-	float Ia, Ib, Ic;
-	float clarke_alpha, clarke_beta;
-	float park_d, park_q;
-	// Generate ramp angle
-	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// Rotor angle comes from ramp generator
 	fangle = ((float)g_rampAngle)/65536.0f;
 	// Feed ramp angle with feedback to inverse Park
 	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
@@ -517,12 +530,7 @@ void User_PWMTIM_IRQ(void)
 	// DAC debugging outputs
 	DAC->DHR12L1 = g_rampAngle;
 	DAC->DHR12L2 = HallSensor_Get_Angle();
-	// USB debugging outputs
-	usbdac1val = g_rampAngle;
-	usbdac2val = DAC->DHR12L2;
-	usbdac3val = (uint16_t)(6553.60f*((park_d) + 5.0f));
-	usbdac4val = (uint16_t)(6553.60f*((park_q) + 5.0f));
-	usbdac5val = (uint16_t)(6553.60f*((Ia) + 5.0f));
+
 #endif
 #if PHASE == 5
 	/* Phase five connections
@@ -539,12 +547,6 @@ void User_PWMTIM_IRQ(void)
 	 * Place series power resistors!
 	 * Heatsinks on the power FETs!
 	 */
-	float fangle, ipark_a, ipark_b;
-	float tAf, tBf, tCf;
-	int16_t tA, tB, tC;
-	float Ia, Ib, Ic;
-	float clarke_alpha, clarke_beta;
-	float park_d, park_q;
 
 // **************** FORWARD PATH *****************
 	// Read angle from Hall sensors
@@ -576,13 +578,20 @@ void User_PWMTIM_IRQ(void)
 	// DAC debugging outputs
 	DAC->DHR12L1 = g_rampAngle;
 	DAC->DHR12L2 = (uint16_t)(fangle*65536.0f);
-	// USB debugging outputs
-	usbdac1val = g_rampAngle;
-	usbdac2val = DAC->DHR12L2;
-	usbdac3val = (uint16_t)(6553.60f*((park_d) + 5.0f));
-	usbdac4val = (uint16_t)(6553.60f*((park_q) + 5.0f));
-	usbdac5val = (uint16_t)(6553.60f*((Ia) + 5.0f));
+
 #endif
+
+	// USB Debugging outputs
+	usbdacvals[0] = (uint32_t)((Ia+5.0f)*6553.6f);
+	usbdacvals[1] = (uint32_t)((Ib+5.0f)*6553.6f);
+	usbdacvals[2] = (uint32_t)((Ic+5.0f)*6553.6f);
+	usbdacvals[3] = tA;
+	usbdacvals[4] = tB;
+	usbdacvals[5] = tC;
+	usbdacvals[6] = (uint16_t)(Throttle_cmd * 65536.0f);
+	usbdacvals[7] = g_rampAngle;
+	usbdacvals[8] = HallSensor_Get_Angle();
+	usbdacvals[9] = HallSensor_Get_Speed();
 }
 
 // Simple application timer (1kHz)
