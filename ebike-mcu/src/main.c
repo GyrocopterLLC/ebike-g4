@@ -151,6 +151,7 @@ int main(void)
   //PWM_Init();
   PWM_Init_NoHal();
   HallSensor_Init_NoHal(20000);
+  HBD_Init();
 
   adcInit();
   

@@ -18,5 +18,17 @@
 #define BMS_USARTDIV			(22.8125f)
 #define BMS_BRR					(22 << 4) + 13
 
+#define HBD_BUFFER_LENGTH		64
+#define HBD_TXMT_TIMEOUT		100 // ms
+
+typedef struct
+{
+    uint8_t Buffer[HBD_BUFFER_LENGTH];
+    uint8_t RdPos, WrPos;
+    uint8_t Done;
+} HBDBuffer_Type;
 
 #endif // UART_H_
+
+void HBD_Init(void);
+void HBD_IRQ(void);

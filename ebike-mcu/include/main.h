@@ -55,7 +55,7 @@
 #include "pwm.h"
 #include "throttle.h"
 #include "pinconfig.h"
-
+#include "uart.h"
 #include <stdio.h>
 #include <string.h>
 

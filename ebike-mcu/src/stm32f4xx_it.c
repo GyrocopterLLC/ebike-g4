@@ -158,6 +158,18 @@ void SysTick_Handler(void)
 /******************************************************************************/
 
 /**
+ * Interrupt priorities (lower number = higher priority)
+ *
+ * TIM1_UP_TIM10_IRQ:		0 (set in pwm.c)
+ * TIM8_BRK_TIM12_IRQ:		3 (set in main.c)
+ * TIM3_IRQ:				1 (set in hallSensor.c)
+ * ADC_IRQ:					2 (set in adc.c)
+ * OTG_FS_IRQ:				6 (set in usbd_conf.c)
+ * USART3_IRQ:				4 (set in uart.c)
+ *
+ */
+
+/**
   * @brief  This function handles USB-On-The-Go FS global interrupt request.
   * @param  None
   * @retval None
@@ -208,18 +220,6 @@ void TIM3_IRQHandler(void)
 	//deli_hall_capture_isr();
 }
 
-/*
-void ADC_IRQHandler(void)
-{
-	// JEOC
-	if((ADC1->SR & ADC_SR_JEOC) != 0)
-	{
-		ADC1->SR &= ~(ADC_SR_JEOC);
-		ADC_InjectedConversionCompleteCallBack();
-	}
-}
-*/
-
 void ADC_IRQHandler(void)
 {
 	if(((ADC1->SR) & ADC_SR_JEOC) == ADC_SR_JEOC)
@@ -232,6 +232,12 @@ void ADC_IRQHandler(void)
 		ADC1->SR = ~(ADC_SR_OVR);
 	}
 }
+
+void USART3_IRQHandler(void)
+{
+	HBD_IRQ();
+}
+
 #ifdef USE_UART
 
 /**
