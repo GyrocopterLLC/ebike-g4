@@ -202,6 +202,11 @@ int main(void)
 			sprintf(string,"***tC: %d\r\n",(int)(TIM1->CCR3));
 			VCP_write(string,strlen(string));
     	}
+    if(HBD_Receive(&byte, 1) != 0)
+    {
+    	// Read a byte from the HBD UART
+    	UI_Process(byte);
+    }
     if(pb_state == PB_PRESSED)
     {
     	// Wait until release
