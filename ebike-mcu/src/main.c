@@ -48,9 +48,15 @@ uint32_t g_ledcount;
  * 4 - Tb
  * 5 - Tc
  * 6 - Throttle
- * 7 - Ramp Angle
- * 8 - Hall Angle
- * 9 - Hall Speed
+ * 7 - RampAngle
+ * 8 - HallAngle
+ * 9 - HallSpeed
+ * 10 - Spare
+ * 11 - Spare
+ * 12 - Spare
+ * 13 - Spare
+ * 14 - Spare
+ * 15 - Spare
  *
  */
 #define MAX_USB_VALS	16
@@ -662,6 +668,17 @@ void User_BasicTIM_IRQ(void)
 	}
 }
 
+void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)
+{
+	// Check if we need to clear it
+	for (uint8_t i = 0; i < MAX_USB_VALS; i++)
+	{
+		if(usbdacassignments[i] == outputnum)
+			usbdacassignments[i] =0;
+	}
+	// Set the new output
+	usbdacassignments[valuenum] = outputnum;
+}
 
 #ifdef  USE_FULL_ASSERT
 /**

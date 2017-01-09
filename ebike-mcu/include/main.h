@@ -74,6 +74,7 @@ typedef enum
 /* Exported functions ------------------------------------------------------- */
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
+void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 
