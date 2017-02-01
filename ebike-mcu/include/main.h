@@ -56,6 +56,7 @@
 #include "throttle.h"
 #include "pinconfig.h"
 #include "uart.h"
+#include "ui.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -75,6 +76,7 @@ typedef enum
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
+void MAIN_SetUSBDebugging(uint8_t on_or_off);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 

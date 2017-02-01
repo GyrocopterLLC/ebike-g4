@@ -60,8 +60,10 @@ uint32_t g_ledcount;
  *
  */
 #define MAX_USB_VALS	16
+#define MAX_USB_OUTPUTS	5
 uint32_t usbdacvals[MAX_USB_VALS];
-uint8_t usbdacassignments[MAX_USB_VALS];
+uint8_t usbdacassignments[MAX_USB_OUTPUTS];
+char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 
 uint32_t systick_debounce_counter;
 uint8_t debounce_integrator;
@@ -181,22 +183,42 @@ int main(void)
   dfsl_pid_defaultsf(&Iq_control);
 
   /* Default USB debugging outputs */
-  for(uint8_t i = 0; i < MAX_USB_VALS; i++)
-  {
-	  usbdacassignments[i] = 0;
-  }
   usbdacassignments[0] = 1; // Ia
   usbdacassignments[1] = 2; // Ib
   usbdacassignments[2] = 3; // Ic
-  usbdacassignments[6] = 4; // Throttle
-  usbdacassignments[8] = 5; // Hall angle
+  usbdacassignments[3] = 7; // Throttle
+  usbdacassignments[4] = 9; // Hall angle
 
   /* Run Application (Interrupt mode) */
   while (1)
   {
+	  uint8_t vcp_buf_len;
     //Toggle_Leds();
     if(VCP_read(&byte, 1) != 0)
+    {
+    	// Add it to the VCP buffer
+    	vcp_buf_len = strlen(vcp_buffer);
+    	if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
     	{
+    		vcp_buffer[vcp_buf_len + 1] = byte;
+    		vcp_buffer[vcp_buf_len + 2] = 0;
+    	}
+    	else
+    	{
+    		// Flush the buffer, just ignore overlong strings
+    		vcp_buffer[0] = 0;
+    	}
+
+    	if(byte == '\n')
+    	{
+    		// Send it to the UI processor!
+    		UI_Process(vcp_buffer);
+
+    		// and flush
+    		vcp_buffer[0] = 0;
+    	}
+
+    	/*
     		VCP_write("You wrote\r\n",11);
     		VCP_write(&byte, 1);
     		VCP_write("\r\n",2);
@@ -207,7 +229,8 @@ int main(void)
 			VCP_write(string,strlen(string));
 			sprintf(string,"***tC: %d\r\n",(int)(TIM1->CCR3));
 			VCP_write(string,strlen(string));
-    	}
+		*/
+    }
     if(HBD_Receive(&byte, 1) != 0)
     {
     	// Read a byte from the HBD UART
@@ -223,8 +246,18 @@ int main(void)
     if(data_out != 0)
     {
     	usbstring[0] = 0;
-    	for(uint8_t i = 1; i < MAX_USB_VALS; i++)
+    	for(uint8_t i = 1; i < MAX_USB_OUTPUTS; i++)
     	{
+    		if(usbdacassignments[i] == 0)
+    		{
+    			strcat(usbstring,"0 ");
+    		}
+    		else
+    		{
+    			sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+    			strcat(usbstring,string);
+    		}
+    		/*
     		for(uint8_t j = 0; j < MAX_USB_VALS; j++)
     		{
     			if(usbdacassignments[j] == i)
@@ -234,6 +267,7 @@ int main(void)
     				strcat(usbstring,string);
     			}
     		}
+    		*/
     	}
 
     	strcat(usbstring,"\r\n");
@@ -670,14 +704,16 @@ void User_BasicTIM_IRQ(void)
 
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)
 {
-	// Check if we need to clear it
-	for (uint8_t i = 0; i < MAX_USB_VALS; i++)
-	{
-		if(usbdacassignments[i] == outputnum)
-			usbdacassignments[i] =0;
-	}
 	// Set the new output
-	usbdacassignments[valuenum] = outputnum;
+	usbdacassignments[outputnum] = valuenum+1;
+}
+
+void MAIN_SetUSBDebugging(uint8_t on_or_off)
+{
+	if(on_or_off == 0)
+		data_out = 0;
+	else
+		data_out = 1;
 }
 
 #ifdef  USE_FULL_ASSERT
