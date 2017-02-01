@@ -202,8 +202,8 @@ int main(void)
     	vcp_buf_len = strlen(vcp_buffer);
     	if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
     	{
-    		vcp_buffer[vcp_buf_len + 1] = byte;
-    		vcp_buffer[vcp_buf_len + 2] = 0;
+    		vcp_buffer[vcp_buf_len] = byte;
+    		vcp_buffer[vcp_buf_len + 1] = 0;
     	}
     	else
     	{

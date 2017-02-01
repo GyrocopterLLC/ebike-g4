@@ -138,7 +138,7 @@ uint8_t UI_Process(char* inputstring)
 				return UI_ERROR;
 			}
 			// Next, make sure syntax is right (should be a comma)
-			inputstring += 1 + ui_usb_lengths[usb_var];
+			inputstring += ui_usb_lengths[usb_var];
 			if(*inputstring != ',')
 			{
 				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
