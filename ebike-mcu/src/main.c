@@ -196,6 +196,8 @@ int main(void)
     //Toggle_Leds();
     if(VCP_read(&byte, 1) != 0)
     {
+    	// Echo it
+    	VCP_write(&byte, 1);
     	// Add it to the VCP buffer
     	vcp_buf_len = strlen(vcp_buffer);
     	if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
@@ -216,6 +218,12 @@ int main(void)
 
     		// and flush
     		vcp_buffer[0] = 0;
+
+    		// Send response if it exists
+    		if(UI_RespLen() > 0)
+    		{
+    			VCP_write(UI_SendBuf(), UI_RespLen());
+    		}
     	}
 
     	/*
@@ -246,7 +254,7 @@ int main(void)
     if(data_out != 0)
     {
     	usbstring[0] = 0;
-    	for(uint8_t i = 1; i < MAX_USB_OUTPUTS; i++)
+    	for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
     	{
     		if(usbdacassignments[i] == 0)
     		{

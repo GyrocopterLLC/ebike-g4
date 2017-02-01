@@ -150,6 +150,7 @@ uint8_t UI_Process(char* inputstring)
 			{
 				usb_place = *inputstring - '0';
 				MAIN_SetUSBDebugOutput(usb_place, usb_var);
+				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 			}
 			else
 			{
@@ -163,10 +164,12 @@ uint8_t UI_Process(char* inputstring)
 			if(*inputstring == '1')
 			{
 				MAIN_SetUSBDebugging(1);
+				UI_SerialOut("", 0);
 			}
 			else if(*inputstring == '0')
 			{
 				MAIN_SetUSBDebugging(0);
+				UI_SerialOut("", 0);
 			}
 			else
 			{
@@ -185,6 +188,5 @@ uint8_t UI_Process(char* inputstring)
 		return UI_ERROR;
 		break;
 	}
-	UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 	return UI_OK;
 }
