@@ -149,7 +149,7 @@ uint8_t UI_Process(char* inputstring)
 			if(*inputstring >= '1' && *inputstring <= '5')
 			{
 				usb_place = *inputstring - '0';
-				MAIN_SetUSBDebugOutput(usb_place, usb_var);
+				MAIN_SetUSBDebugOutput(usb_place-1, usb_var);
 				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 			}
 			else
