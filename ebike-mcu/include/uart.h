@@ -28,7 +28,9 @@ typedef struct
     uint8_t Done;
 } HBDBuffer_Type;
 
-#endif // UART_H_
-
 void HBD_Init(void);
 void HBD_IRQ(void);
+uint8_t HBD_Receive(uint8_t* buf, uint8_t count);
+uint8_t HBD_Transmit(uint8_t* buf, uint8_t count);
+
+#endif // UART_H_
