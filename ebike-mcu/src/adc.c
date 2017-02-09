@@ -8,6 +8,8 @@
 #include "adc.h"
 #include "stm32f4xx_hal.h"
 #include "gpio.h"
+#include "project_parameters.h"
+
 uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[3];
 float adc_vref;
@@ -95,7 +97,7 @@ void adcInit(void)
 	ADC1->SR = 0;
 	ADC1->CR1 |= ADC_CR1_JEOCIE;
 
-	NVIC_SetPriority(ADC_IRQn,2);
+	NVIC_SetPriority(ADC_IRQn,PRIO_ADC);
 	NVIC_EnableIRQ(ADC_IRQn);
 
 #if defined(USING_OLD_VER)

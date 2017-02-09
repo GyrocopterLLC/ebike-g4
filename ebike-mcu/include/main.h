@@ -55,6 +55,7 @@
 #include "pwm.h"
 #include "throttle.h"
 #include "pinconfig.h"
+#include "project_parameters.h"
 #include "uart.h"
 #include "ui.h"
 #include <stdio.h>
@@ -73,6 +74,7 @@ typedef enum
 #define DEBOUNCE_MAX			5 // Must get integrator up to 5 to count as "pressed"
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+uint32_t itoa(char* buf, int32_t num);
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);

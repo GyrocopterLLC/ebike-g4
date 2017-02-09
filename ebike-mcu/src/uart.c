@@ -8,6 +8,7 @@
 #include "uart.h"
 #include "gpio.h"
 #include "pinconfig.h"
+#include "project_parameters.h"
 
 HBDBuffer_Type s_RxBuffer;
 HBDBuffer_Type s_TxBuffer;
@@ -36,7 +37,7 @@ void HBD_Init(void)
 	HBD_UART->CR1 |= USART_CR1_UE;
 
 	// Interrupt config
-	NVIC_SetPriority(USART3_IRQn, 4);
+	NVIC_SetPriority(USART3_IRQn, PRIO_HBD_UART);
 	NVIC_EnableIRQ(USART3_IRQn);
 }
 

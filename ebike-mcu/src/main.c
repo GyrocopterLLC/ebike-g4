@@ -231,12 +231,27 @@ int main(void)
     		VCP_write(&byte, 1);
     		VCP_write("\r\n",2);
     		//Toggle_Leds();
-    		sprintf(string,"***tA: %d\r\n",(int)(TIM1->CCR1));
-    		VCP_write(string,strlen(string));
-    		sprintf(string,"***tB: %d\r\n",(int)(TIM1->CCR2));
-			VCP_write(string,strlen(string));
-			sprintf(string,"***tC: %d\r\n",(int)(TIM1->CCR3));
-			VCP_write(string,strlen(string));
+    		//sprintf(string,"***tA: %d\r\n",(int)(TIM1->CCR1));
+    		//VCP_write(string,strlen(string));
+    		//sprintf(string,"***tB: %d\r\n",(int)(TIM1->CCR2));
+			//VCP_write(string,strlen(string));
+			//sprintf(string,"***tC: %d\r\n",(int)(TIM1->CCR3));
+			//VCP_write(string,strlen(string));
+    		uint32_t outlen;
+    		VCP_write("***tA: ", 7);
+    		outlen = itoa(string, (int)(TIM1->CCR1));
+    		VCP_write(string, outlen);
+    		VCP_write("\r\n", 2);
+     		VCP_write("***tB: ", 7);
+    		outlen = itoa(string, (int)(TIM1->CCR2));
+    		VCP_write(string, outlen);
+    		VCP_write("\r\n", 2);
+     		VCP_write("***tC: ", 7);
+    		outlen = itoa(string, (int)(TIM1->CCR3));
+    		VCP_write(string, outlen);
+    		VCP_write("\r\n", 2);
+
+
 		*/
     }
     if(HBD_Receive(&byte, 1) != 0)
@@ -262,8 +277,10 @@ int main(void)
     		}
     		else
     		{
-    			sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+    			//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+    			itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
     			strcat(usbstring,string);
+    			strcat(usbstring," ");
     		}
     		/*
     		for(uint8_t j = 0; j < MAX_USB_VALS; j++)
@@ -401,7 +418,7 @@ static void User_BasicTim_Init(void)
 	TIM12->PSC = 9; // 84MHz clock, divided by 9+1 = 8.4MHz
 	TIM12->ARR = 8400; // 8.4MHz / 8400 = 1kHz clock
 
-	NVIC_SetPriority(TIM8_BRK_TIM12_IRQn,3);
+	NVIC_SetPriority(TIM8_BRK_TIM12_IRQn,PRIO_APPTIMER);
 	NVIC_EnableIRQ(TIM8_BRK_TIM12_IRQn);
 
 	TIM12->DIER = TIM_DIER_UIE;
@@ -426,7 +443,7 @@ void User_PWMTIM_IRQ(void)
 {
 	float fangle, ipark_a, ipark_b;
 	float tAf, tBf, tCf;
-	int16_t tA, tB, tC;
+	uint16_t tA, tB, tC;
 	float Ia, Ib, Ic;
 	float clarke_alpha, clarke_beta;
 	float park_d, park_q;
@@ -521,9 +538,9 @@ void User_PWMTIM_IRQ(void)
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
-	tA = (int16_t)(tAf*65535.0f);
-	tB = (int16_t)(tBf*65535.0f);
-	tC = (int16_t)(tCf*65535.0f);
+	tA = (uint16_t)(tAf*65535.0f);
+	tB = (uint16_t)(tBf*65535.0f);
+	tC = (uint16_t)(tCf*65535.0f);
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// Transform sensor readings
@@ -564,9 +581,9 @@ void User_PWMTIM_IRQ(void)
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
-	tA = (int16_t)(tAf*65535.0f);
-	tB = (int16_t)(tBf*65535.0f);
-	tC = (int16_t)(tCf*65535.0f);
+	tA = (uint16_t)(tAf*65535.0f);
+	tB = (uint16_t)(tBf*65535.0f);
+	tC = (uint16_t)(tCf*65535.0f);
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 	// Transform sensor readings
@@ -610,9 +627,9 @@ void User_PWMTIM_IRQ(void)
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
-	tA = (int16_t)(tAf*65535.0f);
-	tB = (int16_t)(tBf*65535.0f);
-	tC = (int16_t)(tCf*65535.0f);
+	tA = (uint16_t)(tAf*65535.0f);
+	tB = (uint16_t)(tBf*65535.0f);
+	tC = (uint16_t)(tCf*65535.0f);
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
 
@@ -743,5 +760,48 @@ void assert_failed(uint8_t* file, uint32_t line)
   }
 }
 #endif
+
+/* Convert num into ASCII in base 10
+ * Result in buf as a null terminated string
+ * Returns number of digits in buf, including
+ * negative sign when present.
+ */
+uint32_t itoa(char* buf, int32_t num)
+{
+	char* going_out = buf;
+	uint32_t retval = 0;
+	uint8_t is_neg = 0;
+	if(num < 0)
+	{
+		*going_out = '-';
+		going_out++;
+		is_neg = 1;
+		num = -num;
+	}
+
+	// Start assembling the string, in backwards order
+	// do..while is required so that a zero value
+	// will print at least one character
+	do
+	{
+		*going_out = (num % 10) + '0';
+		going_out++;
+		retval++;
+		num = num / 10;
+	}while(num != 0);
+	// Null terminate
+	*going_out = 0;
+	// Now, flip the string around
+	// Swapping characters using a dummy byte
+	char dummy;
+	for(uint8_t i = 0; i < retval / 2; i++)
+	{
+		dummy = buf[is_neg + i];
+		buf[is_neg + i] = buf[is_neg + retval - 1 - i];
+		buf[is_neg + retval - 1 - i] = dummy;
+	}
+
+	return retval + is_neg;
+}
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

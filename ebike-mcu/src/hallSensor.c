@@ -8,6 +8,7 @@
 #include "hallSensor.h"
 #include "gpio.h"
 #include "pinconfig.h"
+#include "project_parameters.h"
 
 /*################### Private variables #####################################*/
 TIM_HandleTypeDef hHallTim;
@@ -248,7 +249,7 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 
 	HALL_TIMER->EGR |= TIM_EGR_UG; // Trigger an update to get all those shadow registers set
 
-	NVIC_SetPriority(HALL_IRQn,1);
+	NVIC_SetPriority(HALL_IRQn,PRIO_HALL);
 	NVIC_EnableIRQ(HALL_IRQn);
 
 	HALL_TIMER->DIER = TIM_DIER_CC1IE | TIM_DIER_UIE; // Enable channel 1 and update interrupts
