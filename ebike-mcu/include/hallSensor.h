@@ -42,6 +42,10 @@
 #define HALL_PSC_CHANGED				(HALL_PSC_CHANGED_UP | HALL_PSC_CHANGED_DOWN)
 #define HALL_STOPPED					4
 
+#define	HALL_ROT_UNKNOWN				0
+#define HALL_ROT_FORWARD				1
+#define HALL_ROT_REVERSE				2
+
 typedef struct
 {
 #if defined(USE_FLOATING_POINT)
@@ -53,6 +57,8 @@ typedef struct
 	uint16_t Prescaler;
 	uint8_t Status;
 	uint8_t OverflowCount;
+	uint8_t RotationDirection;
+	uint8_t CurrentState;
 #else
 	uint32_t Speed; // Expressed in Hz * 2^16 (aka Q16 number)
 	uint32_t CallingFrequency; // How rapidly the speed calculation will be updated
@@ -72,6 +78,7 @@ uint8_t HallSensor_Get_State(void);
 void HallSensor_Inc_Angle(void);
 uint16_t HallSensor_Get_Angle(void);
 uint32_t HallSensor_Get_Speed(void);
+uint8_t HallSensor_Get_Direction(void);
 void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
 void HallSensor_UpdateCallback(void);

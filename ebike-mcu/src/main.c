@@ -51,7 +51,7 @@ uint32_t g_ledcount;
  * 7 - RampAngle
  * 8 - HallAngle
  * 9 - HallSpeed
- * 10 - Spare
+ * 10 - HallDifference
  * 11 - Spare
  * 12 - Spare
  * 13 - Spare
@@ -498,7 +498,8 @@ void User_PWMTIM_IRQ(void)
 	// Rotor angle comes from ramp generator
 	fangle = ((float)g_rampAngle)/65536.0f;
 	// Feed ramp angle with fixed throttle to inverse Park
-	dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
+	//dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
+	dfsl_iparkf(Throttle_cmd,0.0f,fangle,&ipark_a, &ipark_b); // Apply on D phase to get rotor locked to angle
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
@@ -665,6 +666,10 @@ void User_PWMTIM_IRQ(void)
 	usbdacvals[7] = g_rampAngle;
 	usbdacvals[8] = HallSensor_Get_Angle();
 	usbdacvals[9] = HallSensor_Get_Speed();
+	if(g_rampAngle > usbdacvals[8])
+		usbdacvals[10] = (g_rampAngle - usbdacvals[8]);
+	else
+		usbdacvals[10] = (usbdacvals[8] - g_rampAngle);
 }
 
 // Simple application timer (1kHz)

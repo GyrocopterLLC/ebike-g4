@@ -19,34 +19,18 @@ uint8_t debug_direction = 0;
 uint8_t debug_freq = 4;
 #endif
 
-uint16_t HallStateAngles[8] = { 0, // State 0 -> Invalid
-								0, // State 1 -> 0°
-								43691, // State 2 -> 240°
-								54613, // State 3 -> 300°
-								21845, // State 4 -> 120°
-								10923, // State 5 -> 60°
-								32768, // State 6 -> 180°
-								0}; // State 7 -> Invalid
+uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
-float HallStateAnglesFloat[8] = { 0.0f, // State 0 -> Invalid
-							  	  0.0f, // State 1 -> 0
-								  0.666666667f, // State 2 -> 240
-								  0.833333333f, // State 3 -> 300
-								  0.333333333f, // State 4 -> 120
-								  0.166666667f, // State 5 -> 60
-								  0.5f, // State 6 -> 180
-								  0.0f}; // State 7 -> Invalid
+float HallStateAnglesFloat[8] = HALL_ANGLES_FLOAT;
 
-// Motor rotation order -> 1, 5, 4, 6, 2, 3...
-uint8_t HallStateOrder[8] = { 0, // State 0 -> Invalid
-							  1, // State 1 -> First
-							  5, // State 2 -> Fifth
-							  6, // State 3 -> Sixth
-							  3, // State 4 -> Third
-							  2, // State 5 -> Second
-							  4, // State 6 -> Fourth
-							  0}; // State 7 -> Invalid
-uint8_t DebugOrder[8] = {0, 1, 5, 4, 6, 2, 3, 0};
+// Motor rotation order -> 5, 1, 3, 2 ,6, 4...
+uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
+uint8_t HallStateReverseOrder[8] = REVERSE_HALL_INVTABLE;
+uint8_t DebugOrder[8] = {0, 5, 1, 3, 2 ,6, 4, 0};
+
+uint8_t StateHistory[256];
+uint8_t DirHistory[256];
+uint8_t StateHistoryPlace;
 
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
@@ -86,7 +70,11 @@ uint8_t HallSensor_Get_State(void)
 void HallSensor_Inc_Angle(void)
 {
 	// Increment the angle by the pre-calculated increment amount
-	HallSensor.Angle += HallSensor.AngleIncrement;
+	if(HallSensor.RotationDirection == HALL_ROT_FORWARD)
+		HallSensor.Angle += HallSensor.AngleIncrement;
+	else if(HallSensor.RotationDirection == HALL_ROT_REVERSE)
+		HallSensor.Angle -= HallSensor.AngleIncrement;
+	// Don't do anything if rotation is unknown.
 #if defined(USE_FLOATING_POINT)
 	// Wraparound for floating point. Fixed point simply overflows the 16 bit variable.
 	if(HallSensor.Angle > 1.0f)
@@ -119,6 +107,11 @@ uint32_t HallSensor_Get_Speed(void)
 #else
 	return HallSensor.Speed;
 #endif
+}
+
+uint8_t HallSensor_Get_Direction(void)
+{
+	return HallSensor.RotationDirection;
 }
 
 /** HallSensor_Init
@@ -261,6 +254,7 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 	HallSensor.CallingFrequency = callingFrequency;
 	HallSensor.OverflowCount = 0;
 	HallSensor.Status |= HALL_STOPPED;
+	HallSensor.CurrentState = 0;
 
 
 #endif
@@ -340,6 +334,21 @@ void HallSensor_UpdateCallback(void)
  */
 void HallSensor_CaptureCallback(void)
 {
+	uint8_t lastState = HallSensor.CurrentState;
+	HallSensor.CaptureValue = HALL_TIMER->CCR1;
+	HallSensor.CurrentState = HallSensor_Get_State();
+
+	// Figure out which way we're turning.
+	if(HallStateForwardOrder[HallSensor.CurrentState] == lastState)
+		HallSensor.RotationDirection = HALL_ROT_FORWARD;
+	else if(HallStateReverseOrder[HallSensor.CurrentState] == lastState)
+		HallSensor.RotationDirection = HALL_ROT_REVERSE;
+	else
+		HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
+
+	StateHistory[StateHistoryPlace] = HallSensor.CurrentState;
+	DirHistory[StateHistoryPlace++] = HallSensor.RotationDirection;
+
 #if defined(HALL_DEBUG_SOURCE)
 	if(debug_state == 6)
 	{
@@ -371,15 +380,48 @@ void HallSensor_CaptureCallback(void)
 
 #endif
 
-	HallSensor.CaptureValue = HALL_TIMER->CCR1;
 
 	// Update the angle - just encountered a 60deg marker (the Hall state change)
+	// If we're rotating forward, the actual angle will be at the beginning of the state.
+	// For example, if we entered State 5 (0->60°), we will be at 0°. Since State 5
+	// is defined as the middle of its range (30°), we need to subtract 30°. In the
+	// reverse rotation case, we would instead add 30°. If we can't trust which way
+	// the motor is turning, just choose the middle of the range (don't add or subtract
+	// anything).
 #if defined(USE_FLOATING_POINT)
-	HallSensor.Angle = HallStateAnglesFloat[HallSensor_Get_State()];
-	//HallSensor.Angle = ((float)HallStateAngles[HallSensor_Get_State()]) / 65536.0f;
+	switch(HallSensor.RotationDirection)
+	{
+	case HALL_ROT_FORWARD:
+		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState] - F32_30_DEG;
+		if(HallSensor.Angle < 0.0f) { HallSensor.Angle += 1.0f; }
+		break;
+	case HALL_ROT_REVERSE:
+		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState] + F32_30_DEG;
+		if(HallSensor.Angle > 1.0f) { HallSensor.Angle -= 1.0f; }
+		break;
+	case HALL_ROT_UNKNOWN:
+	default:
+		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState];
+		break;
+	}
+	//HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState];
 #else
-	HallSensor.Angle = HallStateAngles[HallSensor_Get_State()];
+	switch(HallSensor.RotationDirection)
+	{
+	case HALL_ROT_FORWARD:
+		HallSensor.Angle = HallStateAngles[HallSensor.CurrentState] - U16_30_DEG;
+		break;
+	case HALL_ROT_REVERSE:
+		HallSensor.Angle = HallStateAngles[HallSensor.CurrentState] + U16_30_DEG;
+		break;
+	case HALL_ROT_UNKNOWN:
+	default:
+		HallSensor.Angle = HallStateAngles[HallSensor.CurrentState];
+		break;
+	}
+	//HallSensor.Angle = HallStateAngles[HallSensor.CurrentState];
 #endif
+
 
 	if(HallSensor.OverflowCount > 0)
 	{

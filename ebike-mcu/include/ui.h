@@ -20,7 +20,7 @@ typedef enum
 	UI_NoCmd = 127
 } UI_CommandType;
 
-#define UI_USB_NUMOPTIONS	10
+#define UI_USB_NUMOPTIONS	11
 #define UI_USB_OPTIONLIST 	{ 	"IA",\
 								"IB",\
 								"IC",\
@@ -30,8 +30,10 @@ typedef enum
 								"TH",\
 								"RA",\
 								"HA",\
-								"HS" }
+								"HS",\
+								"HD"}
 #define UI_USB_LENGTHSLIST {	2,\
+								2,\
 								2,\
 								2,\
 								2,\
