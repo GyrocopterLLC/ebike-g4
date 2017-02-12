@@ -54,6 +54,32 @@ static void to_upper(char* in)
 	}
 }
 
+// Converts input string (assumed to be an ASCII integer number) into a 32 bit int
+static uint32_t UI_atoi(char* in)
+{
+	char* str = in;
+	uint32_t retval = 0;
+	while(*str != 0) // Stop when we hit a null terminator
+	{
+		if(((*str) >= '0') && ((*str) <= '9'))
+		{
+			// Valid numeral seen here
+			retval *= 10;
+			retval += (*str) - '0';
+		}
+		else if((*str) == '\n')
+		{
+			return retval;
+		}
+		else
+		{
+			return 0;
+		}
+		str++;
+	}
+	return retval;
+}
+
 // Doesn't actually send any output, just adds it to the output buffer
 // Function that called UI_Process can call UI_BufLen to see if there's
 // some info to send, and then call UI_SendBuf to retrieve it.
@@ -79,6 +105,7 @@ uint8_t UI_Process(char* inputstring)
 	uint8_t ui_error = 0;
 	UI_CommandType ui_cmd = UI_NoCmd;
 	uint8_t usb_var=255, usb_place=0;
+	uint32_t newspeed;
 	// Convert to upper case
 	to_upper(inputstring);
 	// First, check the preamble.
@@ -170,6 +197,38 @@ uint8_t UI_Process(char* inputstring)
 			{
 				MAIN_SetUSBDebugging(0);
 				UI_SerialOut("", 0);
+			}
+			else
+			{
+				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+				return UI_ERROR;
+			}
+			break;
+		case RampSpeed_Command:
+			// Decode the number to see what we're setting the speed to
+			newspeed = UI_atoi(inputstring);
+			if(newspeed != 0)
+			{
+				MAIN_SetRampSpeed(newspeed);
+				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+			}
+			else
+			{
+				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+				return UI_ERROR;
+			}
+			break;
+		case RampDir_Command:
+			// Only two options allowed - 'F' for forward, 'R' for reverse
+			if(*inputstring == 'F')
+			{
+				MAIN_SetRampDir(0);
+				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+			}
+			else if(*inputstring == 'R')
+			{
+				MAIN_SetRampDir(1);
+				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 			}
 			else
 			{

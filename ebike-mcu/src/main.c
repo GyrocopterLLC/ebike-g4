@@ -30,11 +30,14 @@
   
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define RAMP_CALLFREQ		(20000)
+#define RAMP_DEFAULTSPEED	(5)
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 USBD_HandleTypeDef  USBD_Device;
 DAC_HandleTypeDef	hdac;
 TIM_HandleTypeDef	hBasicTim;
+uint8_t g_rampdir;
 uint16_t g_rampAngle;
 uint16_t g_rampInc;
 uint32_t g_ledcount;
@@ -175,8 +178,9 @@ int main(void)
   /* Start Device Process */
   USBD_Start(&USBD_Device);
   
-  /* Initialize ramp angle increment */
-  g_rampInc = dfsl_rampctrl(20000, 5);
+  /* Initialize ramp angle increment at 5 Hz*/
+  g_rampdir = 0; // Going forward at start.
+  g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
 
   /* Initialize PID controllers */
   dfsl_pid_defaultsf(&Id_control);
@@ -189,10 +193,16 @@ int main(void)
   usbdacassignments[3] = 7; // Throttle
   usbdacassignments[4] = 9; // Hall angle
 
+  /* Initialize watchdog timer */
+  // WDT_init();
+
   /* Run Application (Interrupt mode) */
   while (1)
   {
 	  uint8_t vcp_buf_len;
+	  // Feed the watchdog!
+	  // WDT_feedme();
+
     //Toggle_Leds();
     if(VCP_read(&byte, 1) != 0)
     {
@@ -452,7 +462,15 @@ void User_PWMTIM_IRQ(void)
 
 	// For all build phases
 	// Generate ramp angle
-	dfsl_rampgen(&g_rampAngle, g_rampInc);
+	// dfsl_rampgen(&g_rampAngle, g_rampInc); // Can use the dfsl library later, following code is simpler
+	if(g_rampdir == 0)
+	{
+		g_rampAngle += g_rampInc;
+	}
+	else
+	{
+		g_rampAngle -= g_rampInc;
+	}
 	// Update Hall sensor angle
 	HallSensor_Inc_Angle();
 #if PHASE == 1
@@ -746,6 +764,24 @@ void MAIN_SetUSBDebugging(uint8_t on_or_off)
 		data_out = 0;
 	else
 		data_out = 1;
+}
+
+void MAIN_SetRampSpeed(uint32_t newspeed)
+{
+	g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, newspeed);
+}
+
+void MAIN_SetRampDir(uint8_t forwardOrBackwards)
+{
+	if(forwardOrBackwards == 0)
+	{
+		// Forwards!
+		g_rampdir = 0;
+	}
+	else
+	{
+		g_rampdir = 1;
+	}
 }
 
 #ifdef  USE_FULL_ASSERT

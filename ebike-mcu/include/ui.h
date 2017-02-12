@@ -7,16 +7,22 @@
 #define UI_MAX_BUFFER_LENGTH	32
 #define UI_PREAMBLE			"MCU+"
 #define UI_LENGTH_PREAMBLE	4
-#define UI_NUM_OPTIONS		2
+#define UI_NUM_OPTIONS		4
 #define UI_OPTIONS			{	"USB",\
-								"SERIALDATA"}
+								"SERIALDATA",\
+								"RAMPSPEED",\
+								"RAMPDIR"}
 #define UI_OPTIONS_LENGTHSLIST	{	3,\
-								   10}
+								   10,\
+								    9,\
+									7}
 
 typedef enum
 {
 	USB_Command = 0,
 	SerialData_Command = 1,
+	RampSpeed_Command = 2,
+	RampDir_Command = 3,
 	UI_NoCmd = 127
 } UI_CommandType;
 

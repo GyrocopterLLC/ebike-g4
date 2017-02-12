@@ -79,6 +79,8 @@ void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 void MAIN_SetUSBDebugging(uint8_t on_or_off);
+void MAIN_SetRampSpeed(uint32_t newspeed);
+void MAIN_SetRampDir(uint8_t forwardOrBackwards);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 
