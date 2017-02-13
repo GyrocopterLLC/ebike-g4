@@ -58,6 +58,7 @@
 #include "project_parameters.h"
 #include "uart.h"
 #include "ui.h"
+#include "wdt.h"
 #include <stdio.h>
 #include <string.h>
 

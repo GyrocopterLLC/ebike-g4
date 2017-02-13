@@ -194,14 +194,14 @@ int main(void)
   usbdacassignments[4] = 9; // Hall angle
 
   /* Initialize watchdog timer */
-  // WDT_init();
+  WDT_init();
 
   /* Run Application (Interrupt mode) */
   while (1)
   {
 	  uint8_t vcp_buf_len;
 	  // Feed the watchdog!
-	  // WDT_feedme();
+	  WDT_feed();
 
     //Toggle_Leds();
     if(VCP_read(&byte, 1) != 0)
@@ -534,7 +534,7 @@ void User_PWMTIM_IRQ(void)
 	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
 
 	// DAC debugging outputs
-	DAC->DHR12L1 = adcRawCurrent(ADC_IA)<<4;
+	DAC->DHR12L1 = ((uint16_t)(HallSensor_Get_State())) * 8192;
 	DAC->DHR12L2 = adcRawCurrent(ADC_IB)<<4;
 
 #endif
