@@ -54,11 +54,17 @@ static void to_upper(char* in)
 	}
 }
 
-// Converts input string (assumed to be an ASCII integer number) into a 32 bit int
-static uint32_t UI_atoi(char* in)
+// Converts input string (assumed to be an ASCII integer number) into a signed 32 bit int
+static int32_t UI_atoi(char* in)
 {
 	char* str = in;
-	uint32_t retval = 0;
+	uint8_t isneg = 0;
+	int32_t retval = 0;
+	if(*str == '-')
+	{
+		isneg = 1;
+		str++;
+	}
 	while(*str != 0) // Stop when we hit a null terminator
 	{
 		if(((*str) >= '0') && ((*str) <= '9'))
@@ -67,17 +73,61 @@ static uint32_t UI_atoi(char* in)
 			retval *= 10;
 			retval += (*str) - '0';
 		}
-		else if((*str) == '\n')
-		{
-			return retval;
-		}
 		else
 		{
-			return 0;
+			if(isneg != 0)
+				retval = 0 - retval;
+			return retval;
 		}
 		str++;
 	}
+	if(isneg != 0)
+	{
+		retval = 0 - retval;
+	}
 	return retval;
+}
+
+// Converts input string to single-precision floating point
+static float UI_atof(char* in)
+{
+	char* str = in;
+	float divfactor = 1.0f;
+	float retval = 0.0f;
+	uint8_t decimal_point_happened = 0;
+	if(*str == '-')
+	{
+		divfactor = -1.0f;
+		str++;
+	}
+	// Go through that string!
+	while((*str) != 0)
+	{
+		// Is a digit?
+		if(((*str) >= '0') && ((*str) <= '9'))
+		{
+			if(decimal_point_happened != 0)
+				divfactor = divfactor / 10.0f;
+			retval *= 10.0f;
+			retval += (float)(*str - '0');
+		}
+		else if((*str) == '.')
+		{
+			if(decimal_point_happened != 0)
+			{
+				// This is the second decimal point! Abandon ship!
+				return (retval*divfactor);
+			}
+			decimal_point_happened = 1;
+		}
+		else
+		{
+			// Unknown character, get out now.
+			return (retval * divfactor);
+		}
+		str++;
+	}
+	return (retval * divfactor);
 }
 
 // Doesn't actually send any output, just adds it to the output buffer
