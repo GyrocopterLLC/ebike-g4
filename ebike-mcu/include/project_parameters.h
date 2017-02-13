@@ -83,22 +83,22 @@
 //			210->270: State 2
 //			270->330: State 3
 #define HALL_ANGLES_INT		{	U16_0_DEG ,  /* State 0 - undefined */	\
-								U16_0_DEG,   /* State 1 */		\
-								U16_240_DEG, /* State 2 */		\
-								U16_300_DEG, /* State 3 */ 		\
-								U16_120_DEG, /* State 4 */		\
-								U16_60_DEG,  /* State 5 */		\
-								U16_180_DEG, /* State 6 */		\
+								U16_180_DEG,   /* State 1 */		\
+								U16_60_DEG, /* State 2 */		\
+								U16_120_DEG, /* State 3 */ 		\
+								U16_300_DEG, /* State 4 */		\
+								U16_240_DEG,  /* State 5 */		\
+								U16_0_DEG, /* State 6 */		\
 								U16_0_DEG    /* State 7 - undefined */	\
 							}
 // And the same for floating point
 #define HALL_ANGLES_FLOAT	{	F32_0_DEG,		\
-								F32_0_DEG,		\
-								F32_240_DEG,	\
-								F32_300_DEG,	\
-								F32_120_DEG,	\
-								F32_60_DEG,		\
 								F32_180_DEG,	\
+								F32_60_DEG,		\
+								F32_120_DEG,	\
+								F32_300_DEG,	\
+								F32_240_DEG,	\
+								F32_0_DEG,		\
 								F32_0_DEG		\
 							}
 

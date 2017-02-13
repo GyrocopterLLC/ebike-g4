@@ -91,8 +91,16 @@ uint16_t HallSensor_Get_Angle(void)
 {
 
 #if defined(USE_FLOATING_POINT)
+	if((HallSensor.Status & HALL_STOPPED) != 0)
+	{
+		return (uint16_t)(HallStateAnglesFloat[HallSensor_Get_State()] * 65536.0f);
+	}
 	return (uint16_t)(HallSensor.Angle * 65536.0f);
 #else
+	if((HallSensor.Status & HALL_STOPPED) != 0)
+	{
+		return HallStateAngles[HallSensor_Get_State()];
+	}
 	return HallSensor.Angle;
 #endif
 }
