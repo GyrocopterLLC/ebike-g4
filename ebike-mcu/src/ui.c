@@ -12,11 +12,20 @@
 #include "ui.h"
 #include "main.h"
 
+/* Function Definitions */
+uint8_t UI_USB_Command_Req(char cmdtype, char* options);
+uint8_t UI_SerialData_Command_Req(char cmdtype, char* options);
+uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
+uint8_t UI_RampDir_Command_Req(char cmdtype, char* options);
+uint8_t UI_Variable_Command_Req(char cmdtype, char* options);
+
+/* Private Variables */
 char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
 uint8_t ui_option_lengths[UI_NUM_OPTIONS] = UI_OPTIONS_LENGTHSLIST;
 
 char* ui_usb_options[UI_USB_NUMOPTIONS] = UI_USB_OPTIONLIST;
-uint8_t ui_usb_lengths[UI_USB_NUMOPTIONS] = UI_USB_LENGTHSLIST;
+
+char* ui_var_options[UI_VAR_NUMOPTIONS] = UI_VAR_OPTIONLIST;
 
 char ui_response_buf[UI_MAX_BUFFER_LENGTH];
 uint8_t ui_response_len;
@@ -154,8 +163,7 @@ uint8_t UI_Process(char* inputstring)
 {
 	uint8_t ui_error = 0;
 	UI_CommandType ui_cmd = UI_NoCmd;
-	uint8_t usb_var=255, usb_place=0;
-	uint32_t newspeed;
+
 	// Convert to upper case
 	to_upper(inputstring);
 	// First, check the preamble.
@@ -197,94 +205,19 @@ uint8_t UI_Process(char* inputstring)
 		switch(ui_cmd)
 		{
 		case USB_Command:
-			// Which USB output are we setting?
-
-			for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
-			{
-				ui_error = strcmp_s(inputstring,ui_usb_options[i],ui_usb_lengths[i]);
-				if(ui_error == 0)
-				{
-					// Setting this variable!
-					usb_var = i;
-					break;
-				}
-			}
-			if(ui_error != 0)
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
-			// Next, make sure syntax is right (should be a comma)
-			inputstring += ui_usb_lengths[usb_var];
-			if(*inputstring != ',')
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
-			inputstring++; // go past the comma
-			// Check if the output place is correct
-			if(*inputstring >= '1' && *inputstring <= '5')
-			{
-				usb_place = *inputstring - '0';
-				MAIN_SetUSBDebugOutput(usb_place-1, usb_var);
-				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-			}
-			else
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
+			ui_error = UI_USB_Command_Req(UI_SETCMD, inputstring);
 			break;
 		case SerialData_Command:
-			// Only two valid options here, '0' or '1'
-			// '0' turns off the output, '1' turns it on
-			if(*inputstring == '1')
-			{
-				MAIN_SetUSBDebugging(1);
-				UI_SerialOut("", 0);
-			}
-			else if(*inputstring == '0')
-			{
-				MAIN_SetUSBDebugging(0);
-				UI_SerialOut("", 0);
-			}
-			else
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
+			ui_error = UI_SerialData_Command_Req(UI_SETCMD, inputstring);
 			break;
 		case RampSpeed_Command:
-			// Decode the number to see what we're setting the speed to
-			newspeed = UI_atoi(inputstring);
-			if(newspeed != 0)
-			{
-				MAIN_SetRampSpeed(newspeed);
-				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-			}
-			else
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
+			ui_error = UI_RampSpeed_Command_Req(UI_SETCMD, inputstring);
 			break;
 		case RampDir_Command:
-			// Only two options allowed - 'F' for forward, 'R' for reverse
-			if(*inputstring == 'F')
-			{
-				MAIN_SetRampDir(0);
-				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-			}
-			else if(*inputstring == 'R')
-			{
-				MAIN_SetRampDir(1);
-				UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-			}
-			else
-			{
-				UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-				return UI_ERROR;
-			}
+			ui_error = UI_RampDir_Command_Req(UI_SETCMD, inputstring);
+			break;
+		case Variable_Command:
+			ui_error = UI_Variable_Command_Req(UI_SETCMD, inputstring);
 			break;
 		case UI_NoCmd:
 			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -297,5 +230,163 @@ uint8_t UI_Process(char* inputstring)
 		return UI_ERROR;
 		break;
 	}
-	return UI_OK;
+	return ui_error;
+}
+
+uint8_t UI_USB_Command_Req(char cmdtype, char* options)
+{
+	uint8_t ui_error;
+	uint8_t usb_var=255, usb_place=0;
+	if(cmdtype == UI_SETCMD)
+	{
+		for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+		{
+			ui_error = strcmp_s(options,ui_usb_options[i],UI_USB_LENGTH);
+			if(ui_error == 0)
+			{
+				// Setting this variable!
+				usb_var = i;
+				break;
+			}
+		}
+		if(ui_error != 0)
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		// Next, make sure syntax is right (should be a comma)
+		options += UI_USB_LENGTH;
+		if(*options != ',')
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		options++; // go past the comma
+		// Check if the output place is correct
+		if(*options >= '1' && *options <= '5')
+		{
+			usb_place = *options - '0';
+			MAIN_SetUSBDebugOutput(usb_place-1, usb_var);
+		}
+		else
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+		return UI_OK;
+	}
+	return UI_ERROR;
+}
+
+uint8_t UI_SerialData_Command_Req(char cmdtype, char* options)
+{
+	if(cmdtype == UI_SETCMD)
+	{
+		// Only two valid options here, '0' or '1'
+		// '0' turns off the output, '1' turns it on
+		if(*options == '1')
+		{
+			MAIN_SetUSBDebugging(1);
+			UI_SerialOut("", 0);
+		}
+		else if(*options == '0')
+		{
+			MAIN_SetUSBDebugging(0);
+			UI_SerialOut("", 0);
+		}
+		else
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		return UI_OK;
+	}
+	return UI_ERROR;
+}
+
+uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options)
+{
+	uint32_t newspeed;
+	if(cmdtype == UI_SETCMD)
+	{
+		// Decode the number to see what we're setting the speed to
+		newspeed = UI_atoi(options);
+		if(newspeed != 0)
+		{
+			MAIN_SetRampSpeed(newspeed);
+			UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+		}
+		else
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		return UI_OK;
+	}
+	return UI_ERROR;
+}
+
+uint8_t UI_RampDir_Command_Req(char cmdtype, char* options)
+{
+	if(cmdtype == UI_SETCMD)
+	{
+		// Only two options allowed - 'F' for forward, 'R' for reverse
+		if(*options == 'F')
+		{
+			MAIN_SetRampDir(0);
+			UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+		}
+		else if(*options == 'R')
+		{
+			MAIN_SetRampDir(1);
+			UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+		}
+		else
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		return UI_OK;
+	}
+	return UI_ERROR;
+}
+
+uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
+{
+	uint8_t ui_error;
+	uint8_t ui_var = 255;
+	float newval;
+	if(cmdtype == UI_SETCMD)
+	{
+		for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+		{
+			ui_error = strcmp_s(options,ui_var_options[i],UI_VAR_LENGTH);
+			if(ui_error == 0)
+			{
+				// Setting this variable!
+				ui_var = i;
+				break;
+			}
+		}
+		if(ui_error != 0)
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		// Next, make sure syntax is right (should be a comma)
+		options += UI_USB_LENGTH;
+		if(*options != ',')
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+		options++; // go past the comma
+		// What's the new value?
+		newval = UI_atof(options);
+		MAIN_SetVar(ui_var, newval);
+		UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+		return UI_OK;
+	}
+	return UI_ERROR;
 }

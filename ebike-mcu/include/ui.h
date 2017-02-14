@@ -7,15 +7,17 @@
 #define UI_MAX_BUFFER_LENGTH	32
 #define UI_PREAMBLE			"MCU+"
 #define UI_LENGTH_PREAMBLE	4
-#define UI_NUM_OPTIONS		4
+#define UI_NUM_OPTIONS		5
 #define UI_OPTIONS			{	"USB",\
 								"SERIALDATA",\
 								"RAMPSPEED",\
-								"RAMPDIR"}
+								"RAMPDIR",\
+								"VAR"}
 #define UI_OPTIONS_LENGTHSLIST	{	3,\
 								   10,\
 								    9,\
-									7}
+									7,\
+									3}
 
 typedef enum
 {
@@ -23,10 +25,12 @@ typedef enum
 	SerialData_Command = 1,
 	RampSpeed_Command = 2,
 	RampDir_Command = 3,
+	Variable_Command = 4,
 	UI_NoCmd = 127
 } UI_CommandType;
 
-#define UI_USB_NUMOPTIONS	11
+#define UI_USB_NUMOPTIONS	15
+#define UI_USB_LENGTH		2
 #define UI_USB_OPTIONLIST 	{ 	"IA",\
 								"IB",\
 								"IC",\
@@ -37,18 +41,19 @@ typedef enum
 								"RA",\
 								"HA",\
 								"HS",\
-								"HD"}
-#define UI_USB_LENGTHSLIST {	2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2,\
-								2}
+								"HD",\
+								"ID",\
+								"IQ",\
+								"TD",\
+								"TQ"}
+#define UI_VAR_NUMOPTIONS	4
+#define UI_VAR_LENGTH		2
+#define UI_VAR_OPTIONLIST	{	"KP",\
+								"KI",\
+								"KD",\
+								"KC"}
+
+
 #define UI_SETCMD			'='
 #define UI_QUERYCMD			'?'
 #define UI_RESPGOOD			"OK"

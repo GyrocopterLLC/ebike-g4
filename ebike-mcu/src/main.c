@@ -55,10 +55,10 @@ uint32_t g_ledcount;
  * 8 - HallAngle
  * 9 - HallSpeed
  * 10 - HallDifference
- * 11 - Spare
- * 12 - Spare
- * 13 - Spare
- * 14 - Spare
+ * 11 - Id
+ * 12 - Iq
+ * 13 - Td
+ * 14 - Tq
  * 15 - Spare
  *
  */
@@ -688,6 +688,10 @@ void User_PWMTIM_IRQ(void)
 		usbdacvals[10] = (g_rampAngle - usbdacvals[8]);
 	else
 		usbdacvals[10] = (usbdacvals[8] - g_rampAngle);
+	usbdacvals[11] = (uint32_t)((park_d+5.0f)*6553.6f);
+	usbdacvals[12] = (uint32_t)((park_q+5.0f)*6553.6f);
+	usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
+	usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
 }
 
 // Simple application timer (1kHz)
@@ -781,6 +785,33 @@ void MAIN_SetRampDir(uint8_t forwardOrBackwards)
 	else
 	{
 		g_rampdir = 1;
+	}
+}
+
+void MAIN_SetVar(uint8_t var, float newval)
+{
+	switch(var)
+	{
+	case 0:
+		// Kp
+		Id_control.Kp = newval;
+		Iq_control.Kp = newval;
+		break;
+	case 1:
+		// Ki
+		Id_control.Ki = newval;
+		Iq_control.Ki = newval;
+		break;
+	case 2:
+		// Kd
+		Id_control.Kd = newval;
+		Iq_control.Kd = newval;
+		break;
+	case 3:
+		// Kc
+		Id_control.Kc = newval;
+		Iq_control.Kc = newval;
+		break;
 	}
 }
 

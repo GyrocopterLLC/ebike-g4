@@ -30,7 +30,7 @@
 #define __MAIN_H
 
 /* PMSM3_1 Testing Phase definition */
-#define PHASE	2
+#define PHASE	3
 
 #ifndef PHASE
 #error Testing phase needs to be defined.
@@ -82,6 +82,7 @@ void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 void MAIN_SetUSBDebugging(uint8_t on_or_off);
 void MAIN_SetRampSpeed(uint32_t newspeed);
 void MAIN_SetRampDir(uint8_t forwardOrBackwards);
+void MAIN_SetVar(uint8_t var, float newval);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 

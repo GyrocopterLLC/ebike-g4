@@ -40,8 +40,8 @@ void dfsl_pid_defaults(PID_Type* pid)
 {
 	pid->Err = 0;
 	pid->Ui = 0;
-	pid->Kp = 5452595; // 1.3
-	pid->Ki = 83886; // 0.02
+	pid->Kp = 419430; // 0.1
+	pid->Ki = 4194; // 0.001
 	pid->Kd = 0;
 	pid->Kc = 209715; // 0.05
 	pid->OutMin = -65536;
@@ -54,8 +54,8 @@ void dfsl_pid_defaultsf(PID_Float_Type* pid)
 {
 	pid->Err = 0.0f;
 	pid->Ui = 0.0f;
-	pid->Kp = 1.3f;
-	pid->Ki = 0.02f;
+	pid->Kp = 0.1f;
+	pid->Ki = 0.001f;
 	pid->Kd = 0.0f;
 	pid->Kc = 0.05f;
 	pid->OutMin = -1.0f;
