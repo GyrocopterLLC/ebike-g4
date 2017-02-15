@@ -28,8 +28,8 @@
 #define HALL_TIM_CLK_ENABLE()			__HAL_RCC_TIM3_CLK_ENABLE()
 #define HALL_IRQn						TIM3_IRQn
 
-#define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock
-#define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock / 1000000
+#define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock * 2
+#define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock * 2 / 1000000
 
 #define HALL_PSC_MIN					15  // 84MHz clock / 16  = 5.25MHz -> 12.5millisec total period
 #define HALL_PSC_MAX					511 // 84MHz clock / 512 = 164kHz -> 0.4sec total period

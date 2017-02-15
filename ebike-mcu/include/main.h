@@ -30,7 +30,7 @@
 #define __MAIN_H
 
 /* PMSM3_1 Testing Phase definition */
-#define PHASE	3
+#define PHASE	5
 
 #ifndef PHASE
 #error Testing phase needs to be defined.

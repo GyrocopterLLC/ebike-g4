@@ -572,7 +572,7 @@ void User_PWMTIM_IRQ(void)
 	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
 	// Input feedbacks to the Id and Iq controllers
 	Id_control.Err = 0.0f - park_d;
-	Iq_control.Err = Throttle_cmd - park_q;
+	Iq_control.Err = (3.0f)*Throttle_cmd - park_q; // Throttle goes up to THREE now!
 	dfsl_pidf(&Id_control);
 	dfsl_pidf(&Iq_control);
 
@@ -644,7 +644,8 @@ void User_PWMTIM_IRQ(void)
 	// Read angle from Hall sensors
 	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
 	// Feed to inverse Park
-	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
+	//dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
+	dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
@@ -663,7 +664,7 @@ void User_PWMTIM_IRQ(void)
 	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
 	// Input feedbacks to the Id and Iq controllers
 	Id_control.Err = 0.0f - park_d;
-	Iq_control.Err = Throttle_cmd - park_q;
+	Iq_control.Err = (3.0f)*Throttle_cmd - park_q;
 	dfsl_pidf(&Id_control);
 	dfsl_pidf(&Iq_control);
 
