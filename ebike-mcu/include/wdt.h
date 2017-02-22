@@ -1,3 +1,6 @@
+// Used resources:
+// IWDG
+
 #ifndef WDT_H_
 #define WDT_H_
 

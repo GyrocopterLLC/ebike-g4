@@ -9,15 +9,11 @@
 #include "gpio.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
+#include "main.h"
 
 /*################### Private variables #####################################*/
 TIM_HandleTypeDef hHallTim;
 HallSensor_HandleTypeDef HallSensor;
-#if defined(HALL_DEBUG_SOURCE)
-uint8_t debug_state = 1;
-uint8_t debug_direction = 0;
-uint8_t debug_freq = 4;
-#endif
 
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
@@ -26,11 +22,8 @@ float HallStateAnglesFloat[8] = HALL_ANGLES_FLOAT;
 // Motor rotation order -> 5, 1, 3, 2 ,6, 4...
 uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
 uint8_t HallStateReverseOrder[8] = REVERSE_HALL_INVTABLE;
-uint8_t DebugOrder[8] = {0, 5, 1, 3, 2 ,6, 4, 0};
 
-uint8_t StateHistory[256];
-uint8_t DirHistory[256];
-uint8_t StateHistoryPlace;
+uint32_t HallSampleBuffer[HALL_NUM_SAMPLES];
 
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
@@ -42,25 +35,9 @@ static void HallSensor_CalcSpeed(void);
  * inputs. States 0 and 7 are invalid, since the Hall Sensors should
  * never be all low or all high. States 1-6 are valid states.
  */
-
 uint8_t HallSensor_Get_State(void)
 {
-#if defined(HALL_DEBUG_SOURCE)
-	debug_state++;
-	if((debug_state == 0) || (debug_state >= 7))
-		debug_state = 1;
-	return DebugOrder[debug_state];
-#else
-	uint32_t temp;
-	uint8_t state = 0;
-	// Pull out only the Hall pins A, B, and C
-	temp = HALL_PORT->IDR;
-	state += (temp & (1<<HALL_PIN_A)) ? 1 : 0;
-	state += (temp & (1<<HALL_PIN_B)) ? 2 : 0;
-	state += (temp & (1<<HALL_PIN_C)) ? 4 : 0;
-
-	return state;
-#endif
+	return HallSensor.CurrentState;
 }
 
 /** HallSensor_Inc_Angle
@@ -123,103 +100,25 @@ uint8_t HallSensor_Get_Direction(void)
 }
 
 /** HallSensor_Init
- * Starts the time base for the Hall Sensor Timer and (through the MSP init function)
- * the GPIOs associated with the Hall Sensors. The timer is started in the UP counting
- * mode, with a prescaler that results in about a 10KHz clock. The period is always at the
- * max value, 0xFFFF (=65535 decimal). The first overflow will occur at about 6 and a
- * half seconds.
- * While the timer is running and the Hall effect sensor inputs are switching, the prescaler
- * is adjusted to keep the interrupts around half of the maximum period. This results in better
- * granularity and more accurate measurement of the motor speed.
+ * Starts the time base for the Hall Sensor Timer and the GPIOs associated
+ * with the Hall Sensors. The timer is started in the UP counting mode, with
+ * a prescaler that results in about a 10KHz clock. The period is always at
+ * the max value, 0xFFFF (=65535 decimal). The first overflow will occur at
+ * about 6 and a half seconds.
+ * While the timer is running and the Hall effect sensor inputs are
+ * switching, the prescaler is adjusted to keep the interrupts around half
+ * of the maximum period. This results in better granularity and more accurate
+ * measurement of the motor speed.
+ * Noise filters on the TIM_CCR1 capture input are turned on. This prevents
+ * spurious changes being recognized as Hall state changes. Additionally,
+ * a DMA channel and simple timer are used to take multiple measurements of
+ * the GPIO states, and a determination of the current Hall state is made
+ * based on the majority of the readings.
  */
-
-void HallSensor_Init(uint32_t callingFrequency)
-{
-	TIM_HallSensor_InitTypeDef hallInit;
-
-	hHallTim.Instance = HALL_TIMER;
-	hHallTim.Init.Prescaler = HALL_PSC_MAX; // 84MHz timer clock / (511+1) = 164kHz
-	hHallTim.Init.CounterMode = TIM_COUNTERMODE_UP;
-	hHallTim.Init.Period = 0xFFFF;
-	hHallTim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1; // Filter clock Fdts is 84MHz
-
-	hallInit.IC1Polarity = TIM_ICPOLARITY_BOTHEDGE;
-	hallInit.IC1Prescaler = TIM_ICPSC_DIV1;
-	hallInit.IC1Filter = 0x8; // Filter is 6 samples at Fdts/8 (1.75MHz ~= 571ns)
-	hallInit.Commutation_Delay = 0; // Not using this anyway
-
-	HAL_TIMEx_HallSensor_Init(&hHallTim, &hallInit);
-
-	HALL_TIMER->CR1 |= TIM_CR1_URS; // Reset through slave controller does not cause an Update interrupt
-	HALL_TIMER->DIER |= TIM_DIER_UIE; // Update interrupt enabled ... only occurs when timer rolls over without hall sensor change
-
-	HAL_NVIC_SetPriority(HALL_IRQn,2,0);
-	HAL_NVIC_EnableIRQ(HALL_IRQn);
-
-	HAL_TIMEx_HallSensor_Start_IT(&hHallTim);
-
-	HallSensor.Prescaler = HALL_PSC_MAX;
-	HallSensor.Status = 0;
-#if defined(USE_FLOATING_POINT)
-	HallSensor.Speed = 0.0f;
-#else
-	HallSensor.Speed = 0;
-#endif
-	HallSensor.CallingFrequency = callingFrequency;
-	HallSensor.OverflowCount = 0;
-	HallSensor.Status |= HALL_STOPPED;
-}
 
 void HallSensor_Init_NoHal(uint32_t callingFrequency)
 {
 
-#if defined(HALL_DEBUG_SOURCE)
-
-	HALL_TIM_CLK_ENABLE();
-
-	HALL_TIMER->PSC = HALL_PSC_MAX; // Set the prescaler as high as possible to start
-	HALL_TIMER->ARR = 0xFFFF; // Auto reload always at max
-
-	HALL_TIMER->CCMR1 = TIM_CCMR1_CC1S; // Channel 1 is input
-	HALL_TIMER->CCMR1 |= TIM_CCMR1_IC1F_3 | TIM_CCMR1_IC1F_0; // Filter set to 8 samples
-															// at Fdts/8 (2.625MHz)
-	HALL_TIMER->SMCR = TIM_SMCR_TS_0 | TIM_SMCR_SMS_2; // Reset mode, input is ITR1 (TIM2 TRGO)
-	//HALL_TIMER->SMCR = TIM_SMCR_TS_2 | TIM_SMCR_SMS_2; // Reset mode, input is TI1F_ED (Channel 1
-														// input, filtered, edge detector)
-	HALL_TIMER->CCER = TIM_CCER_CC1E | TIM_CCER_CC1P | TIM_CCER_CC1NP; // Input 1 enabled, both
-																	// edges captured
-	HALL_TIMER->CR1 = TIM_CR1_URS; // The slave mode resets (capture interrupts) won't trigger
-									// an update interrupt, only a timer overflow will.
-	HALL_TIMER->CR1 |= TIM_CR1_CKD_1; // Input filter clock = timer clock / 4
-	HALL_TIMER->CR2 = TIM_CR2_TI1S; // Channels 1, 2, and 3 are XOR'd together into Channel 1
-
-	HALL_TIMER->EGR |= TIM_EGR_UG; // Trigger an update to get all those shadow registers set
-
-	NVIC_SetPriority(HALL_IRQn,2);
-	NVIC_EnableIRQ(HALL_IRQn);
-
-	HALL_TIMER->DIER = TIM_DIER_CC1IE | TIM_DIER_UIE; // Enable channel 1 and update interrupts
-	HALL_TIMER->CR1 |= TIM_CR1_CEN; // Start the timer
-
-	HallSensor.Prescaler = HALL_PSC_MAX;
-	HallSensor.Status = 0;
-	HallSensor.Speed = 0;
-	HallSensor.CallingFrequency = callingFrequency;
-	HallSensor.OverflowCount = 0;
-	HallSensor.Status |= HALL_STOPPED;
-
-
-	/**** TIM2 Settings, used to trigger Hall sensor captures ****/
-	__HAL_RCC_TIM2_CLK_ENABLE();
-	TIM2->CR1 = 0;
-	TIM2->CR2 = TIM_CR2_MMS_2; // OC1REF is TRGO
-	TIM2->PSC = 399; // 84MHz / 400 = 210kHz
-	TIM2->ARR = 70000; // 210kHz / 70000 = 3.0 Hz
-	TIM2->CCR1 = 20;
-	TIM2->CCMR1 = TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1; // PWM mode 1
-	TIM2->CR1 |= TIM_CR1_CEN;
-
-#else
 	//HALL_PORT_CLK_ENABLE();
 	GPIO_Clk(HALL_PORT);
 	HALL_TIM_CLK_ENABLE();
@@ -247,6 +146,7 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 									// an update interrupt, only a timer overflow will.
 	HALL_TIMER->CR1 |= TIM_CR1_CKD_1; // Input filter clock = timer clock / 4
 	HALL_TIMER->CR2 = TIM_CR2_TI1S; // Channels 1, 2, and 3 are XOR'd together into Channel 1
+									// Also, the Reset pulse is sent as TRGO (to the Sample timer)
 
 	HALL_TIMER->EGR |= TIM_EGR_UG; // Trigger an update to get all those shadow registers set
 
@@ -264,8 +164,34 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 	HallSensor.Status |= HALL_STOPPED;
 	HallSensor.CurrentState = 0;
 
+	// Initialization for the Hall state measuring method.
+	// Timer starts, triggered by Hall_Timer Capture, which then repeatedly moves
+	// the GPIO input register into memory via DMA. When determining the Hall state
+	// a majority decision is made based on the list of recorded values.
 
-#endif
+	HALL_DMA_CLK_ENABLE();
+	// Channel 7 selected (TIM8_UP), transfer size = 32 bits, memory increases, transfer complete interrupt enabled.
+	HALL_DMA->CR = DMA_SxCR_CHSEL_2 | DMA_SxCR_CHSEL_1 | DMA_SxCR_CHSEL_0 | DMA_SxCR_MSIZE_1 | DMA_SxCR_PSIZE_1
+			| DMA_SxCR_MINC | DMA_SxCR_TCIE;
+	HALL_DMA->NDTR = HALL_NUM_SAMPLES;
+	HALL_DMA->M0AR = (uint32_t)HallSampleBuffer;
+	HALL_DMA->PAR = (uint32_t)(&(HALL_PORT->IDR));
+
+	NVIC_SetPriority(DMA2_Stream1_IRQn, PRIO_HALL);
+	NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+
+	HALL_SAMPLE_TIMER_CLK_ENABLE();
+	HALL_SAMPLE_TIMER->CR1 = TIM_CR1_URS; // Reset doesn't affect update event, only counter overflow does.
+	HALL_SAMPLE_TIMER->ARR = HALL_SAMPLE_PERIOD;
+	//// Trigger ITR2 selected (TIM3_TRGO)
+	//// with Trigger Mode (timer starts on rising edge of trigger
+	//HALL_SAMPLE_TIMER->SMCR = TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 | TIM_SMCR_TS_1;
+	HALL_SAMPLE_TIMER->EGR |= TIM_EGR_UG; // Trigger an update to reset everything
+
+	DMA1->LIFCR = 0x0F7D0F7D; // Clear all flags -
+	DMA1->HIFCR = 0x0F7D0F7D; // on all channels.
+	HALL_DMA->CR |= DMA_SxCR_EN; // Enable DMA channel
+	HALL_SAMPLE_TIMER->DIER = TIM_DIER_UDE; // Update triggers DMA
 }
 
 /** HallSensor_CalcSpeed
@@ -343,52 +269,20 @@ void HallSensor_UpdateCallback(void)
 void HallSensor_CaptureCallback(void)
 {
 	uint8_t lastState = HallSensor.CurrentState;
+	uint8_t nextState;
 	HallSensor.CaptureValue = HALL_TIMER->CCR1;
-	HallSensor.CurrentState = HallSensor_Get_State();
+	//HallSensor.CurrentState = HallSensor_Get_State();
+	HALL_SAMPLE_TIMER->CR1 |= TIM_CR1_CEN; // Start the sampling for the next state
 
 	// Figure out which way we're turning.
+	/*
 	if(HallStateForwardOrder[HallSensor.CurrentState] == lastState)
 		HallSensor.RotationDirection = HALL_ROT_FORWARD;
 	else if(HallStateReverseOrder[HallSensor.CurrentState] == lastState)
 		HallSensor.RotationDirection = HALL_ROT_REVERSE;
 	else
 		HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
-
-	StateHistory[StateHistoryPlace] = HallSensor.CurrentState;
-	DirHistory[StateHistoryPlace++] = HallSensor.RotationDirection;
-
-#if defined(HALL_DEBUG_SOURCE)
-	if(debug_state == 6)
-	{
-		if(debug_direction == 0)
-		{
-			if(debug_freq >= 100)
-			{
-				debug_direction = 1;
-			}
-			else
-			{
-				debug_freq += 1;
-				(TIM2->ARR) = 210000 / debug_freq;
-			}
-		}
-		else if(debug_direction == 1)
-		{
-			if(debug_freq <= 4)
-			{
-				debug_direction = 0;
-			}
-			else
-			{
-				debug_freq -= 1;
-				(TIM2->ARR) = 210000 / debug_freq;
-			}
-		}
-	}
-
-#endif
-
-
+	*/
 	// Update the angle - just encountered a 60deg marker (the Hall state change)
 	// If we're rotating forward, the actual angle will be at the beginning of the state.
 	// For example, if we entered State 5 (0->60°), we will be at 0°. Since State 5
@@ -400,16 +294,19 @@ void HallSensor_CaptureCallback(void)
 	switch(HallSensor.RotationDirection)
 	{
 	case HALL_ROT_FORWARD:
-		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState] - F32_30_DEG;
+		nextState = HallStateReverseOrder[lastState];
+		HallSensor.Angle = HallStateAnglesFloat[nextState] - F32_30_DEG;
 		if(HallSensor.Angle < 0.0f) { HallSensor.Angle += 1.0f; }
 		break;
 	case HALL_ROT_REVERSE:
-		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState] + F32_30_DEG;
+		nextState = HallStateForwardOrder[lastState];
+		HallSensor.Angle = HallStateAnglesFloat[nextState] + F32_30_DEG;
 		if(HallSensor.Angle > 1.0f) { HallSensor.Angle -= 1.0f; }
 		break;
 	case HALL_ROT_UNKNOWN:
 	default:
-		HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState];
+		//HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState];
+		//Angle updated in DMA transfer complete interrupt
 		break;
 	}
 	//HallSensor.Angle = HallStateAnglesFloat[HallSensor.CurrentState];
@@ -472,4 +369,73 @@ void HallSensor_CaptureCallback(void)
 	}
 	// Now it's safe to clear overflow counts
 	HallSensor.OverflowCount = 0;
+}
+
+void DMA2_Stream1_IRQHandler(void)
+{
+	uint32_t hall_a_vote = 0, hall_b_vote = 0, hall_c_vote = 0;
+	uint8_t voted_state = 0;
+	if((DMA2->LISR & DMA_LISR_TCIF1) != 0)
+	{
+		DMA2->LIFCR = DMA_LIFCR_CTCIF1;
+		if((HALL_DMA->CR & DMA_SxCR_TCIE) != 0)
+		{
+			// Turn off the sample timer
+			HALL_SAMPLE_TIMER->CR1 &= ~(TIM_CR1_CEN);
+			HALL_SAMPLE_TIMER->DIER = 0;
+			// Re-enable the DMA stream
+			HALL_DMA->NDTR = HALL_NUM_SAMPLES;
+			HALL_DMA->M0AR = (uint32_t)HallSampleBuffer;
+			HALL_DMA->PAR = (uint32_t)(&(HALL_PORT->IDR));
+			HALL_DMA->CR |= DMA_SxCR_EN;
+			HALL_SAMPLE_TIMER->DIER = TIM_DIER_UDE;
+
+			// Take majority vote to determine Hall state
+			for (uint8_t i=0; i < HALL_NUM_SAMPLES; i++)
+			{
+				hall_a_vote += (HallSampleBuffer[i] & (1 << HALL_PIN_A)) ? 1 : 0;
+				hall_b_vote += (HallSampleBuffer[i] & (1 << HALL_PIN_B)) ? 1 : 0;
+				hall_c_vote += (HallSampleBuffer[i] & (1 << HALL_PIN_C)) ? 1 : 0;
+			}
+			// Determine majority: use 50% as decision criteria
+			if(hall_a_vote > (HALL_NUM_SAMPLES/2))
+			{
+				voted_state += 1;
+			}
+			if(hall_b_vote > (HALL_NUM_SAMPLES/2))
+			{
+				voted_state += 2;
+			}
+			if(hall_c_vote > (HALL_NUM_SAMPLES/2))
+			{
+				voted_state += 4;
+			}
+
+			// Invalid state?
+			if((voted_state == 0) || (voted_state == 7))
+			{
+				MAIN_SetError(MAIN_ERR_HALL_STATE);
+			}
+			// Determine direction
+			if(HallSensor.CurrentState == HallStateForwardOrder[voted_state])
+			{
+				HallSensor.RotationDirection = HALL_ROT_FORWARD;
+			}
+			else if(HallSensor.CurrentState == HallStateReverseOrder[voted_state])
+			{
+				HallSensor.RotationDirection = HALL_ROT_REVERSE;
+			}
+			else
+			{
+				HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
+				// Need to update angle here instead of in the capture callback
+#if defined(USE_FLOATING_POINT)
+				HallSensor.Angle = HallStateAnglesFloat[voted_state];
+#else
+				HallSensor.Angle = HallStateAngles[voted_state];
+#endif
+			}
+			HallSensor.CurrentState = voted_state;
+		}
+	}
 }

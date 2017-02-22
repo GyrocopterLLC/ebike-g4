@@ -1,3 +1,6 @@
+// Used resources:
+// USART2, USART3
+
 #ifndef UART_H_
 #define UART_H_
 

@@ -5,6 +5,9 @@
  *      Author: David
  */
 
+// Used resources:
+// TIM1
+
 #ifndef PWM_H_
 #define PWM_H_
 

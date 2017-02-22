@@ -1,31 +1,8 @@
-/**
-  ******************************************************************************
-  * @file    USB_Device/CDC_Standalone/Inc/main.h 
-  * @author  MCD Application Team
-  * @version V1.2.0
-  * @date    26-December-2014
-  * @brief   Header for main.c module
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
+// Used resources:
+// DAC
+// TIM12
   
-/* Define to prevent recursive inclusion -------------------------------------*/
+
 #ifndef __MAIN_H
 #define __MAIN_H
 
@@ -73,6 +50,8 @@ typedef enum
 #define MAXLEDCOUNT		1000
 #define DEBOUNCE_INTERVAL		10 // 10 milliseconds ==> 100Hz timer
 #define DEBOUNCE_MAX			5 // Must get integrator up to 5 to count as "pressed"
+
+#define MAIN_ERR_HALL_STATE		(0x00000800)
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 uint32_t itoa(char* buf, int32_t num);
@@ -83,6 +62,8 @@ void MAIN_SetUSBDebugging(uint8_t on_or_off);
 void MAIN_SetRampSpeed(uint32_t newspeed);
 void MAIN_SetRampDir(uint8_t forwardOrBackwards);
 void MAIN_SetVar(uint8_t var, float newval);
+void MAIN_SetError(uint32_t errorCode);
+void MAIN_SoftReset(uint8_t restartInBootloader);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 

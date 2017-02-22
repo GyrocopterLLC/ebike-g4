@@ -7,17 +7,21 @@
 #define UI_MAX_BUFFER_LENGTH	32
 #define UI_PREAMBLE			"MCU+"
 #define UI_LENGTH_PREAMBLE	4
-#define UI_NUM_OPTIONS		5
+#define UI_NUM_OPTIONS		7
 #define UI_OPTIONS			{	"USB",\
 								"SERIALDATA",\
 								"RAMPSPEED",\
 								"RAMPDIR",\
-								"VAR"}
+								"VAR",\
+								"RESET",\
+								"BOOTRESET"}
 #define UI_OPTIONS_LENGTHSLIST	{	3,\
 								   10,\
 								    9,\
 									7,\
-									3}
+									3,\
+									5,\
+									9}
 
 typedef enum
 {
@@ -26,10 +30,12 @@ typedef enum
 	RampSpeed_Command = 2,
 	RampDir_Command = 3,
 	Variable_Command = 4,
+	Reset_Command = 5,
+	Bootreset_Command = 6,
 	UI_NoCmd = 127
 } UI_CommandType;
 
-#define UI_USB_NUMOPTIONS	15
+#define UI_USB_NUMOPTIONS	16
 #define UI_USB_LENGTH		2
 #define UI_USB_OPTIONLIST 	{ 	"IA",\
 								"IB",\
@@ -45,7 +51,8 @@ typedef enum
 								"ID",\
 								"IQ",\
 								"TD",\
-								"TQ"}
+								"TQ",\
+								"ER"}
 #define UI_VAR_NUMOPTIONS	4
 #define UI_VAR_LENGTH		2
 #define UI_VAR_OPTIONLIST	{	"KP",\

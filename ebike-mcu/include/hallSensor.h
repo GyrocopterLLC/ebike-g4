@@ -5,12 +5,15 @@
  *      Author: David
  */
 
+// Used resources:
+// TIM3, TIM4
+// DMAx Stream x
+
 #ifndef HALLSENSOR_H_
 #define HALLSENSOR_H_
 
 #include "stm32f4xx_hal.h"
 
-//#define HALL_DEBUG_SOURCE
 #define USE_FLOATING_POINT
 
 /*
@@ -27,9 +30,16 @@
 #define HALL_TIMER						TIM3
 #define HALL_TIM_CLK_ENABLE()			__HAL_RCC_TIM3_CLK_ENABLE()
 #define HALL_IRQn						TIM3_IRQn
+#define HALL_SAMPLE_TIMER				TIM8
+#define HALL_SAMPLE_TIMER_CLK_ENABLE()	__HAL_RCC_TIM8_CLK_ENABLE()
+#define HALL_DMA						DMA2_Stream1
+#define HALL_DMA_CLK_ENABLE()			__HAL_RCC_DMA2_CLK_ENABLE()
 
 #define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock * 2
 #define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock * 2 / 1000000
+
+#define HALL_SAMPLE_PERIOD				1176	// 7us on the APB2 clock (NOT a multiple of 50us!)
+#define HALL_NUM_SAMPLES				32 // Number of samples taken of the GPIO
 
 #define HALL_PSC_MIN					15  // 84MHz clock / 16  = 5.25MHz -> 12.5millisec total period
 #define HALL_PSC_MAX					511 // 84MHz clock / 512 = 164kHz -> 0.4sec total period
@@ -68,6 +78,8 @@ typedef struct
 	uint16_t Prescaler;
 	uint8_t Status;
 	uint8_t OverflowCount;
+	uint8_t RotationDirection;
+	uint8_t CurrentState;
 #endif
 
 }HallSensor_HandleTypeDef;

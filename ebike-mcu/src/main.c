@@ -1,38 +1,15 @@
-/**
-  ******************************************************************************
-  * @file    USB_Device/CDC_Standalone/Src/main.c
-  * @author  MCD Application Team
-  * @version V1.2.0
-  * @date    26-December-2014
-  * @brief   USB device CDC application main file
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; COPYRIGHT(c) 2014 STMicroelectronics</center></h2>
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
   
 /* Private typedef -----------------------------------------------------------*/
+
 /* Private define ------------------------------------------------------------*/
 #define RAMP_CALLFREQ		(20000)
 #define RAMP_DEFAULTSPEED	(5)
+
+#define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 /* Private macro -------------------------------------------------------------*/
+
 /* Private variables ---------------------------------------------------------*/
 USBD_HandleTypeDef  USBD_Device;
 DAC_HandleTypeDef	hdac;
@@ -41,6 +18,8 @@ uint8_t g_rampdir;
 uint16_t g_rampAngle;
 uint16_t g_rampInc;
 uint32_t g_ledcount;
+
+uint32_t g_errorCode;
 
 /** Debugging outputs **
  *
@@ -59,7 +38,7 @@ uint32_t g_ledcount;
  * 12 - Iq
  * 13 - Td
  * 14 - Tq
- * 15 - Spare
+ * 15 - ErrorCode
  *
  */
 #define MAX_USB_VALS	16
@@ -91,6 +70,82 @@ static void User_BasicTim_Init(void);
 /* Private functions ---------------------------------------------------------*/ 
 
 /**
+ * Enable backup domain write access.
+ */
+static void BackupEnable(void)
+{
+	// First, enable the clock to the power controller
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
+	// Next, set the write protection disable bit in the power controller
+	PWR->CR |= PWR_CR_DBP;
+	// Finally, write the two keys (found in the chip's user manual) to enable
+	// write access to the backup domain
+	RTC->WPR = 0xCA;
+	RTC->WPR = 0x53;
+}
+/**
+ * Startup bootloader check.
+ * Loads bootloader if...
+ * ** User pushbutton is held down at startup, or
+ * ** A particular memory location has a bootloader reset flag enabled
+ */
+
+static void BootloaderStartup(void)
+{
+	void (*bootloader)(void) = (void(*)(void)) *((uint32_t *)(0x1FFF0004));
+	// Breaking down that previous line...
+	// Before the equals sign: declare a pointer to a function with no input arguments and no return value.
+	// After the equals sign: the (void(*)(void)) part casts the following value to a function pointer type
+	// the (uint32_t *) casts the following value (0x1FFF0004) to a unsigned integer pointer type
+	// the whole *((uint32_t *)(#0x1FFF0004#)) portion returns the value pointed at by the address stored
+	// at the 0x1FFF0004 location
+	// This allows the bootloader function pointer to take the address stored at location 0x1FFF0004 as its own
+	// address.
+
+	uint8_t bootByte;
+	uint8_t go_to_boot = 0;
+
+	User_PB_Init(); // Enable pushbutton so we can check if it's pressed
+	if((PB_PORT->IDR & (1<<PB_PIN)) == 0)
+	{
+		// Make sure it really is pressed. Check 100x in a row.
+		bootByte = 100;
+		while(bootByte > 0)
+		{
+			bootByte--;
+			//if(HAL_GPIO_ReadPin(PB_PORT, PB_PIN) == GPIO_PIN_SET)
+			if((PB_PORT->IDR & (1<<PB_PIN)) == (1<<PB_PIN))
+			{
+				break;
+			}
+		}
+		if(bootByte == 0)
+		{
+			go_to_boot = 1;
+
+		}
+	}
+
+	// Other way into the bootloader is through a stored memory location.
+	// The backup registers are not modified by a software reset, so if application code
+	// changes this register and resets the processor, we will know that a bootloader
+	// reset is required.
+	if(RTC->BKP0R == BOOTLOADER_RESET_FLAG)
+	{
+		// Need to reset this register first. Enable access to backup domain...
+		BackupEnable();
+		// Change the backup register so we don't get stuck forever restarting in bootloader mode
+		RTC->BKP0R = 0;
+		// And now, load the bootloader
+		go_to_boot = 1;
+	}
+	if(go_to_boot != 0)
+	{
+		__set_MSP(0x2001FFFF); // Change stack pointer to the end of ram.
+		bootloader(); // Call the bootloader.
+	}
+}
+/**
   * @brief  Main program
   * @param  None
   * @retval None
@@ -100,45 +155,11 @@ int main(void)
 	char byte;
 	char string[32];
 	char usbstring[64];
-	User_PB_Init();
 	Throttle_cmd = 0.0f;
 	data_out = 0;
-	//if(HAL_GPIO_ReadPin(PB_PORT, PB_PIN) == GPIO_PIN_RESET)
-	if((PB_PORT->IDR & (1<<PB_PIN)) == 0)
-	{
-		// Make sure it really is
-		byte = 100;
-		while(byte > 0)
-		{
-			byte--;
-			//if(HAL_GPIO_ReadPin(PB_PORT, PB_PIN) == GPIO_PIN_SET)
-			if((PB_PORT->IDR & (1<<PB_PIN)) == (1<<PB_PIN))
-			{
-				break;
-			}
-		}
-		if(byte == 0)
-		{
-			// Load bootloader
-			__set_MSP(0x2001FFFF); // Change stack pointer to the end of ram
 
-			// Make a function pointer to the bootloader start address
-			void (*bootloader)(void) = (void(*)(void)) *((uint32_t *)(0x1FFF0004));
-			// Breaking down that previous line...
-			// Before the equals sign: declare a pointer to a function with no input arguments and no return value.
-			// After the equals sign: the (void(*)(void)) part casts the following value to a function pointer type
-			// the (uint32_t *) casts the following value (0x1FFF0004) to a unsigned integer pointer type
-			// the whole *((uint32_t *)(#0x1FFF0004#)) portion returns the value pointed at by the address stored
-			// at the 0x1FFF0004 location
-			// This allows the bootloader function pointer to take the address stored at location 0x1FFF0004 as its own
-			// address.
-
-			// Call the bootloader...
-			bootloader();
-
-
-		}
-	}
+	BootloaderStartup(); // Load bootloader if certain conditions are met
+	// Also initializes the user pushbutton
 
 	  /* Configure the system clock to 168 MHz */
 	  SystemClock_Config();
@@ -151,6 +172,7 @@ int main(void)
      */
   HAL_Init();
 
+  g_errorCode = 0;
   
   /* Configure LED1, LED2, LED3 and LED4 */
   /* David's version */
@@ -693,6 +715,7 @@ void User_PWMTIM_IRQ(void)
 	usbdacvals[12] = (uint32_t)((park_q+5.0f)*6553.6f);
 	usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
 	usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
+	usbdacvals[15] = g_errorCode;
 }
 
 // Simple application timer (1kHz)
@@ -816,25 +839,26 @@ void MAIN_SetVar(uint8_t var, float newval)
 	}
 }
 
-#ifdef  USE_FULL_ASSERT
-/**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
-void assert_failed(uint8_t* file, uint32_t line)
-{ 
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-
-  /* Infinite loop */
-  while (1)
-  {
-  }
+void MAIN_SetError(uint32_t errorCode)
+{
+	g_errorCode |= errorCode;
 }
-#endif
+
+void MAIN_SoftReset(uint8_t restartInBootloader)
+{
+	// Absolutely no PWM should be happening right now!
+	PWM_MotorOFF();
+	if(restartInBootloader)
+	{
+		// Enable access to backup registers
+		BackupEnable();
+		// Set the bootloader flag in backup register 0
+		RTC->BKP0R = BOOTLOADER_RESET_FLAG;
+	}
+
+	// Trigger a software reset
+	NVIC_SystemReset();
+}
 
 /* Convert num into ASCII in base 10
  * Result in buf as a null terminated string
@@ -879,4 +903,3 @@ uint32_t itoa(char* buf, int32_t num)
 	return retval + is_neg;
 }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

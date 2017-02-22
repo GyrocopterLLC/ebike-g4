@@ -219,6 +219,12 @@ uint8_t UI_Process(char* inputstring)
 		case Variable_Command:
 			ui_error = UI_Variable_Command_Req(UI_SETCMD, inputstring);
 			break;
+		case Reset_Command:
+			MAIN_SoftReset(0);
+			break;
+		case Bootreset_Command:
+			MAIN_SoftReset(1);
+			break;
 		case UI_NoCmd:
 			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
 			return UI_ERROR;

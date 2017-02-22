@@ -5,6 +5,9 @@
  *      Author: David
  */
 
+// Used resources:
+// ADC1, ADC2, ADC3
+
 #ifndef ADC_H_
 #define ADC_H_
 
