@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
+#include "main.h"
 
 HBDBuffer_Type s_RxBuffer;
 HBDBuffer_Type s_TxBuffer;
@@ -78,10 +79,10 @@ uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
 	{
 		// In the rare chance that the transmitter is just finishing,
 		// wait for the shift register to empty
-		uint32_t timeout = HAL_GetTick();
+		uint32_t timeout = GetTick();
 		while(!(HBD_UART->SR & USART_SR_TXE))
 		{
-			if(HAL_GetTick() > (timeout + HBD_TXMT_TIMEOUT))
+			if(GetTick() > (timeout + HBD_TXMT_TIMEOUT))
 			{
 				return 0;
 			}

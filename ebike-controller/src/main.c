@@ -915,3 +915,8 @@ void Delay(__IO uint32_t Delay)
   {
   }
 }
+
+uint32_t GetTick(void)
+{
+	return g_MainSysTick;
+}
