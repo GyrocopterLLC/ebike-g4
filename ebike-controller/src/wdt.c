@@ -5,7 +5,6 @@
  *      Author: David
  */
 
-#include "stm32f4xx.h"
 #include "wdt.h"
 
 void WDT_init(void)

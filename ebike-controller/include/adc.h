@@ -11,7 +11,7 @@
 #ifndef ADC_H_
 #define ADC_H_
 
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 
 #define MAXCOUNT		(4096)
 #define MAXCOUNTF		(4096.0f)

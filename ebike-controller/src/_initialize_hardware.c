@@ -6,8 +6,6 @@
 // ----------------------------------------------------------------------------
 
 #include "stm32f4xx.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_cortex.h"
 
 // ----------------------------------------------------------------------------
 
@@ -67,7 +65,7 @@ __initialize_hardware(void)
 
   // Initialise the HAL Library; it must be the first
   // instruction to be executed in the main program.
-  HAL_Init();
+  //HAL_Init();
 
   // Warning: The HAL always initialises the system timer.
   // For this to work, the default SysTick_Handler must not hang
@@ -75,7 +73,7 @@ __initialize_hardware(void)
 
   // Unless explicitly enabled by the application, we prefer
   // to keep the timer interrupts off.
-  HAL_SuspendTick();
+  //HAL_SuspendTick();
 
   // Enable HSE Oscillator and activate PLL with HSE as source
   configure_system_clock();
@@ -114,44 +112,84 @@ SysTick_Handler(void)
  * @param  None
  * @retval None
  */
+
 void
 configure_system_clock(void)
 {
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-  RCC_OscInitTypeDef RCC_OscInitStruct;
+	uint32_t timeout = 0;
+	uint32_t tempreg, pllm, pllp, plln, pllq;
+	// Enable Power Control clock
+	//__PWR_CLK_ENABLE();
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 
-  // Enable Power Control clock
-  __PWR_CLK_ENABLE();
+	// The voltage scaling allows optimizing the power consumption when the
+	// device is clocked below the maximum system frequency, to update the
+	// voltage scaling value regarding system frequency refer to product
+	// datasheet.
+	PWR->CR |= PWR_CR_VOS;
 
-  // The voltage scaling allows optimizing the power consumption when the
-  // device is clocked below the maximum system frequency, to update the
-  // voltage scaling value regarding system frequency refer to product
-  // datasheet.
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+	// Set system clock to HSI before changing settings all willy nilly
+	tempreg = RCC->CFGR;
+	tempreg &= ~(RCC_CFGR_SW);
+	tempreg |= RCC_CFGR_SW_HSI;
+	RCC->CFGR = tempreg;
 
-  // Enable HSE Oscillator and activate PLL with HSE as source
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+	// Make sure it switched over
+	timeout = 20000;
+	do
+	{
+		timeout--;
+		if(timeout == 0) return;
+	}while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI);
 
-  // This assumes the HSE_VALUE is a multiple of 1MHz. If this is not
-  // your case, you have to recompute these PLL constants.
-  RCC_OscInitStruct.PLL.PLLM = (HSE_VALUE/1000000u);
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
-  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+	// Disable PLL
+	RCC->CR &= ~(RCC_CR_PLLON);
 
-  // Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
-  // clocks dividers
-  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK
-      | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
-  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
+	// Enable HSE Oscillator and activate PLL with HSE as source
+	RCC->CR |= RCC_CR_HSEON; // Turn on HSE
+	// Wait for HSE to turn on
+	timeout = 20000;
+	do
+	{
+	  timeout--;
+	  if(timeout == 0) return;
+	}
+	while(!(RCC->CR & RCC_CR_HSERDY));
+
+	// Configure PLL multipliers
+	pllm = HSE_VALUE / 1000000u; // Set so the PLL input clock is 1MHz (HSE/pllm = 1MHz)
+	pllp = 0; // This is actually PLL_P = 2
+	pllq = 7;
+	plln = 336;
+	// Set PLL multipliers with HSE selected as input source
+	RCC->PLLCFGR = (pllq << 24)
+			| RCC_PLLCFGR_PLLSRC
+			| (pllp << 16)
+			| (plln << 6)
+			| (pllm);
+
+	// Enable PLL
+	RCC->CR |= RCC_CR_PLLON;
+
+	timeout = 20000;
+	do
+	{
+		timeout--;
+		if(timeout==0) return;
+	}while(!(RCC->CR & RCC_CR_PLLRDY)); // Wait for PLL to start
+
+	// Set flash latency
+	FLASH->ACR &= ~FLASH_ACR_LATENCY;
+	FLASH->ACR |= FLASH_ACR_LATENCY_5WS;
+
+	// Set AHB, APB prescalers
+	RCC->CFGR &= ~(RCC_CFGR_PPRE2 | RCC_CFGR_PPRE1 | RCC_CFGR_HPRE);
+	RCC->CFGR |= (RCC_CFGR_PPRE2_DIV2) | (RCC_CFGR_PPRE1_DIV4); // APB2 divided by 2, APB1 divided by 4
+
+	// Select PLL as system clock
+	RCC->CFGR |= RCC_CFGR_SW_PLL;
+
+
 }
 
 // ----------------------------------------------------------------------------

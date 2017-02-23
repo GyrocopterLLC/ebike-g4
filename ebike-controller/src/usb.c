@@ -6,6 +6,7 @@
  */
 
 #include "stm32f4xx.h"
+#include "gpio.h"
 #include "usb.h"
 #include "usb_cdc.h"
 
@@ -30,7 +31,7 @@ uint8_t USB_DevState;
 uint32_t USB_CurrentConfig;
 uint32_t USB_ConfigStatus;
 uint8_t USB_OUTEP0_Buffer[USB_MAX_EP0_SIZE*2];
-
+/*
 void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af)
 {
 	// Clear MODER for this pin
@@ -55,7 +56,7 @@ void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af)
 		gpio->AFR[0] |= (af << (pin*4));
 	}
 }
-
+*/
 static void USB_CoreReset(void)
 {
 	// Ensure that the AHB bus is idle

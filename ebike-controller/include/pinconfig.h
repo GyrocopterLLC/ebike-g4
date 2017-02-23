@@ -19,7 +19,7 @@
 #define HALL_PIN_B		7
 #define HALL_PIN_C		8
 #define HALL_PORT		GPIOC
-#define HALL_PINS_AF	GPIO_AF2_TIM3
+#define HALL_PINS_AF	((uint8_t)2)
 
 // PWM
 #define PWM_AHI_PIN		10
@@ -30,17 +30,17 @@
 #define PWM_CLO_PIN		13
 #define PWM_HI_PORT		GPIOA
 #define PWM_LO_PORT		GPIOB
-#define PWM_AF			GPIO_AF1_TIM1
+#define PWM_AF			((uint8_t)1)
 
 // UART
 #define HBD_UART_TX_PIN	10
 #define HBD_UART_RX_PIN	11
 #define HBD_UART_PORT	GPIOB
-#define HBD_UART_AF		GPIO_AF7_USART3
+#define HBD_UART_AF		((uint8_t)7)
 #define BMS_UART_TX_PIN	2
 #define BMS_UART_RX_PIN	3
 #define BMS_UART_PORT	GPIOA
-#define BMS_UART_AF		GPIO_AF7_USART2
+#define BMS_UART_AF		((uint8_t)7)
 
 
 #endif //__PINCONFIG_H

@@ -8,6 +8,8 @@
 #ifndef GPIO_H_
 #define GPIO_H_
 
+#include "stm32f4xx.h"
+
 void GPIO_Clk(GPIO_TypeDef* gpio);
 void GPIO_Output(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_Input(GPIO_TypeDef* gpio, uint8_t pin);

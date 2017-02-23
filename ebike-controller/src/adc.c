@@ -6,14 +6,12 @@
  */
 
 #include "adc.h"
-#include "stm32f4xx_hal.h"
 #include "gpio.h"
 #include "project_parameters.h"
 
 uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[3];
 float adc_vref;
-ADC_HandleTypeDef adc1, adc2, adc3;
 
 static void adcAverageInitialValue(void);
 
@@ -32,9 +30,7 @@ void adcInit(void)
 
 	GPIO_Clk(ADC_I_VBUS_THR1_PORT);
 	GPIO_Clk(ADC_THR2_AND_TEMP_PORT);
-	__HAL_RCC_ADC1_CLK_ENABLE();
-	__HAL_RCC_ADC2_CLK_ENABLE();
-	__HAL_RCC_ADC3_CLK_ENABLE();
+	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN | RCC_APB2ENR_ADC2EN | RCC_APB2ENR_ADC3EN;
 
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IA_PIN);
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IB_PIN);

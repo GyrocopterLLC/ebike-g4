@@ -20,11 +20,10 @@
 #define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 //#include "stm324xg_eval.h"
-#include "usbd_desc.h"
-#include "usbd_cdc.h" 
-#include "usbd_cdc_interface.h"
+#include "usb.h"
+#include "usb_cdc.h"
 #include "gpio.h"
 #include "DavidsFOCLib.h"
 #include "hallSensor.h"
@@ -55,6 +54,7 @@ typedef enum
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 uint32_t itoa(char* buf, int32_t num);
+void SYSTICK_IRQHandler(void);
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
@@ -64,6 +64,7 @@ void MAIN_SetRampDir(uint8_t forwardOrBackwards);
 void MAIN_SetVar(uint8_t var, float newval);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
+void Delay(__IO uint32_t Delay);
 //void User_HallTIM_IRQ(void);
 #endif /* __MAIN_H */
 

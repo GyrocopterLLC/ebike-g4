@@ -14,7 +14,7 @@ May 20, 2014
 #ifndef _DAVIDS_FOC_LIB_H_
 #define _DAVIDS_FOC_LIB_H_
 
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 #include "arm_math.h"
 
 #define ONE_HALF_Q16	(32768)

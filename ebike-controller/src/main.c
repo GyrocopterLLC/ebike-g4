@@ -11,9 +11,8 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-USBD_HandleTypeDef  USBD_Device;
-DAC_HandleTypeDef	hdac;
-TIM_HandleTypeDef	hBasicTim;
+__IO uint32_t g_MainSysTick;
+
 uint8_t g_rampdir;
 uint16_t g_rampAngle;
 uint16_t g_rampInc;
@@ -161,181 +160,149 @@ int main(void)
 	BootloaderStartup(); // Load bootloader if certain conditions are met
 	// Also initializes the user pushbutton
 
-	  /* Configure the system clock to 168 MHz */
-	  SystemClock_Config();
+	/* Configure the system clock to 168 MHz */
+	SystemClock_Config();
 
-  /* STM32F4xx HAL library initialization:
-       - Configure the Flash prefetch, instruction and Data caches
-       - Configure the Systick to generate an interrupt each 1 msec
-       - Set NVIC Group Priority to 4
-       - Global MSP (MCU Support Package) initialization
+	/* Default initialization:
+	 ** Configure the Flash prefetch, instruction and Data caches
+	 ** Configure the Systick to generate an interrupt each 1 msec
+	 ** Set NVIC Group Priority to 4
+	 ** Start systick timer with 1ms interval
      */
-  HAL_Init();
+	FLASH->ACR |= FLASH_ACR_ICEN;
+	FLASH->ACR |= FLASH_ACR_DCEN;
 
-  g_errorCode = 0;
+	/* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
+	if (((DBGMCU->IDCODE) >> 16) == 0x1001)
+	{
+		/* Enable the Flash prefetch */
+		FLASH->ACR |= FLASH_ACR_PRFTEN;
+	}
   
-  /* Configure LED1, LED2, LED3 and LED4 */
-  /* David's version */
-  User_LED_Init();
-  //GPIOD->ODR |= GPIO_PIN_12|GPIO_PIN_15;
-  GLED_PORT->ODR |= (1<<GLED_PIN);
-  User_DAC_Init();
-  User_BasicTim_Init();
-  //PWM_Init();
-  PWM_Init_NoHal();
-  HallSensor_Init_NoHal(20000);
-  HBD_Init();
+	NVIC_SetPriorityGrouping(3); // 4 priority bits, 0 sub-priority
 
-  adcInit();
-  
-  /* Init Device Library */
-  USBD_Init(&USBD_Device, &VCP_Desc, 0);
-  
-  /* Add Supported Class */
-  USBD_RegisterClass(&USBD_Device, USBD_CDC_CLASS);
-  
-  /* Add CDC Interface Class */
-  USBD_CDC_RegisterInterface(&USBD_Device, &USBD_CDC_fops);
-  
-  /* Start Device Process */
-  USBD_Start(&USBD_Device);
-  
-  /* Initialize ramp angle increment at 5 Hz*/
-  g_rampdir = 0; // Going forward at start.
-  g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
+	SysTick_Config(SystemCoreClock/1000);
+	NVIC_SetPriority(SysTick_IRQn, PRIO_SYSTICK);
 
-  /* Initialize PID controllers */
-  dfsl_pid_defaultsf(&Id_control);
-  dfsl_pid_defaultsf(&Iq_control);
+	g_errorCode = 0;
 
-  /* Default USB debugging outputs */
-  usbdacassignments[0] = 1; // Ia
-  usbdacassignments[1] = 2; // Ib
-  usbdacassignments[2] = 3; // Ic
-  usbdacassignments[3] = 7; // Throttle
-  usbdacassignments[4] = 9; // Hall angle
+	/* Configure LED1, LED2, LED3 and LED4 */
+	/* David's version */
+	User_LED_Init();
+	//GPIOD->ODR |= GPIO_PIN_12|GPIO_PIN_15;
+	GLED_PORT->ODR |= (1<<GLED_PIN);
+	User_DAC_Init();
+	User_BasicTim_Init();
+	//PWM_Init();
+	PWM_Init_NoHal();
+	HallSensor_Init_NoHal(20000);
+	HBD_Init();
 
-  /* Initialize watchdog timer */
-  WDT_init();
+	adcInit();
 
-  /* Run Application (Interrupt mode) */
-  while (1)
-  {
-	  uint8_t vcp_buf_len;
-	  // Feed the watchdog!
-	  WDT_feed();
+	// USB init
+	USB_Init();
+	USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
+	USB_Start();
 
-    //Toggle_Leds();
-    if(VCP_read(&byte, 1) != 0)
-    {
-    	// Echo it
-    	VCP_write(&byte, 1);
-    	// Add it to the VCP buffer
-    	vcp_buf_len = strlen(vcp_buffer);
-    	if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
-    	{
-    		vcp_buffer[vcp_buf_len] = byte;
-    		vcp_buffer[vcp_buf_len + 1] = 0;
-    	}
-    	else
-    	{
-    		// Flush the buffer, just ignore overlong strings
-    		vcp_buffer[0] = 0;
-    	}
+	/* Initialize ramp angle increment at 5 Hz*/
+	g_rampdir = 0; // Going forward at start.
+	g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
 
-    	if(byte == '\n')
-    	{
-    		// Send it to the UI processor!
-    		UI_Process(vcp_buffer);
+	/* Initialize PID controllers */
+	dfsl_pid_defaultsf(&Id_control);
+	dfsl_pid_defaultsf(&Iq_control);
 
-    		// and flush
-    		vcp_buffer[0] = 0;
+	/* Default USB debugging outputs */
+	usbdacassignments[0] = 1; // Ia
+	usbdacassignments[1] = 2; // Ib
+	usbdacassignments[2] = 3; // Ic
+	usbdacassignments[3] = 7; // Throttle
+	usbdacassignments[4] = 9; // Hall angle
 
-    		// Send response if it exists
-    		if(UI_RespLen() > 0)
-    		{
-    			VCP_write(UI_SendBuf(), UI_RespLen());
-    		}
-    	}
+	/* Initialize watchdog timer */
+	WDT_init();
 
-    	/*
-    		VCP_write("You wrote\r\n",11);
-    		VCP_write(&byte, 1);
-    		VCP_write("\r\n",2);
-    		//Toggle_Leds();
-    		//sprintf(string,"***tA: %d\r\n",(int)(TIM1->CCR1));
-    		//VCP_write(string,strlen(string));
-    		//sprintf(string,"***tB: %d\r\n",(int)(TIM1->CCR2));
-			//VCP_write(string,strlen(string));
-			//sprintf(string,"***tC: %d\r\n",(int)(TIM1->CCR3));
-			//VCP_write(string,strlen(string));
-    		uint32_t outlen;
-    		VCP_write("***tA: ", 7);
-    		outlen = itoa(string, (int)(TIM1->CCR1));
-    		VCP_write(string, outlen);
-    		VCP_write("\r\n", 2);
-     		VCP_write("***tB: ", 7);
-    		outlen = itoa(string, (int)(TIM1->CCR2));
-    		VCP_write(string, outlen);
-    		VCP_write("\r\n", 2);
-     		VCP_write("***tC: ", 7);
-    		outlen = itoa(string, (int)(TIM1->CCR3));
-    		VCP_write(string, outlen);
-    		VCP_write("\r\n", 2);
+	/* Run Application (Interrupt mode) */
+	while (1)
+	{
+		uint8_t vcp_buf_len;
+		// Feed the watchdog!
+		WDT_feed();
 
+		//Toggle_Leds();
+		if(VCP_Read(&byte, 1) != 0)
+		{
+			// Echo it
+			VCP_Write(&byte, 1);
+			// Add it to the VCP buffer
+			vcp_buf_len = strlen(vcp_buffer);
+			if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
+			{
+				vcp_buffer[vcp_buf_len] = byte;
+				vcp_buffer[vcp_buf_len + 1] = 0;
+			}
+			else
+			{
+				// Flush the buffer, just ignore overlong strings
+				vcp_buffer[0] = 0;
+			}
 
+			if(byte == '\n')
+			{
+			// Send it to the UI processor!
+				UI_Process(vcp_buffer);
+
+				// and flush
+				vcp_buffer[0] = 0;
+
+				// Send response if it exists
+				if(UI_RespLen() > 0)
+				{
+					VCP_Write(UI_SendBuf(), UI_RespLen());
+				}
+			}
+		}
+		/*
+		if(HBD_Receive(&byte, 1) != 0)
+		{
+		// Read a byte from the HBD UART
+		UI_Process(byte);
+		}
 		*/
-    }
-    /*
-    if(HBD_Receive(&byte, 1) != 0)
-    {
-    	// Read a byte from the HBD UART
-    	UI_Process(byte);
-    }
-    */
-    if(pb_state == PB_PRESSED)
-    {
-    	// Wait until release
-    	while(pb_state == PB_PRESSED) {}
-    	// Change data output state
-    	data_out = ~data_out;
-    }
-    if(data_out != 0)
-    {
-    	usbstring[0] = 0;
-    	for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
-    	{
-    		if(usbdacassignments[i] == 0)
-    		{
-    			strcat(usbstring,"0 ");
-    		}
-    		else
-    		{
-    			//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
-    			itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
-    			strcat(usbstring,string);
-    			strcat(usbstring," ");
-    		}
-    		/*
-    		for(uint8_t j = 0; j < MAX_USB_VALS; j++)
-    		{
-    			if(usbdacassignments[j] == i)
-    			{
-    				sprintf(string,"%d ",(int)usbdacvals[j]);
-    				//VCP_write(string,strlen(string));
-    				strcat(usbstring,string);
-    			}
-    		}
-    		*/
-    	}
+		if(pb_state == PB_PRESSED)
+		{
+			// Wait until release
+			while(pb_state == PB_PRESSED) {}
+			// Change data output state
+			data_out = ~data_out;
+		}
+		if(data_out != 0)
+		{
+			usbstring[0] = 0;
+			for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
+			{
+				if(usbdacassignments[i] == 0)
+				{
+					strcat(usbstring,"0 ");
+				}
+				else
+				{
+					//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+					itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
+					strcat(usbstring,string);
+					strcat(usbstring," ");
+				}
 
-    	strcat(usbstring,"\r\n");
+			}
 
-    	VCP_write(usbstring,strlen(usbstring));
+			strcat(usbstring,"\r\n");
 
-    	HAL_Delay(20);
-    }
-  }
+			VCP_Write(usbstring,strlen(usbstring));
+
+			Delay(20);
+		}
+	}
 }
 
 /**
@@ -360,44 +327,81 @@ int main(void)
   */
 static void SystemClock_Config(void)
 {
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+	uint32_t timeout = 0;
+	uint32_t tempreg, pllm, pllp, plln, pllq;
+	// Enable Power Control clock
+	//__PWR_CLK_ENABLE();
+	RCC->APB1ENR |= RCC_APB1ENR_PWREN;
 
-  /* Enable Power Control clock */
-  __HAL_RCC_PWR_CLK_ENABLE();
+	// The voltage scaling allows optimizing the power consumption when the
+	// device is clocked below the maximum system frequency, to update the
+	// voltage scaling value regarding system frequency refer to product
+	// datasheet.
+	PWR->CR |= PWR_CR_VOS;
 
-  /* The voltage scaling allows optimizing the power consumption when the device is 
-     clocked below the maximum system frequency, to update the voltage scaling value 
-     regarding system frequency refer to product datasheet.  */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+	// Set system clock to HSI before changing settings all willy nilly
+	tempreg = RCC->CFGR;
+	tempreg &= ~(RCC_CFGR_SW);
+	tempreg |= RCC_CFGR_SW_HSI;
+	RCC->CFGR = tempreg;
 
-  /* Configure RCC Oscillators: All parameters can be changed according to user’s needs */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 336;
-  RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
-  HAL_RCC_OscConfig (&RCC_OscInitStruct);
+	// Make sure it switched over
+	timeout = 20000;
+	do
+	{
+		timeout--;
+		if(timeout == 0) return;
+	}while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI);
+
+	// Disable PLL
+	RCC->CR &= ~(RCC_CR_PLLON);
+
+	// Enable HSE Oscillator and activate PLL with HSE as source
+	RCC->CR |= RCC_CR_HSEON; // Turn on HSE
+	// Wait for HSE to turn on
+	timeout = 20000;
+	do
+	{
+	  timeout--;
+	  if(timeout == 0) return;
+	}
+	while(!(RCC->CR & RCC_CR_HSERDY));
+
+	// Configure PLL multipliers
+	pllm = HSE_VALUE / 1000000u; // Set so the PLL input clock is 1MHz (HSE/pllm = 1MHz)
+	pllp = 0; // This is actually PLL_P = 2
+	pllq = 7;
+	plln = 336;
+	// Set PLL multipliers with HSE selected as input source
+	RCC->PLLCFGR = (pllq << 24)
+			| RCC_PLLCFGR_PLLSRC
+			| (pllp << 16)
+			| (plln << 6)
+			| (pllm);
+
+	// Enable PLL
+	RCC->CR |= RCC_CR_PLLON;
+
+	timeout = 20000;
+	do
+	{
+		timeout--;
+		if(timeout==0) return;
+	}while(!(RCC->CR & RCC_CR_PLLRDY)); // Wait for PLL to start
+
+	// Set flash latency
+	FLASH->ACR &= ~FLASH_ACR_LATENCY;
+	FLASH->ACR |= FLASH_ACR_LATENCY_5WS;
+
+	// Set AHB, APB prescalers
+	RCC->CFGR &= ~(RCC_CFGR_PPRE2 | RCC_CFGR_PPRE1 | RCC_CFGR_HPRE);
+	RCC->CFGR |= (RCC_CFGR_PPRE2_DIV2) | (RCC_CFGR_PPRE1_DIV4); // APB2 divided by 2, APB1 divided by 4
+
+	// Select PLL as system clock
+	RCC->CFGR |= RCC_CFGR_SW_PLL;
   
-  /* RCC Clocks: All parameters can be changed according to user’s needs */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK |RCC_CLOCKTYPE_HCLK |RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  
-  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
-  
-  SystemCoreClockUpdate();
+	SystemCoreClockUpdate();
 
-  /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
-  if (HAL_GetREVID() == 0x1001)
-  {
-    /* Enable the Flash prefetch */
-    __HAL_FLASH_PREFETCH_BUFFER_ENABLE();
-  }
 }
 
 /**
@@ -435,7 +439,7 @@ static void User_PB_Init(void)
 
 static void User_DAC_Init(void)
 {
-	__HAL_RCC_DAC_CLK_ENABLE();
+	RCC->APB1ENR |= RCC_APB1ENR_DACEN;
 	GPIO_Clk(DAC_PORT);
 
 	GPIO_Analog(DAC_PORT,DAC1_PIN);
@@ -447,7 +451,7 @@ static void User_DAC_Init(void)
 
 static void User_BasicTim_Init(void)
 {
-	__HAL_RCC_TIM12_CLK_ENABLE();
+	RCC->APB1ENR |= RCC_APB1ENR_TIM12EN;
 
 	TIM12->PSC = 9; // 84MHz clock, divided by 9+1 = 8.4MHz
 	TIM12->ARR = 8400; // 8.4MHz / 8400 = 1kHz clock
@@ -460,9 +464,9 @@ static void User_BasicTim_Init(void)
 
 }
 
-void HAL_SYSTICK_Callback(void)
+void SYSTICK_IRQHandler(void)
 {
-
+	g_MainSysTick++;
 }
 
 /*
@@ -903,3 +907,11 @@ uint32_t itoa(char* buf, int32_t num)
 	return retval + is_neg;
 }
 
+void Delay(__IO uint32_t Delay)
+{
+  uint32_t tickstart = 0;
+  tickstart = g_MainSysTick;
+  while((g_MainSysTick - tickstart) < Delay)
+  {
+  }
+}

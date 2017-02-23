@@ -36,7 +36,7 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 
-extern PCD_HandleTypeDef hpcd;
+/* extern PCD_HandleTypeDef hpcd; */
 
 /* UART handler declared in "usbd_cdc_interface.c" file */
 //extern UART_HandleTypeDef UartHandle;
@@ -146,8 +146,7 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
-	HAL_SYSTICK_IRQHandler();
-  HAL_IncTick(); 
+	SYSTICK_IRQHandler();
 }
 
 /******************************************************************************/
@@ -180,7 +179,8 @@ void OTG_FS_IRQHandler(void)
 void OTG_HS_IRQHandler(void)
 #endif
 {
-  HAL_PCD_IRQHandler(&hpcd);
+/*  HAL_PCD_IRQHandler(&hpcd);  */
+	USB_IRQ();
 }
 
 void TIM1_UP_TIM10_IRQHandler(void)

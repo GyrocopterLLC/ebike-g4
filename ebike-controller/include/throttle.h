@@ -1,7 +1,7 @@
 #ifndef _THROTTLE_H_
 #define _THROTTLE_H_
 
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 #include "DavidsFOCLib.h"
 #include "adc.h"
 

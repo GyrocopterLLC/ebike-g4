@@ -4,6 +4,8 @@
 #ifndef WDT_H_
 #define WDT_H_
 
+#include "stm32f4xx.h"
+
 #define IWDG_RELOAD		(0xAAAA)
 #define IWDG_KEY		(0x5555)
 #define IWDG_START		(0xCCCC)

@@ -1,6 +1,6 @@
 #ifndef DELI_HALL_H_
 #define DELI_HALL_H_
-
+#if 0
 /* deli_hall.c
  * David's Ebike Library:
  * Hall Sensor Motor Positioning
@@ -55,5 +55,5 @@ typedef struct
 								 * 0 to 65535. This is mapped to 360 degrees, e.g. 0=0deg, 65535=359.995deg */
 	uint8_t  HallState;			/* Hall Effect sensor state - 0 to 7 (where 1-6 are valid states) */
 } HallSensorType;
-
+#endif /* 0 */
 #endif /* DELI_HALL_H_ */

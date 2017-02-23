@@ -11,7 +11,7 @@
 #ifndef PWM_H_
 #define PWM_H_
 
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx.h"
 
 /*********** GPIO defines **********/
 
@@ -35,7 +35,7 @@
 /********** Timer defines ***********/
 
 #define PWM_TIMER					TIM1
-#define PWM_TIM_CLK_ENABLE()		__HAL_RCC_TIM1_CLK_ENABLE()
+#define PWM_TIM_CLK_ENABLE()		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN
 #define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				4199.0f
 // Dead time calculation rules:

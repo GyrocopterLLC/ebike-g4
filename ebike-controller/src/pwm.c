@@ -10,10 +10,9 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 
-TIM_HandleTypeDef hpwm;
-
-
 /***** Not using this version, using the non-HAL version below.
+
+TIM_HandleTypeDef hpwm;
 
 // Enables the three-phase complementary PWM channels
 void PWM_Init(void)

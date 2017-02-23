@@ -5,7 +5,7 @@
  *      Author: David M Miller
  */
 
-#include "stm32f4xx_hal.h"
+#include "gpio.h"
 
 /**
  * @brief  Enables the clock in the RCC for this GPIO port.

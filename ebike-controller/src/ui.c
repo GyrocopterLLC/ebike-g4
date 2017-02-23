@@ -365,7 +365,7 @@ uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
 	float newval;
 	if(cmdtype == UI_SETCMD)
 	{
-		for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+		for(uint8_t i = 0; i < UI_VAR_NUMOPTIONS; i++)
 		{
 			ui_error = strcmp_s(options,ui_var_options[i],UI_VAR_LENGTH);
 			if(ui_error == 0)

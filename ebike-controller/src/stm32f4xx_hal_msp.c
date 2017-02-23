@@ -1,4 +1,5 @@
 /* Includes ------------------------------------------------------------------*/
+#if 0
 #include "stm32f4xx_hal.h"
 #include "main.h"
 
@@ -120,3 +121,4 @@ void HAL_TIMEx_HallSensor_MspInit(TIM_HandleTypeDef *htim)
 		HAL_GPIO_Init(HALL_PORT,&gpioInit);
 	}
 }
+#endif /** 0 **/

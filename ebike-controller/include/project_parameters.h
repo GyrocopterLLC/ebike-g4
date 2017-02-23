@@ -46,6 +46,7 @@
 // Multiple interrupt sources can use the same priority level,
 // but only a lower number interrupt will override a currently
 // responding IRQ function.
+#define PRIO_SYSTICK	3
 #define PRIO_PWM		0
 #define PRIO_HALL		1
 #define PRIO_ADC		2

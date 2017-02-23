@@ -1,6 +1,6 @@
 #ifndef DELI_MATH_H_
 #define DELI_MATH_H_
-
+#if 0
 /* deli_math.h
  * David's Ebike Library:
  * Fixed point math functions
@@ -20,5 +20,5 @@
 #define FXD_DIV(value1, value2)		((uint32_t)((((uint64_t)(value1))<<GLOBAL_FXD)/(value2)))
 
 
-
+#endif /** 0 **/
 #endif /* DELI_MATH_H_ */

@@ -12,7 +12,7 @@
 #include "main.h"
 
 /*################### Private variables #####################################*/
-TIM_HandleTypeDef hHallTim;
+
 HallSensor_HandleTypeDef HallSensor;
 
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
