@@ -533,6 +533,6 @@ int32_t VCP_Write(const void* data, int32_t len)
     USB_CDC_ClassData.TxState = 1;
     USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
 
-    while(USB_CDC_ClassData.TxState) { } //Wait until transfer is done
+    //while(USB_CDC_ClassData.TxState) { } //Wait until transfer is done
     return len;
 }

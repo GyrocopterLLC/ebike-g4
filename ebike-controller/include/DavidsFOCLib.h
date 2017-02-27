@@ -23,13 +23,14 @@ May 20, 2014
 #define ONE_HALF		(0.5f)
 #define SQRT3_OVER_2	(0.8660254f)
 #define INV_SQRT3		(0.5773503f)
+//#define PI				(3.141592654898f)
 
 #define Q_FACTOR		(22)	// Max value: (2^31-1)/2^22 = 511.9999997615814208984375
 								// Smallest positive: 1/2^22 = 0.0000002384185791015625
 
 // **** Biquad filter design ****
 // For a 1kHz sampled system
-// Low pass filter, Fc = 20Hz, Q = 0.9
+// Low pass filter, Fs = 20kHz, f0 = 400Hz, Q = 0.9
 #define BIQ_LPF_DEFAULTS	{-1.855062f, \
 							  0.8698062f, \
 							  0.003685995f, \
@@ -90,6 +91,7 @@ void dfsl_pid_defaultsf(PID_Float_Type* pid);
 void dfsl_pid(PID_Type* pid);
 void dfsl_pidf(PID_Float_Type* pid);
 void dfsl_biquadf(Biquad_Float_Type* biq);
+void dfsl_biquadcalc_lpf(Biquad_Float_Type* biq, float Fs, float f0, float Q);
 void dfsl_svm(int16_t alpha, int16_t beta, int32_t* tA, int32_t* tB, int32_t* tC);
 void dfsl_svmf(float alpha, float beta, float* tA, float* tB, float* tC);
 void dfsl_ipark(int16_t D, int16_t Q, int16_t angle, int16_t* alpha, int16_t* beta);

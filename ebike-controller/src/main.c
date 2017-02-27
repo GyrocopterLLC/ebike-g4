@@ -8,6 +8,10 @@
 #define RAMP_DEFAULTSPEED	(5)
 
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
+
+#define SERIAL_DATA_RATE	(10)
+
+#define MAINFLAG_SERIALDATA			(0x0001)
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -19,6 +23,8 @@ uint16_t g_rampInc;
 uint32_t g_ledcount;
 
 uint32_t g_errorCode;
+
+uint32_t g_MainFlags;
 
 /** Debugging outputs **
  *
@@ -38,9 +44,10 @@ uint32_t g_errorCode;
  * 13 - Td
  * 14 - Tq
  * 15 - ErrorCode
+ * 16 - Vrefint
  *
  */
-#define MAX_USB_VALS	16
+#define MAX_USB_VALS	17
 #define MAX_USB_OUTPUTS	5
 uint32_t usbdacvals[MAX_USB_VALS];
 uint8_t usbdacassignments[MAX_USB_OUTPUTS];
@@ -55,6 +62,7 @@ uint8_t data_out;
 
 PID_Float_Type Id_control, Iq_control;
 //Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
+Biquad_Float_Type Id_Filt, Iq_Filt;
 float Throttle_cmd;
 float raw_throttle;
 
@@ -191,6 +199,7 @@ int main(void)
 	User_LED_Init();
 	//GPIOD->ODR |= GPIO_PIN_12|GPIO_PIN_15;
 	GLED_PORT->ODR |= (1<<GLED_PIN);
+	adcInit();
 	User_DAC_Init();
 	User_BasicTim_Init();
 	//PWM_Init();
@@ -198,7 +207,7 @@ int main(void)
 	HallSensor_Init_NoHal(20000);
 	HBD_Init();
 
-	adcInit();
+
 
 	// USB init
 	USB_Init();
@@ -219,6 +228,10 @@ int main(void)
 	usbdacassignments[2] = 3; // Ic
 	usbdacassignments[3] = 7; // Throttle
 	usbdacassignments[4] = 9; // Hall angle
+
+	/* Set defaults for D, Q current filters */
+	dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 500.0f, 0.707f);
+	dfsl_biquadcalc_lpf(&Iq_Filt, 20000.0f, 500.0f, 0.707f);
 
 	/* Initialize watchdog timer */
 	WDT_init();
@@ -279,28 +292,31 @@ int main(void)
 		}
 		if(data_out != 0)
 		{
-			usbstring[0] = 0;
-			for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
+			if(g_MainFlags & MAINFLAG_SERIALDATA)
 			{
-				if(usbdacassignments[i] == 0)
+				g_MainFlags &= ~MAINFLAG_SERIALDATA;
+				usbstring[0] = 0;
+				for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
 				{
-					strcat(usbstring,"0 ");
-				}
-				else
-				{
-					//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
-					itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
-					strcat(usbstring,string);
-					strcat(usbstring," ");
+					if(usbdacassignments[i] == 0)
+					{
+						strcat(usbstring,"0 ");
+					}
+					else
+					{
+						//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+						itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
+						strcat(usbstring,string);
+						strcat(usbstring," ");
+					}
+
 				}
 
+				strcat(usbstring,"\r\n");
+
+				VCP_Write(usbstring,strlen(usbstring));
 			}
 
-			strcat(usbstring,"\r\n");
-
-			VCP_Write(usbstring,strlen(usbstring));
-
-			Delay(20);
 		}
 	}
 }
@@ -467,6 +483,10 @@ static void User_BasicTim_Init(void)
 void SYSTICK_IRQHandler(void)
 {
 	g_MainSysTick++;
+	if((g_MainSysTick % SERIAL_DATA_RATE) == 0)
+	{
+		g_MainFlags |= MAINFLAG_SERIALDATA;
+	}
 }
 
 /*
@@ -561,7 +581,7 @@ void User_PWMTIM_IRQ(void)
 
 	// DAC debugging outputs
 	DAC->DHR12L1 = ((uint16_t)(HallSensor_Get_State())) * 8192;
-	DAC->DHR12L2 = adcRawCurrent(ADC_IB)<<4;
+	DAC->DHR12L2 = adcRaw(ADC_IB)<<4;
 
 #endif
 #if PHASE == 3
@@ -670,8 +690,8 @@ void User_PWMTIM_IRQ(void)
 	// Read angle from Hall sensors
 	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
 	// Feed to inverse Park
-	//dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
-	dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
+	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
+	//dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
@@ -689,10 +709,22 @@ void User_PWMTIM_IRQ(void)
 	dfsl_clarkef(Ia, Ib, &clarke_alpha, &clarke_beta);
 	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
 	// Input feedbacks to the Id and Iq controllers
+	// Filter the currents
+	Id_Filt.X = park_d;
+	Iq_Filt.X = park_q;
+	dfsl_biquadf(&Id_Filt);
+	dfsl_biquadf(&Iq_Filt);
+	// Pass filtered current to the PI(D)s
 	Id_control.Err = 0.0f - park_d;
 	Iq_control.Err = (3.0f)*Throttle_cmd - park_q;
-	dfsl_pidf(&Id_control);
-	dfsl_pidf(&Iq_control);
+	//Id_control.Err = 0.0f - Id_Filt.Y;
+	//Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
+	// Don't integrate unless the throttle is active
+	if(Throttle_cmd > 0.0f)
+	{
+		dfsl_pidf(&Id_control);
+		dfsl_pidf(&Iq_control);
+	}
 
 	// DAC debugging outputs
 	DAC->DHR12L1 = g_rampAngle;
@@ -717,9 +749,12 @@ void User_PWMTIM_IRQ(void)
 		usbdacvals[10] = (usbdacvals[8] - g_rampAngle);
 	usbdacvals[11] = (uint32_t)((park_d+5.0f)*6553.6f);
 	usbdacvals[12] = (uint32_t)((park_q+5.0f)*6553.6f);
-	usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
-	usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
+	usbdacvals[13] = (uint32_t)((Id_Filt.Y + 5.0f)*6553.6f);
+	usbdacvals[14] = (uint32_t)((Iq_Filt.Y + 5.0f)*6553.6f);
+	//usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
+	//usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
 	usbdacvals[15] = g_errorCode;
+	usbdacvals[16] = adcRaw(ADC_VREFINT);
 }
 
 // Simple application timer (1kHz)
@@ -862,6 +897,48 @@ void MAIN_SoftReset(uint8_t restartInBootloader)
 
 	// Trigger a software reset
 	NVIC_SystemReset();
+}
+
+void MAIN_SetDebug(uint8_t yesorno)
+{
+	if(yesorno != 0)
+	{
+		// Changing PWM outputs into GPIO, and setting the low-side outputs on.
+		// High side outputs are set off to prevent shoot-through.
+		PWM_MotorOFF();
+		// Changing high-side outputs first.
+		PWM_HI_PORT->ODR &= ~((1 << PWM_AHI_PIN) | (1 << PWM_BHI_PIN) | (1 << PWM_CHI_PIN));
+		GPIO_Output(PWM_HI_PORT, PWM_AHI_PIN);
+		GPIO_Output(PWM_HI_PORT, PWM_BHI_PIN);
+		GPIO_Output(PWM_HI_PORT, PWM_CHI_PIN);
+
+		// Low side, outputs off at first
+		PWM_LO_PORT->ODR &= ~((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
+		GPIO_Output(PWM_LO_PORT, PWM_ALO_PIN);
+		GPIO_Output(PWM_LO_PORT, PWM_BLO_PIN);
+		GPIO_Output(PWM_LO_PORT, PWM_CLO_PIN);
+
+		// Delay a moment
+		Delay(5);
+		// Set low-side outputs high
+		PWM_LO_PORT->ODR |= ((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
+	}
+	else
+	{
+		// Back to normal
+		PWM_MotorOFF();
+		// Outputs all LOW
+		PWM_HI_PORT->ODR &= ~((1 << PWM_AHI_PIN) | (1 << PWM_BHI_PIN) | (1 << PWM_CHI_PIN));
+		PWM_LO_PORT->ODR &= ~((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
+
+		// Back to alternate function control
+		GPIO_AF(PWM_HI_PORT, PWM_AHI_PIN, PWM_AF);
+		GPIO_AF(PWM_HI_PORT, PWM_BHI_PIN, PWM_AF);
+		GPIO_AF(PWM_HI_PORT, PWM_CHI_PIN, PWM_AF);
+		GPIO_AF(PWM_LO_PORT, PWM_ALO_PIN, PWM_AF);
+		GPIO_AF(PWM_LO_PORT, PWM_BLO_PIN, PWM_AF);
+		GPIO_AF(PWM_LO_PORT, PWM_CLO_PIN, PWM_AF);
+	}
 }
 
 /* Convert num into ASCII in base 10

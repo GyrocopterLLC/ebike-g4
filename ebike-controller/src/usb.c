@@ -167,6 +167,8 @@ void USB_Init(void)
 	// Set TX (IN packets) FIFO buffer size for Endpoint 1
 	// Start address is offset by RX buffer and TX EP0 buffer
 	USB_CORE->DIEPTXF[0] = (TX_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE + TX_FIFO_BUF_SIZE);
+	USB_CORE->DIEPTXF[1] = 0;
+	USB_CORE->DIEPTXF[2] = 0;
 
 	USB_InEPs[0].mps = USB_MAX_EP0_SIZE;
 	USB_OutEPs[0].mps = USB_MAX_EP0_SIZE;
@@ -272,7 +274,6 @@ void USB_IRQ(void)
 		{
 			if((temp & (USB_OTG_GRXSTSP_BCNT)) != 0) // Non-zero byte count
 			{
-				//TODO: Read packet callback()
 				USB_ReadPacket((uint8_t*)USB_OutEPs[USB_FIFO_Status.chnum].xfer_buffer, USB_FIFO_Status.bcnt);
 				USB_OutEPs[USB_FIFO_Status.chnum].xfer_buffer += USB_FIFO_Status.bcnt;
 				USB_OutEPs[USB_FIFO_Status.chnum].xfer_done_count += USB_FIFO_Status.bcnt;
@@ -280,7 +281,6 @@ void USB_IRQ(void)
 		}
 		else if(((temp & (USB_OTG_GRXSTSP_PKTSTS)) >> 17) == STS_SETUP_UPDT) // Setup packet received
 		{
-			//TODO: Read packet callback()
 			USB_ReadPacket((uint8_t*)USB_Setup_Buffer, USB_FIFO_Status.bcnt); // bcnt should always be 8 for a setup packet
 			USB_OutEPs[USB_FIFO_Status.chnum].xfer_done_count += USB_FIFO_Status.bcnt;
 		}
@@ -1051,6 +1051,7 @@ void USB_SendData(uint8_t *pbuf, uint8_t epnum, uint16_t len)
 	USB_InEPs[epnum].xfer_done_count = 0;
 
 	// Flush this endpoint's TX buffer
+	// I shouldn't have to flush the FIFO. But without doing this, the IN packets fail to send!
 	USB_FlushTxFifo(epnum);
 
 	if(epnum == 0)
@@ -1099,12 +1100,11 @@ void USB_ReadPacket(uint8_t* buf, uint16_t len)
 
 void USB_WritePacket(uint8_t* buf, uint8_t epnum, uint16_t len)
 {
-	uint32_t* buf32 = (uint32_t*)buf;
 	uint16_t len32 = (len+3) / 4;
 	for(uint16_t i = 0; i < len32; i++)
 	{
-		USB_DFIFO(epnum) = *buf32;
-		buf32++;
+		USB_DFIFO(epnum) = *((__attribute__((__packed__)) uint32_t *)buf);
+		buf+=4;
 	}
 }
 

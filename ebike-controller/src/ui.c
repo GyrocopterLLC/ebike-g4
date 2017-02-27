@@ -18,6 +18,7 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampDir_Command_Req(char cmdtype, char* options);
 uint8_t UI_Variable_Command_Req(char cmdtype, char* options);
+uint8_t UI_Debug_Command_Req(char cmdtype, char* options);
 
 /* Private Variables */
 char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
@@ -225,6 +226,9 @@ uint8_t UI_Process(char* inputstring)
 		case Bootreset_Command:
 			MAIN_SoftReset(1);
 			break;
+		case Debug_Command:
+			UI_Debug_Command_Req(UI_SETCMD, inputstring);
+			break;
 		case UI_NoCmd:
 			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
 			return UI_ERROR;
@@ -395,4 +399,31 @@ uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
 		return UI_OK;
 	}
 	return UI_ERROR;
+}
+
+uint8_t UI_Debug_Command_Req(char cmdtype, char* options)
+{
+	if(cmdtype == UI_SETCMD)
+	{
+		if(*options == '1')
+		{
+			MAIN_SetDebug(1);
+		}
+		else if(*options == '0')
+		{
+			MAIN_SetDebug(0);
+		}
+		else
+		{
+			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+			return UI_ERROR;
+		}
+	}
+	else
+	{
+		UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+		return UI_ERROR;
+	}
+	UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+	return UI_OK;
 }

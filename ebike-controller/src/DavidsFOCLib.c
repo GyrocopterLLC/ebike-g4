@@ -190,6 +190,38 @@ void dfsl_biquadf(Biquad_Float_Type* biq)
 	biq->U1 = intermed;
 }
 
+/**
+ * dfsl_biquadcalc_LPF
+ * Calculates the constants for a biquad filter.
+ * Filter type: low-pass filter (LPF)
+ * Inputs:
+ * -- Fs = sample rate
+ * -- f0 = cutoff frequency
+ * -- Q = quality factor
+ */
+void dfsl_biquadcalc_lpf(Biquad_Float_Type* biq, float Fs, float f0, float Q)
+{
+	// Intermediate values
+	float w0, sinw0, cosw0, alpha;
+	// Cancel operation if inputs are invalid
+	if((Fs == 0.0f) || (f0 == 0.0f) || (Q == 0.0f))
+	{
+		return;
+	}
+	// Calculate the intermediates
+	w0 = 2.0f*PI*(f0/Fs);
+	arm_sin_cos_f32(w0*(180.0f/PI), &sinw0, &cosw0);
+	alpha = sinw0 / (2.0f*Q);
+
+	// Calculate the filter constants
+	biq->B0 = (1.0f-cosw0)/(2.0f)/(1.0f+alpha);
+	biq->B1 = (1.0f-cosw0)/(1.0f+alpha);
+	biq->B2 = biq->B0;
+	biq->A1 = ((-2.0f)*cosw0)/(1.0f+alpha);
+	biq->A2 = (1.0f-alpha)/(1.0f+alpha);
+
+}
+
 /** 
  * dfsl_svm
  * Implmentation of Space Vector Modulation using fixed-point math.

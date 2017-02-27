@@ -64,6 +64,7 @@ void MAIN_SetRampDir(uint8_t forwardOrBackwards);
 void MAIN_SetVar(uint8_t var, float newval);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
+void MAIN_SetDebug(uint8_t yesorno);
 void Delay(__IO uint32_t Delay);
 uint32_t GetTick(void);
 //void User_HallTIM_IRQ(void);

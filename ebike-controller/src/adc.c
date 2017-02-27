@@ -7,6 +7,7 @@
 
 #include "adc.h"
 #include "gpio.h"
+#include "main.h"
 #include "project_parameters.h"
 
 uint16_t adc_conv[NUM_ADC_CH];
@@ -24,9 +25,9 @@ static void adcAverageInitialValue(void);
  */
 void adcInit(void)
 {
-	// ADC1: IA(10), Vbus(13), and Throttle2(8)
+	// ADC1: IA(10), Vrefint(17), and Vrefint(17) again
 	// ADC2: IB(11), Throttle1(15), and Temperature(9)
-	// ADC3: IC(12)
+	// ADC3: IC(12), Vbus(13), and Throttle2(8)
 
 	GPIO_Clk(ADC_I_VBUS_THR1_PORT);
 	GPIO_Clk(ADC_THR2_AND_TEMP_PORT);
@@ -72,15 +73,17 @@ void adcInit(void)
 	ADC3->SQR3 = ADC_IC_CH;
 
 	// Injected sequence
-	ADC1->JSQR = ADC_JSQR_JL_1 | (ADC_IA_CH << 5) | (ADC_VBUS_CH << 10) | (ADC_THR2_CH << 15);
+	ADC1->JSQR = ADC_JSQR_JL_1 | (ADC_IA_CH << 5) | (VREFINT_CH  << 10) | (VREFINT_CH  << 15);
 	ADC2->JSQR = ADC_JSQR_JL_1 | (ADC_IB_CH << 5) | (ADC_THR1_CH << 10) | (ADC_TEMP_CH << 15);
-	ADC3->JSQR = (ADC_IC_CH << 15);
+	ADC3->JSQR = ADC_JSQR_JL_1 | (ADC_IC_CH << 5) | (ADC_VBUS_CH << 10) | (ADC_THR2_CH << 15);
 
 	// ADC master controls
 	// PCLK divided by 4 (21MHz)
 	// Simultaneous regular and injected mode
 	//ADC->CCR = ADC_CCR_ADCPRE_0 | ADC_CCR_MULTI_0 | ADC_CCR_MULTI_2 | ADC_CCR_MULTI_4;
 	ADC->CCR = ADC_CCR_ADCPRE_0 | ADC_CCR_MULTI_0 | ADC_CCR_MULTI_4;
+	// Turn on the Vrefint and Temp sensor channels
+	ADC->CCR |= ADC_CCR_TSVREFE;
 
 	ADC1->CR2 |= ADC_CR2_ADON;
 	ADC2->CR2 |= ADC_CR2_ADON;
@@ -191,10 +194,11 @@ void adcConvComplete(void)
 	adc_conv[ADC_IA] = ADC1->JDR1;
 	adc_conv[ADC_IB] = ADC2->JDR1;
 	adc_conv[ADC_IC] = ADC3->JDR1;
-	adc_conv[ADC_VBUS] = ADC1->JDR2;
+	adc_conv[ADC_VBUS] = ADC3->JDR2;
 	adc_conv[ADC_THR1] = ADC2->JDR2;
-	adc_conv[ADC_THR2] = ADC1->JDR3;
+	adc_conv[ADC_THR2] = ADC3->JDR3;
 	adc_conv[ADC_TEMP] = ADC2->JDR3;
+	adc_conv[ADC_VREFINT] = (ADC1->JDR2 + ADC1->JDR3) >> 1;
 }
 
 static void adcAverageInitialValue(void)
@@ -215,7 +219,7 @@ static void adcAverageInitialValue(void)
 		vrefint = VREFINTDEFAULT;
 	}
 
-	ADC->CCR |= ADC_CCR_TSVREFE; // Turn on the Vrefint and Temp sensor channels
+	Delay(50); // Wait for all analog voltages to stablize
 
 	// Loop and average
 	for(uint8_t i = 0; i < 128; i++)
@@ -270,7 +274,7 @@ float adcGetCurrent(uint8_t which_cur)
 	return adcConvertToAmps((int32_t)(adc_conv[which_cur]) - (int32_t)(adc_current_null[which_cur]));
 }
 
-uint16_t adcRawCurrent(uint8_t which_cur)
+uint16_t adcRaw(uint8_t which_cur)
 {
 	return adc_conv[which_cur];
 }

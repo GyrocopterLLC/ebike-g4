@@ -16,7 +16,7 @@
 #define MAXCOUNT		(4096)
 #define MAXCOUNTF		(4096.0f)
 
-#define NUM_ADC_CH			7
+#define NUM_ADC_CH			8
 
 #define ADC_IA_PIN		0
 #define ADC_IB_PIN		1
@@ -48,31 +48,6 @@
 #define INAGAIN_INV		(0.02f) // Inverse of 50x gain (INA213 current amplifier)
 #define VBUS_RESISTOR_RATIO	(33.36246f) // Inverse of resistor gain (3.09 / 103.09)
 
-//
-//#define ADC_IA_PIN		GPIO_PIN_0
-//#define ADC_IB_PIN		GPIO_PIN_1
-//#define ADC_IC_PIN		GPIO_PIN_6
-//#define ADC_VBUS_PIN	GPIO_PIN_7
-//#define ADC_TEMP_PIN	GPIO_PIN_0
-//#define ADC_THR1_PIN	GPIO_PIN_1
-//#define ADC_THR2_PIN	GPIO_PIN_5
-//
-//#define ADC_I_AND_VBUS_PORT		GPIOA
-//#define ADC_TEMP_AND_THR1_PORT	GPIOB
-//#define ADC_THR2_PORT			GPIOC
-//
-//#define ADC_IA_CH		0
-//#define ADC_IB_CH		1
-//#define ADC_IC_CH		6
-//#define ADC_VBUS_CH		7
-//#define ADC_TEMP_CH		8
-//#define ADC_THR1_CH		9
-//#define ADC_THR2_CH		15
-//
-//#define ADC_I_AND_VBUS_GPIO_CLK_ENABLE()			__HAL_RCC_GPIOA_CLK_ENABLE()
-//#define ADC_TEMP_AND_THR1_GPIO_CLK_ENABLE()			__HAL_RCC_GPIOB_CLK_ENABLE()
-//#define ADC_THR2_GPIO_CLK_ENABLE()			__HAL_RCC_GPIOC_CLK_ENABLE()
-
 typedef enum
 {
 	ADC_IA = 0,
@@ -81,13 +56,14 @@ typedef enum
 	ADC_VBUS = 3,
 	ADC_TEMP = 4,
 	ADC_THR1 = 5,
-	ADC_THR2 = 6
+	ADC_THR2 = 6,
+	ADC_VREFINT = 7
 }ADC_OutputTypeDef;
 
 void adcConvComplete(void);
 void adcInit(void);
 float adcGetCurrent(uint8_t which_cur);
-uint16_t adcRawCurrent(uint8_t which_cur);
+uint16_t adcRaw(uint8_t which_cur);
 float adcConvertToAmps(int32_t rawCurrentReading);
 float adcGetThrottle(void);
 float adcGetVbus(void);
