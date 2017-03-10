@@ -38,7 +38,7 @@
 * POSSIBILITY OF SUCH DAMAGE.   
 * -------------------------------------------------------------------- */
 
-
+#include "stm32f4xx.h"
 #include "arm_math.h"
 #include "arm_common_tables.h"
 

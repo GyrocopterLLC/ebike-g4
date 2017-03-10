@@ -53,10 +53,16 @@
 #define PWM_DEAD_TIME				(TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/
-void PWM_Init(void);
+
 void PWM_Init_NoHal(void);
-void PWM_MotorOFF(void);
-void PWM_MotorON(void);
+inline void PWM_MotorOFF(void)
+{
+	PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE);
+}
+inline void PWM_MotorON(void)
+{
+	PWM_TIMER->BDTR |= (TIM_BDTR_MOE);
+}
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
 

@@ -131,14 +131,16 @@ void PWM_Init_NoHal(void)
 	/* NOTE: MOE bit is still zero, so outputs are at their inactive level. */
 }
 
-void PWM_MotorOFF(void)
+/*
+inline void PWM_MotorOFF(void)
 {
 	PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE);
 }
-void PWM_MotorON(void)
+inline void PWM_MotorON(void)
 {
 	PWM_TIMER->BDTR |= TIM_BDTR_MOE;
 }
+*/
 
 /* Changed so that tA->CCR3, tC->CCR1. tB unchanged (tB->CCR2)
  * The implemented pinout on the STM32F4x5 is TIM1_CH1 -> PA8,

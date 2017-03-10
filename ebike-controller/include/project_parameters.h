@@ -8,6 +8,9 @@
 #ifndef PROJECT_PARAMETERS_H_
 #define PROJECT_PARAMETERS_H_
 
+// Motor parameters
+#define MOTOR_POLEPAIRS		23
+
 // Angle definitions - integer
 // This set of defines are the integer values of angles
 // as defined for a 16 bit unsigned integer.

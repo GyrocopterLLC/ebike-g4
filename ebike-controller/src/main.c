@@ -9,9 +9,19 @@
 
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 
-#define SERIAL_DATA_RATE	(10)
+#define SERIAL_DATA_RATE			(10)
 
-#define MAINFLAG_SERIALDATA			(0x0001)
+#define MAIN_STARTUP_SPEED_MAX		(65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
+#define MAIN_STARTUP_CUR_AVG_COUNT	(256)
+
+#define MAINFLAG_SERIALDATA			((uint32_t)0x00000001)
+#define MAINFLAG_UNUSED0			((uint32_t)0x00000002)
+#define MAINFLAG_UNUSED1			((uint32_t)0x00000004)
+#define MAINFLAG_UNUSED2			((uint32_t)0x00000008)
+#define MAINFLAG_UNUSED3			((uint32_t)0x00000010)
+#define MAINFLAG_UNUSED4			((uint32_t)0x00000020)
+#define MAINFLAG_UNUSED5			((uint32_t)0x00000040)
+#define MAINFLAG_UNUSED6			((uint32_t)0x00000080)
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -25,6 +35,12 @@ uint32_t g_ledcount;
 uint32_t g_errorCode;
 
 uint32_t g_MainFlags;
+
+uint32_t cur_a_sum;
+uint32_t cur_b_sum;
+uint32_t cur_c_sum;
+uint32_t cur_sum_count;
+
 
 /** Debugging outputs **
  *
@@ -187,7 +203,7 @@ int main(void)
 		FLASH->ACR |= FLASH_ACR_PRFTEN;
 	}
   
-	NVIC_SetPriorityGrouping(3); // 4 priority bits, 0 sub-priority
+	NVIC_SetPriorityGrouping(0); // Maximum number of priority bits (4 for this MCU), no sub-priority bits
 
 	SysTick_Config(SystemCoreClock/1000);
 	NVIC_SetPriority(SysTick_IRQn, PRIO_SYSTICK);
@@ -206,8 +222,6 @@ int main(void)
 	PWM_Init_NoHal();
 	HallSensor_Init_NoHal(20000);
 	HBD_Init();
-
-
 
 	// USB init
 	USB_Init();
@@ -427,7 +441,7 @@ static void SystemClock_Config(void)
   */
 static void Toggle_Leds(void)
 {
-	RLED_PORT->ODR ^= (1<<RLED_PIN);
+	//RLED_PORT->ODR ^= (1<<RLED_PIN);
 	GLED_PORT->ODR ^= (1<<GLED_PIN);
 }
 /* Configure PC9 and PB12 as LED outputs */
@@ -499,6 +513,9 @@ void User_HallTIM_IRQ(void)
 // TIM1 overflow / update IRQ (20kHz)
 void User_PWMTIM_IRQ(void)
 {
+	// Debug: Blink RLED to show how much processor time is used
+	RLED_PORT->BSRR = (1 << RLED_PIN);
+
 	float fangle, ipark_a, ipark_b;
 	float tAf, tBf, tCf;
 	uint16_t tA, tB, tC;
@@ -506,7 +523,6 @@ void User_PWMTIM_IRQ(void)
 	float clarke_alpha, clarke_beta;
 	float park_d, park_q;
 
-	// For all build phases
 	// Generate ramp angle
 	// dfsl_rampgen(&g_rampAngle, g_rampInc); // Can use the dfsl library later, following code is simpler
 	if(g_rampdir == 0)
@@ -519,159 +535,8 @@ void User_PWMTIM_IRQ(void)
 	}
 	// Update Hall sensor angle
 	HallSensor_Inc_Angle();
-#if PHASE == 1
-	/* Phase one connections
-	 * Ramp Generator->Ipark
-	 * Vd_testing, Vq_testing ->Ipark
-	 * Ipark->SVM
-	 *
-	 * No current feedback, no ADCs, no motor connected!
-	 */
-	// Rotor angle comes from ramp generator
-	fangle = ((float)g_rampAngle)/65536.0f;
-	// Feed ramp angle with fixed throttle to inverse Park
-	dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
-	// Inverse Park outputs to space vector modulation, output three-phase waveforms
-	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
-	// Convert from floats to 16-bit ints
-	tA = (uint16_t)(tAf*65535.0f);
-	tB = (uint16_t)(tBf*65535.0f);
-	tC = (uint16_t)(tCf*65535.0f);
-	// Set PWM duty cycles
-	PWM_SetDuty(tA,tB,tC);
-	// DAC debugging outputs
-	DAC->DHR12L1 = (uint16_t)(Throttle_cmd * 65536.0f); // Displays 0-1 volts
-	//DAC->DHR12L1 = HallSensor_Get_Angle();
-	DAC->DHR12L2 = HallSensor_Get_Speed()>>8;
 
-#endif
-#if PHASE == 2
-	/* Phase two connections
-	 * Ramp Generator->Ipark
-	 * Vd_testing, Vq_testing ->Ipark
-	 * Ipark->SVM
-	 * Motor currents->ADCs
-	 * ADC results->Clarke
-	 * Clarke Outputs, Ramp Generator ->Park
-	 *
-	 * No current feedback, motor is connected.
-	 * Make sure that current does not exceed safe levels!
-	 * Place series power resistors!
-	 * Heatsinks on the power FETs!
-	 */
-	// Rotor angle comes from ramp generator
-	fangle = ((float)g_rampAngle)/65536.0f;
-	// Feed ramp angle with fixed throttle to inverse Park
-	//dfsl_iparkf(0.0f,Throttle_cmd,fangle,&ipark_a, &ipark_b);
-	dfsl_iparkf(Throttle_cmd,0.0f,fangle,&ipark_a, &ipark_b); // Apply on D phase to get rotor locked to angle
-	// Inverse Park outputs to space vector modulation, output three-phase waveforms
-	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
-	// Convert from floats to 16-bit ints
-	tA = (uint16_t)(tAf*65535.0f);
-	tB = (uint16_t)(tBf*65535.0f);
-	tC = (uint16_t)(tCf*65535.0f);
-	// Set PWM duty cycles
-	PWM_SetDuty(tA,tB,tC);
-	// Transform sensor readings
-	Ia = adcGetCurrent(ADC_IA);
-	Ib = adcGetCurrent(ADC_IB);
-	Ic = adcGetCurrent(ADC_IC);
-	dfsl_clarkef(Ia, Ib, &clarke_alpha, &clarke_beta);
-	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
-
-	// DAC debugging outputs
-	DAC->DHR12L1 = ((uint16_t)(HallSensor_Get_State())) * 8192;
-	DAC->DHR12L2 = adcRaw(ADC_IB)<<4;
-
-#endif
-#if PHASE == 3
-	/* Phase three connections
-	 * Ramp Generator->Ipark
-	 * Vd, Vq feedback PIDs ->Ipark
-	 * Ipark->SVM
-	 * Motor currents->ADCs
-	 * ADC results->Clarke
-	 * Clarke Outputs, Ramp Generator ->Park
-	 * Park -> Vd, Vq feedback PIDs
-	 * Motor is connected.
-	 * Make sure that current does not exceed safe levels!
-	 * Place series power resistors!
-	 * Heatsinks on the power FETs!
-	 */
-	// Rotor angle comes from ramp generator
-	fangle = ((float)g_rampAngle)/65536.0f;
-	// Feed ramp angle with feedback to inverse Park
-	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
-	// Inverse Park outputs to space vector modulation, output three-phase waveforms
-	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
-	// Convert from floats to 16-bit ints
-	tA = (uint16_t)(tAf*65535.0f);
-	tB = (uint16_t)(tBf*65535.0f);
-	tC = (uint16_t)(tCf*65535.0f);
-	// Set PWM duty cycles
-	PWM_SetDuty(tA,tB,tC);
-	// Transform sensor readings
-	Ia = adcGetCurrent(ADC_IA);
-	Ib = adcGetCurrent(ADC_IB);
-	Ic = adcGetCurrent(ADC_IC);
-	dfsl_clarkef(Ia, Ib, &clarke_alpha, &clarke_beta);
-	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
-	// Input feedbacks to the Id and Iq controllers
-	Id_control.Err = 0.0f - park_d;
-	Iq_control.Err = (3.0f)*Throttle_cmd - park_q; // Throttle goes up to THREE now!
-	dfsl_pidf(&Id_control);
-	dfsl_pidf(&Iq_control);
-
-	// DAC debugging outputs
-	DAC->DHR12L1 = (uint16_t)(6553.60f*((park_d) + 5.0f));
-	DAC->DHR12L2 = (uint16_t)(6553.60f*((park_q) + 5.0f));
-
-#endif
-#if PHASE == 4
-	/* Phase four connections
-	 * Ramp Generator->Ipark
-	 * Vd, Vq feedback PIDs ->Ipark
-	 * Ipark->SVM
-	 * Motor currents->ADCs
-	 * ADC results->Clarke
-	 * Clarke Outputs, Ramp Generator ->Park
-	 * Park -> Vd, Vq feedback PIDs
-	 * Motor is connected.
-	 * Make sure that current does not exceed safe levels!
-	 * Place series power resistors!
-	 * Heatsinks on the power FETs!
-	 */
-	// Rotor angle comes from ramp generator
-	fangle = ((float)g_rampAngle)/65536.0f;
-	// Feed ramp angle with feedback to inverse Park
-	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
-	// Inverse Park outputs to space vector modulation, output three-phase waveforms
-	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
-	// Convert from floats to 16-bit ints
-	tA = (uint16_t)(tAf*65535.0f);
-	tB = (uint16_t)(tBf*65535.0f);
-	tC = (uint16_t)(tCf*65535.0f);
-	// Set PWM duty cycles
-	PWM_SetDuty(tA,tB,tC);
-	// Transform sensor readings
-	Ia = adcGetCurrent(ADC_IA);
-	Ib = adcGetCurrent(ADC_IB);
-	Ic = adcGetCurrent(ADC_IC);
-	dfsl_clarkef(Ia, Ib, &clarke_alpha, &clarke_beta);
-	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
-	// Input feedbacks to the Id and Iq controllers
-	Id_control.Err = 0.0f - park_d;
-	Iq_control.Err = Throttle_cmd - park_q;
-	dfsl_pidf(&Id_control);
-	dfsl_pidf(&Iq_control);
-
-	// DAC debugging outputs
-	DAC->DHR12L1 = g_rampAngle;
-	DAC->DHR12L2 = HallSensor_Get_Angle();
-
-#endif
-#if PHASE == 5
-	/* Phase five connections
+	/* Connections:
 	 * Everything connected in final configuration
 	 * Hall sensor angle->Ipark
 	 * Vd, Vq feedback PIDs ->Ipark
@@ -690,16 +555,29 @@ void User_PWMTIM_IRQ(void)
 	// Read angle from Hall sensors
 	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
 	// Feed to inverse Park
-	dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
-	//dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
+	//dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
+	dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
 	tA = (uint16_t)(tAf*65535.0f);
 	tB = (uint16_t)(tBf*65535.0f);
 	tC = (uint16_t)(tCf*65535.0f);
+
+	// Is throttle at zero? Motor off
+	if(Throttle_cmd <= 0.0f)
+	{
+		PWM_MotorOFF();
+		Throttle_cmd = 0.0f;
+	}
+	if(Throttle_cmd > 0.0f)
+	{
+		PWM_MotorON();
+	}
+
 	// Set PWM duty cycles
 	PWM_SetDuty(tA,tB,tC);
+
 
 // **************** FEEDBACK PATH *****************
 	// Transform sensor readings
@@ -730,8 +608,6 @@ void User_PWMTIM_IRQ(void)
 	DAC->DHR12L1 = g_rampAngle;
 	DAC->DHR12L2 = (uint16_t)(fangle*65536.0f);
 
-#endif
-
 	// USB Debugging outputs
 	usbdacvals[0] = (uint32_t)((Ia+5.0f)*6553.6f);
 	usbdacvals[1] = (uint32_t)((Ib+5.0f)*6553.6f);
@@ -755,26 +631,20 @@ void User_PWMTIM_IRQ(void)
 	//usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
 	usbdacvals[15] = g_errorCode;
 	usbdacvals[16] = adcRaw(ADC_VREFINT);
+
+	RLED_PORT->BSRR = (1 << (RLED_PIN+16));
 }
 
 // Simple application timer (1kHz)
 void User_BasicTIM_IRQ(void)
 {
+
 	raw_throttle = adcGetThrottle();
 	Throttle_cmd = throttle_process(raw_throttle);
 
-	// Is throttle at zero? Motor off
-	if(Throttle_cmd <= 0.0f)
-	{
-		PWM_MotorOFF();
-		Throttle_cmd = 0.0f;
-	}
-	if(Throttle_cmd > 0.0f)
-	{
-		PWM_MotorON();
-		if(Throttle_cmd >= 1.0f)
-			Throttle_cmd = 0.99f;
-	}
+	// Trim to 99%
+	if(Throttle_cmd >= 1.0f)
+		Throttle_cmd = 0.99f;
 
 	// Blink the LEDs
 	g_ledcount++;
@@ -897,48 +767,6 @@ void MAIN_SoftReset(uint8_t restartInBootloader)
 
 	// Trigger a software reset
 	NVIC_SystemReset();
-}
-
-void MAIN_SetDebug(uint8_t yesorno)
-{
-	if(yesorno != 0)
-	{
-		// Changing PWM outputs into GPIO, and setting the low-side outputs on.
-		// High side outputs are set off to prevent shoot-through.
-		PWM_MotorOFF();
-		// Changing high-side outputs first.
-		PWM_HI_PORT->ODR &= ~((1 << PWM_AHI_PIN) | (1 << PWM_BHI_PIN) | (1 << PWM_CHI_PIN));
-		GPIO_Output(PWM_HI_PORT, PWM_AHI_PIN);
-		GPIO_Output(PWM_HI_PORT, PWM_BHI_PIN);
-		GPIO_Output(PWM_HI_PORT, PWM_CHI_PIN);
-
-		// Low side, outputs off at first
-		PWM_LO_PORT->ODR &= ~((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
-		GPIO_Output(PWM_LO_PORT, PWM_ALO_PIN);
-		GPIO_Output(PWM_LO_PORT, PWM_BLO_PIN);
-		GPIO_Output(PWM_LO_PORT, PWM_CLO_PIN);
-
-		// Delay a moment
-		Delay(5);
-		// Set low-side outputs high
-		PWM_LO_PORT->ODR |= ((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
-	}
-	else
-	{
-		// Back to normal
-		PWM_MotorOFF();
-		// Outputs all LOW
-		PWM_HI_PORT->ODR &= ~((1 << PWM_AHI_PIN) | (1 << PWM_BHI_PIN) | (1 << PWM_CHI_PIN));
-		PWM_LO_PORT->ODR &= ~((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
-
-		// Back to alternate function control
-		GPIO_AF(PWM_HI_PORT, PWM_AHI_PIN, PWM_AF);
-		GPIO_AF(PWM_HI_PORT, PWM_BHI_PIN, PWM_AF);
-		GPIO_AF(PWM_HI_PORT, PWM_CHI_PIN, PWM_AF);
-		GPIO_AF(PWM_LO_PORT, PWM_ALO_PIN, PWM_AF);
-		GPIO_AF(PWM_LO_PORT, PWM_BLO_PIN, PWM_AF);
-		GPIO_AF(PWM_LO_PORT, PWM_CLO_PIN, PWM_AF);
-	}
 }
 
 /* Convert num into ASCII in base 10

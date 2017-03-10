@@ -16,7 +16,8 @@
 #define MAXCOUNT		(4096)
 #define MAXCOUNTF		(4096.0f)
 
-#define NUM_ADC_CH			8
+#define NUM_ADC_CH		8
+#define NUM_CUR_CH		3
 
 #define ADC_IA_PIN		0
 #define ADC_IB_PIN		1
@@ -48,6 +49,8 @@
 #define INAGAIN_INV		(0.02f) // Inverse of 50x gain (INA213 current amplifier)
 #define VBUS_RESISTOR_RATIO	(33.36246f) // Inverse of resistor gain (3.09 / 103.09)
 
+#define ADC_HACKY_OFFSET		(15) // The zero-current points shift by this amount when motor is running
+
 typedef enum
 {
 	ADC_IA = 0,
@@ -68,6 +71,7 @@ float adcConvertToAmps(int32_t rawCurrentReading);
 float adcGetThrottle(void);
 float adcGetVbus(void);
 float adcGetVref(void);
+void adcSetNull(uint8_t which_cur, uint16_t nullVal);
 
 #if defined(USING_OLD_ADC_VER)
 void ADC_Init_OldVer(void);

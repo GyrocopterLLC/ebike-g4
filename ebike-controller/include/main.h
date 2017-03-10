@@ -6,13 +6,6 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-/* PMSM3_1 Testing Phase definition */
-#define PHASE	5
-
-#ifndef PHASE
-#error Testing phase needs to be defined.
-#endif
-
 /* Constants */
 #define THROTTLE_MIN	(0.7f) // Less than 0.7V is zero throttle
 #define THROTTLE_MAX	(2.8f) // Above 2.8V is 100% throttle
@@ -64,7 +57,6 @@ void MAIN_SetRampDir(uint8_t forwardOrBackwards);
 void MAIN_SetVar(uint8_t var, float newval);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
-void MAIN_SetDebug(uint8_t yesorno);
 void Delay(__IO uint32_t Delay);
 uint32_t GetTick(void);
 //void User_HallTIM_IRQ(void);

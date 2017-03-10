@@ -11,7 +11,7 @@
 #include "project_parameters.h"
 
 uint16_t adc_conv[NUM_ADC_CH];
-uint16_t adc_current_null[3];
+uint16_t adc_current_null[NUM_CUR_CH];
 float adc_vref;
 
 static void adcAverageInitialValue(void);
@@ -235,9 +235,9 @@ static void adcAverageInitialValue(void)
 		ib_sum += ADC2->DR;
 		ic_sum += ADC3->DR;
 	}
-	adc_current_null[ADC_IA] = ia_sum / 128;
-	adc_current_null[ADC_IB] = ib_sum / 128;
-	adc_current_null[ADC_IC] = ic_sum / 128;
+	adc_current_null[ADC_IA] = ia_sum / 128 - ADC_HACKY_OFFSET;
+	adc_current_null[ADC_IB] = ib_sum / 128 - ADC_HACKY_OFFSET;
+	adc_current_null[ADC_IC] = ic_sum / 128 - ADC_HACKY_OFFSET;
 
 	// Switch ADC1 to read the Vrefint channel
 	ADC1->SQR3 = VREFINT_CH;
@@ -302,6 +302,11 @@ float adcGetVbus(void)
 float adcGetVref(void)
 {
 	return adc_vref;
+}
+
+void adcSetNull(uint8_t which_cur, uint16_t nullVal)
+{
+	adc_current_null[which_cur] = nullVal;
 }
 
 #if defined(USING_OLD_ADC_VER)
