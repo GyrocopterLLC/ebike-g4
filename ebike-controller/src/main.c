@@ -218,8 +218,7 @@ int main(void)
 	adcInit();
 	User_DAC_Init();
 	User_BasicTim_Init();
-	//PWM_Init();
-	PWM_Init_NoHal();
+	PWM_Init();
 	HallSensor_Init_NoHal(20000);
 	HBD_Init();
 

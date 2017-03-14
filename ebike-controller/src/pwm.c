@@ -10,83 +10,13 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 
-/***** Not using this version, using the non-HAL version below.
-
-TIM_HandleTypeDef hpwm;
-
-// Enables the three-phase complementary PWM channels
 void PWM_Init(void)
-{
-	TIM_OC_InitTypeDef ocInit;
-	TIM_BreakDeadTimeConfigTypeDef brkInit;
-	TIM_MasterConfigTypeDef masterInit;
-
-	// Enable the time base
-	hpwm.Instance = PWM_TIMER;
-	hpwm.Init.Period = PWM_PERIOD;
-	hpwm.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-	hpwm.Init.CounterMode = TIM_COUNTERMODE_CENTERALIGNED1;
-	hpwm.Init.Prescaler = 0;
-	hpwm.Init.RepetitionCounter = 1;
-	HAL_TIM_PWM_Init(&hpwm);
-
-	// Configure the PWM channels
-	ocInit.OCMode = TIM_OCMODE_PWM1;
-	ocInit.OCIdleState = TIM_OCIDLESTATE_RESET;
-	ocInit.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-	ocInit.OCPolarity = TIM_OCPOLARITY_HIGH;
-	ocInit.OCNPolarity = TIM_OCNPOLARITY_HIGH;
-	ocInit.OCFastMode = TIM_OCFAST_DISABLE;
-	ocInit.Pulse = PWM_PERIOD/2 + 1;
-	HAL_TIM_PWM_ConfigChannel(&hpwm, &ocInit, TIM_CHANNEL_1);
-	HAL_TIM_PWM_ConfigChannel(&hpwm, &ocInit, TIM_CHANNEL_2);
-	HAL_TIM_PWM_ConfigChannel(&hpwm, &ocInit, TIM_CHANNEL_3);
-	ocInit.OCMode = TIM_OCMODE_PWM1;
-	ocInit.Pulse = PWM_PERIOD - 1; // Triggers during downcounting, just after reload
-	HAL_TIM_PWM_ConfigChannel(&hpwm, &ocInit, TIM_CHANNEL_4);
-
-	// Configure the break and deadtime
-	brkInit.OffStateRunMode = TIM_OSSR_DISABLE;
-	brkInit.OffStateIDLEMode = TIM_OSSI_DISABLE;
-	brkInit.LockLevel = TIM_LOCKLEVEL_OFF;
-	brkInit.AutomaticOutput = TIM_AUTOMATICOUTPUT_DISABLE;
-	brkInit.BreakPolarity = TIM_BREAKPOLARITY_LOW;
-	brkInit.BreakState = TIM_BREAK_DISABLE;
-	brkInit.DeadTime = PWM_DEAD_TIME;
-	HAL_TIMEx_ConfigBreakDeadTime(&hpwm, &brkInit);
-
-	// Enable the PWM output positive and negative channels
-	PWM_TIMER->CCER |= TIM_CCER_CC1E | TIM_CCER_CC1NE | TIM_CCER_CC2E | TIM_CCER_CC2NE | TIM_CCER_CC3E | TIM_CCER_CC3NE;
-
-	// Configure the master mode (triggers the ADC injected channels with CC4 output)
-	masterInit.MasterOutputTrigger = TIM_TRGO_OC4REF;
-	masterInit.MasterSlaveMode = TIM_SLAVEMODE_DISABLE;
-	HAL_TIMEx_MasterConfigSynchronization(&hpwm, &masterInit);
-
-	// Outputs disabled
-	PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE);
-
-	// Enable the update IRQ
-	HAL_NVIC_SetPriority(TIM1_UP_TIM10_IRQn,0,0);
-	HAL_NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
-
-	// Enable the update interrupt
-	PWM_TIMER->DIER |= TIM_DIER_UIE;
-	// Start the timer
-	PWM_TIMER->CR1 |= TIM_CR1_CEN;
-	// Write to the repetition counter so updates occur at underflow events
-	PWM_TIMER->RCR = 1;
-	// Generate an update to get that immediately latched in
-	PWM_TIMER->EGR |= TIM_EGR_UG;
-}
-
- */
-
-void PWM_Init_NoHal(void)
 {
 	GPIO_Clk(PWM_HI_PORT);
 	GPIO_Clk(PWM_LO_PORT);
 
+	// Force GPIO outputs low. If the Timer releases the output pins, this ensures that the
+	// FETs will not be turned on inadvertently.
 	PWM_HI_PORT->ODR &= ~((1 << PWM_AHI_PIN) | (1 << PWM_BHI_PIN) | (1 << PWM_CHI_PIN));
 	PWM_LO_PORT->ODR &= ~((1 << PWM_ALO_PIN) | (1 << PWM_BLO_PIN) | (1 << PWM_CLO_PIN));
 
