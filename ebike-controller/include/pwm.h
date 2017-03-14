@@ -83,9 +83,11 @@ void PWM_SetDutyF(float tA, float tB, float tC);
 									PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2); \
 									PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);	\
 							}while(0)
-// Phase off: OC mode is "Frozen", outputs disabled
+// Phase off: OC mode is "Force inactive", high-side output disabled, low-side enabled (will be outputting low)
 #define PHASE_C_OFF()		do{		PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);	\
-									PWM_TIMER->CCER &= ~(TIM_CCER_CC1E | TIM_CCER_CC1NE);	\
+									PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2); \
+									PWM_TIMER->CCER &= ~(TIM_CCER_CC1E);	\
+									PWM_TIMER->CCER |= (TIM_CCER_CC1NE);	\
 							}while(0)
 
 #define PHASE_B_PWM()		do{		PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);	\
@@ -97,7 +99,9 @@ void PWM_SetDutyF(float tA, float tB, float tC);
 									PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);	\
 							}while(0)
 #define PHASE_B_OFF()		do{		PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);	\
-									PWM_TIMER->CCER &= ~(TIM_CCER_CC2E | TIM_CCER_CC2NE);	\
+									PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2); \
+									PWM_TIMER->CCER &= ~(TIM_CCER_CC2E);	\
+									PWM_TIMER->CCER |= (TIM_CCER_CC2NE);	\
 							}while(0)
 
 #define PHASE_A_PWM()		do{		PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);	\
@@ -109,6 +113,8 @@ void PWM_SetDutyF(float tA, float tB, float tC);
 									PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);	\
 							}while(0)
 #define PHASE_A_OFF()		do{		PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);	\
-									PWM_TIMER->CCER &= ~(TIM_CCER_CC3E | TIM_CCER_CC3NE);	\
+									PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2); \
+									PWM_TIMER->CCER &= ~(TIM_CCER_CC3E);	\
+									PWM_TIMER->CCER |= (TIM_CCER_CC3NE);	\
 							}while(0)
 #endif /* PWM_H_ */
