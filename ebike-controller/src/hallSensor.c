@@ -192,6 +192,11 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 	DMA1->HIFCR = 0x0F7D0F7D; // on all channels.
 	HALL_DMA->CR |= DMA_SxCR_EN; // Enable DMA channel
 	HALL_SAMPLE_TIMER->DIER = TIM_DIER_UDE; // Update triggers DMA
+
+	// Determine initial Hall state
+	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_A)) != 0 ? 1 : 0;
+	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_B)) != 0 ? 2 : 0;
+	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_C)) != 0 ? 4 : 0;
 }
 
 /** HallSensor_CalcSpeed

@@ -18,7 +18,6 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampDir_Command_Req(char cmdtype, char* options);
 uint8_t UI_Variable_Command_Req(char cmdtype, char* options);
-uint8_t UI_Debug_Command_Req(char cmdtype, char* options);
 
 /* Private Variables */
 char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
@@ -225,6 +224,9 @@ uint8_t UI_Process(char* inputstring)
 			break;
 		case Bootreset_Command:
 			MAIN_SoftReset(1);
+			break;
+		case Dump_Command:
+			MAIN_DumpRecord();
 			break;
 		case UI_NoCmd:
 			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);

@@ -10,18 +10,17 @@
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 
 #define SERIAL_DATA_RATE			(10)
+#define SERIAL_DUMP_RATE			(5)
 
 #define MAIN_STARTUP_SPEED_MAX		(65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT	(256)
 
-#define MAINFLAG_SERIALDATA			((uint32_t)0x00000001)
-#define MAINFLAG_UNUSED0			((uint32_t)0x00000002)
-#define MAINFLAG_UNUSED1			((uint32_t)0x00000004)
-#define MAINFLAG_UNUSED2			((uint32_t)0x00000008)
-#define MAINFLAG_UNUSED3			((uint32_t)0x00000010)
-#define MAINFLAG_UNUSED4			((uint32_t)0x00000020)
-#define MAINFLAG_UNUSED5			((uint32_t)0x00000040)
-#define MAINFLAG_UNUSED6			((uint32_t)0x00000080)
+#define MAINFLAG_SERIALDATAPRINT	((uint32_t)0x00000001)
+#define MAINFLAG_SERIALDATAON		((uint32_t)0x00000002)
+#define MAINFLAG_DUMPRECORD			((uint32_t)0x00000004)
+#define MAINFLAG_DUMPDATAPRINT		((uint32_t)0x00000008)
+#define MAINFLAG_DUMPDATAON			((uint32_t)0x00000010)
+
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -41,6 +40,13 @@ uint32_t cur_b_sum;
 uint32_t cur_c_sum;
 uint32_t cur_sum_count;
 
+Motor_Controls Mctrl;
+Motor_Observations Mobv;
+Motor_PWMDuties Mpwm;
+FOC_StateVariables Mfoc;
+
+uint16_t DumpData[32768] __attribute__((section(".bss_CCMRAM")));
+uint16_t DumpLoc;
 
 /** Debugging outputs **
  *
@@ -72,7 +78,6 @@ char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 uint32_t systick_debounce_counter;
 uint8_t debounce_integrator;
 volatile PB_TypeDef pb_state;
-uint8_t data_out;
 
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
@@ -179,7 +184,6 @@ int main(void)
 	char string[32];
 	char usbstring[64];
 	Throttle_cmd = 0.0f;
-	data_out = 0;
 
 	BootloaderStartup(); // Load bootloader if certain conditions are met
 	// Also initializes the user pushbutton
@@ -241,6 +245,7 @@ int main(void)
 	usbdacassignments[2] = 3; // Ic
 	usbdacassignments[3] = 7; // Throttle
 	usbdacassignments[4] = 9; // Hall angle
+	DumpLoc = 0;
 
 	/* Set defaults for D, Q current filters */
 	dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 500.0f, 0.707f);
@@ -248,6 +253,12 @@ int main(void)
 
 	/* Initialize watchdog timer */
 	WDT_init();
+
+	// Testing only!
+	//Mctrl.state = Motor_Startup;
+	Mctrl.state = Motor_Startup;
+	Mfoc.Id_PID = &Id_control;
+	Mfoc.Iq_PID = &Iq_control;
 
 	/* Run Application (Interrupt mode) */
 	while (1)
@@ -301,13 +312,13 @@ int main(void)
 			// Wait until release
 			while(pb_state == PB_PRESSED) {}
 			// Change data output state
-			data_out = ~data_out;
+			g_MainFlags ^= MAINFLAG_SERIALDATAON;
 		}
-		if(data_out != 0)
+		if(g_MainFlags & MAINFLAG_SERIALDATAON)
 		{
-			if(g_MainFlags & MAINFLAG_SERIALDATA)
+			if(g_MainFlags & MAINFLAG_SERIALDATAPRINT)
 			{
-				g_MainFlags &= ~MAINFLAG_SERIALDATA;
+				g_MainFlags &= ~MAINFLAG_SERIALDATAPRINT;
 				usbstring[0] = 0;
 				for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
 				{
@@ -330,6 +341,29 @@ int main(void)
 				VCP_Write(usbstring,strlen(usbstring));
 			}
 
+		}
+		if(g_MainFlags & MAINFLAG_DUMPDATAON)
+		{
+			if(g_MainFlags & MAINFLAG_DUMPDATAPRINT)
+			{
+				g_MainFlags &= ~(MAINFLAG_DUMPDATAPRINT);
+				usbstring[0] = 0;
+				for(uint8_t i = 0; i < 4; i++)
+				{
+					itoa(string, (int)DumpData[DumpLoc+i]);
+					strcat(usbstring,string);
+					strcat(usbstring," ");
+				}
+				DumpLoc+=4;
+				strcat(usbstring,"\r\n");
+				VCP_Write(usbstring,strlen(usbstring));
+				if(DumpLoc >= 32768)
+				{
+					DumpLoc = 0;
+					g_MainFlags &= ~(MAINFLAG_DUMPDATAON);
+				}
+
+			}
 		}
 	}
 }
@@ -498,7 +532,11 @@ void SYSTICK_IRQHandler(void)
 	g_MainSysTick++;
 	if((g_MainSysTick % SERIAL_DATA_RATE) == 0)
 	{
-		g_MainFlags |= MAINFLAG_SERIALDATA;
+		g_MainFlags |= MAINFLAG_SERIALDATAPRINT;
+	}
+	if((g_MainSysTick % SERIAL_DUMP_RATE) == 0)
+	{
+		g_MainFlags |= MAINFLAG_DUMPDATAPRINT;
 	}
 }
 
@@ -514,7 +552,76 @@ void User_PWMTIM_IRQ(void)
 {
 	// Debug: Blink RLED to show how much processor time is used
 	RLED_PORT->BSRR = (1 << RLED_PIN);
+#if 1
+	// Testing mode starts here
+	uint16_t tA, tB, tC;
+	Mobv.iA = adcGetCurrent(ADC_IA);
+	Mobv.iB = adcGetCurrent(ADC_IB);
+	Mobv.iC = adcGetCurrent(ADC_IC);
 
+	HallSensor_Inc_Angle();
+	if(g_rampdir == 0)
+	{
+		g_rampAngle += g_rampInc;
+	}
+	else
+	{
+		g_rampAngle -= g_rampInc;
+	}
+
+	Mobv.RotorAngle = ((float)HallSensor_Get_Angle())/65536.0f;
+	Mobv.HallState = HallSensor_Get_State();
+	/*
+	Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
+	if(Mobv.RotorAngle >= 0.0f && Mobv.RotorAngle < .1667f)
+	{
+		Mobv.HallState = 6;
+	}
+	else if(Mobv.RotorAngle >= .1667f && Mobv.RotorAngle < .3333f)
+	{
+		Mobv.HallState = 2;
+	}
+	else if(Mobv.RotorAngle >= .3333f && Mobv.RotorAngle < .5f)
+	{
+		Mobv.HallState = 3;
+	}
+	else if(Mobv.RotorAngle >= .5f && Mobv.RotorAngle < .6667f)
+	{
+		Mobv.HallState = 1;
+	}
+	else if(Mobv.RotorAngle >= .6667f && Mobv.RotorAngle < .8333f)
+	{
+		Mobv.HallState = 5;
+	}
+	else if(Mobv.RotorAngle >= .8333f && Mobv.RotorAngle < 1.0f)
+	{
+		Mobv.HallState = 4;
+	}
+	else
+	{
+		Mobv.HallState = 0;
+	}
+	*/
+	Mctrl.ThrottleCommand = Throttle_cmd;
+	Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
+	tA = (uint16_t)(Mpwm.tA*65535.0f);
+	tB = (uint16_t)(Mpwm.tB*65535.0f);
+	tC = (uint16_t)(Mpwm.tC*65535.0f);
+	// Is throttle at zero? Motor off
+	if(Throttle_cmd <= 0.0f)
+	{
+		PWM_MotorOFF();
+		Throttle_cmd = 0.0f;
+	}
+	else
+	{
+		PWM_MotorON();
+	}
+	PWM_SetDuty(tA,tB,tC);
+#endif
+
+#if 0
+	// Regular mode below here
 	float fangle, ipark_a, ipark_b;
 	float tAf, tBf, tCf;
 	uint16_t tA, tB, tC;
@@ -606,11 +713,11 @@ void User_PWMTIM_IRQ(void)
 	// DAC debugging outputs
 	DAC->DHR12L1 = g_rampAngle;
 	DAC->DHR12L2 = (uint16_t)(fangle*65536.0f);
-
+#endif
 	// USB Debugging outputs
-	usbdacvals[0] = (uint32_t)((Ia+5.0f)*6553.6f);
-	usbdacvals[1] = (uint32_t)((Ib+5.0f)*6553.6f);
-	usbdacvals[2] = (uint32_t)((Ic+5.0f)*6553.6f);
+	usbdacvals[0] = (uint32_t)((Mobv.iA+5.0f)*6553.6f);
+	usbdacvals[1] = (uint32_t)((Mobv.iB+5.0f)*6553.6f);
+	usbdacvals[2] = (uint32_t)((Mobv.iC+5.0f)*6553.6f);
 	usbdacvals[3] = tA;
 	usbdacvals[4] = tB;
 	usbdacvals[5] = tC;
@@ -622,8 +729,8 @@ void User_PWMTIM_IRQ(void)
 		usbdacvals[10] = (g_rampAngle - usbdacvals[8]);
 	else
 		usbdacvals[10] = (usbdacvals[8] - g_rampAngle);
-	usbdacvals[11] = (uint32_t)((park_d+5.0f)*6553.6f);
-	usbdacvals[12] = (uint32_t)((park_q+5.0f)*6553.6f);
+	usbdacvals[11] = (uint32_t)((Mfoc.Park_D+5.0f)*6553.6f);
+	usbdacvals[12] = (uint32_t)((Mfoc.Park_Q+5.0f)*6553.6f);
 	usbdacvals[13] = (uint32_t)((Id_Filt.Y + 5.0f)*6553.6f);
 	usbdacvals[14] = (uint32_t)((Iq_Filt.Y + 5.0f)*6553.6f);
 	//usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
@@ -631,7 +738,26 @@ void User_PWMTIM_IRQ(void)
 	usbdacvals[15] = g_errorCode;
 	usbdacvals[16] = adcRaw(ADC_VREFINT);
 
+	if(g_MainFlags & MAINFLAG_DUMPRECORD)
+	{
+		if(DumpLoc < 32768)
+		{
+			DumpData[DumpLoc] = usbdacvals[0];
+			DumpData[DumpLoc+1] = usbdacvals[1];
+			DumpData[DumpLoc+2] = usbdacvals[2];
+			DumpData[DumpLoc+3] = usbdacvals[8];
+			DumpLoc+=4;
+		}
+		else
+		{
+			DumpLoc = 0;
+			g_MainFlags &= ~(MAINFLAG_DUMPRECORD); // Stop recording
+			g_MainFlags |= MAINFLAG_DUMPDATAON; // Start pushing data via USB serial port
+		}
+	}
+
 	RLED_PORT->BSRR = (1 << (RLED_PIN+16));
+
 }
 
 // Simple application timer (1kHz)
@@ -697,9 +823,9 @@ void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)
 void MAIN_SetUSBDebugging(uint8_t on_or_off)
 {
 	if(on_or_off == 0)
-		data_out = 0;
+		g_MainFlags &= ~(MAINFLAG_SERIALDATAON);
 	else
-		data_out = 1;
+		g_MainFlags |= MAINFLAG_SERIALDATAON;
 }
 
 void MAIN_SetRampSpeed(uint32_t newspeed)
@@ -766,6 +892,12 @@ void MAIN_SoftReset(uint8_t restartInBootloader)
 
 	// Trigger a software reset
 	NVIC_SystemReset();
+}
+
+void MAIN_DumpRecord(void)
+{
+	if(!(g_MainFlags & MAINFLAG_DUMPDATAON))
+		g_MainFlags |= MAINFLAG_DUMPRECORD;
 }
 
 /* Convert num into ASCII in base 10
