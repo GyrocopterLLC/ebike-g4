@@ -146,6 +146,7 @@ configure_system_clock(void)
 	RCC->CR &= ~(RCC_CR_PLLON);
 
 	// Enable HSE Oscillator and activate PLL with HSE as source
+	RCC->CR |= RCC_CR_HSEBYP; // Enable bypass mode: using an external clock, not a crystal
 	RCC->CR |= RCC_CR_HSEON; // Turn on HSE
 	// Wait for HSE to turn on
 	timeout = 20000;

@@ -2,6 +2,22 @@
 #define __PINCONFIG_H
 
 // GPIOs
+#define PIN0		0x0001
+#define PIN1		0x0002
+#define PIN2		0x0004
+#define PIN3		0x0008
+#define PIN4		0x0010
+#define PIN5		0x0020
+#define PIN6		0x0040
+#define PIN7		0x0080
+#define PIN8		0x0100
+#define PIN9		0x0200
+#define PIN10		0x0400
+#define PIN11		0x0800
+#define PIN12		0x1000
+#define PIN13		0x2000
+#define PIN14		0x4000
+#define PIN15		0x8000
 
 // User I/O
 #define GLED_PIN	9
@@ -42,5 +58,11 @@
 #define BMS_UART_PORT	GPIOA
 #define BMS_UART_AF		((uint8_t)7)
 
+// Unused Pins
+#define PORTA_UNUSED	(PIN0 | PIN1 | PIN6 | PIN7 | PIN15)
+#define PORTB_UNUSED	(PIN2 | PIN3 | PIN4 | PIN5 | PIN6 | PIN7 | PIN8 | PIN9)
+#define PORTC_UNUSED	(PIN4 | PIN10 | PIN11 | PIN13 | PIN14 | PIN15)
+#define PORTD_UNUSED	(PIN2)
+#define PORTH_UNUSED	(PIN1)
 
 #endif //__PINCONFIG_H

@@ -50,7 +50,7 @@ typedef enum
 								"RA",\
 								"HA",\
 								"HS",\
-								"HD",\
+								"VS",\
 								"ID",\
 								"IQ",\
 								"TD",\

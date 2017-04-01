@@ -11,6 +11,9 @@
 // Motor parameters
 #define MOTOR_POLEPAIRS		23
 
+// Throttle setting
+#define FULLSCALE_THROTTLE	(5.0f) // Amps
+
 // Angle definitions - integer
 // This set of defines are the integer values of angles
 // as defined for a 16 bit unsigned integer.

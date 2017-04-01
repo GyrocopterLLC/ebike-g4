@@ -6,6 +6,7 @@
  */
 
 #include "gpio.h"
+#include "pinconfig.h"
 
 /**
  * @brief  Enables the clock in the RCC for this GPIO port.
@@ -90,4 +91,73 @@ void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af)
 		gpio->AFR[0] &= ~((0x0F) << (pin*4));
 		gpio->AFR[0] |= (af << (pin*4));
 	}
+}
+// Enables the pulldown resistor on all usused pins
+void GPIO_Pulldown_Unused(void)
+{
+	uint32_t temp;
+	// PortA
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+	temp = GPIOA->PUPDR;
+	for(uint8_t i = 0; i < 16; i++)
+	{
+		if(PORTA_UNUSED & (1 << i))
+		{
+			temp &= ~(GPIO_PUPDR_PUPDR0 << (2*i));
+			temp |= (GPIO_PUPDR_PUPDR0_1 << (2*i));
+		}
+	}
+	GPIOA->PUPDR = temp;
+
+	// PortB
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+	temp = GPIOB->PUPDR;
+	for(uint8_t i = 0; i < 16; i++)
+	{
+		if(PORTB_UNUSED & (1 << i))
+		{
+			temp &= ~(GPIO_PUPDR_PUPDR0 << (2*i));
+			temp |= (GPIO_PUPDR_PUPDR0_1 << (2*i));
+		}
+	}
+	GPIOB->PUPDR = temp;
+
+	// PortC
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN;
+	temp = GPIOC->PUPDR;
+	for(uint8_t i = 0; i < 16; i++)
+	{
+		if(PORTC_UNUSED & (1 << i))
+		{
+			temp &= ~(GPIO_PUPDR_PUPDR0 << (2*i));
+			temp |= (GPIO_PUPDR_PUPDR0_1 << (2*i));
+		}
+	}
+	GPIOC->PUPDR = temp;
+
+	// PortD
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIODEN;
+	temp = GPIOD->PUPDR;
+	for(uint8_t i = 0; i < 16; i++)
+	{
+		if(PORTD_UNUSED & (1 << i))
+		{
+			temp &= ~(GPIO_PUPDR_PUPDR0 << (2*i));
+			temp |= (GPIO_PUPDR_PUPDR0_1 << (2*i));
+		}
+	}
+	GPIOD->PUPDR = temp;
+
+	// PortH
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOHEN;
+	temp = GPIOH->PUPDR;
+	for(uint8_t i = 0; i < 16; i++)
+	{
+		if(PORTH_UNUSED & (1 << i))
+		{
+			temp &= ~(GPIO_PUPDR_PUPDR0 << (2*i));
+			temp |= (GPIO_PUPDR_PUPDR0_1 << (2*i));
+		}
+	}
+	GPIOH->PUPDR = temp;
 }

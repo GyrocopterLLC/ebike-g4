@@ -60,7 +60,7 @@ uint16_t DumpLoc;
  * 7 - RampAngle
  * 8 - HallAngle
  * 9 - HallSpeed
- * 10 - HallDifference
+ * 10 - Vbus
  * 11 - Id
  * 12 - Iq
  * 13 - Td
@@ -188,6 +188,9 @@ int main(void)
 	BootloaderStartup(); // Load bootloader if certain conditions are met
 	// Also initializes the user pushbutton
 
+	// Disable (turn on gpio pulldown resistor) unused pins
+	GPIO_Pulldown_Unused();
+
 	/* Configure the system clock to 168 MHz */
 	SystemClock_Config();
 
@@ -244,7 +247,7 @@ int main(void)
 	usbdacassignments[1] = 2; // Ib
 	usbdacassignments[2] = 3; // Ic
 	usbdacassignments[3] = 7; // Throttle
-	usbdacassignments[4] = 9; // Hall angle
+	usbdacassignments[4] = 16; // Error code
 	DumpLoc = 0;
 
 	/* Set defaults for D, Q current filters */
@@ -255,8 +258,8 @@ int main(void)
 	WDT_init();
 
 	// Testing only!
-	//Mctrl.state = Motor_Startup;
 	Mctrl.state = Motor_Startup;
+	//Mctrl.state = Motor_AtSpeed;
 	Mfoc.Id_PID = &Id_control;
 	Mfoc.Iq_PID = &Iq_control;
 
@@ -273,6 +276,40 @@ int main(void)
 			// Echo it
 			VCP_Write(&byte, 1);
 			// Add it to the VCP buffer
+			if(byte == '?')
+			{
+				// Quick debugging of reset source
+				if(RCC->CSR & RCC_CSR_LPWRRSTF)
+				{
+					VCP_Write("Low-power reset\r\n",17);
+				}
+				if(RCC->CSR & RCC_CSR_WWDGRSTF)
+				{
+					VCP_Write("Window watchdog reset\r\n",23);
+				}
+				if(RCC->CSR & RCC_CSR_WDGRSTF)
+				{
+					VCP_Write("Independent watchdog reset\r\n",28);
+				}
+				if(RCC->CSR & RCC_CSR_SFTRSTF)
+				{
+					VCP_Write("Software reset\r\n",16);
+				}
+				if(RCC->CSR & RCC_CSR_PORRSTF)
+				{
+					VCP_Write("Power on reset\r\n",16);
+				}
+				if(RCC->CSR & RCC_CSR_PADRSTF)
+				{
+					VCP_Write("Pin reset\r\n",11);
+				}
+				if(RCC->CSR & RCC_CSR_BORRSTF)
+				{
+					VCP_Write("Brown out reset\r\n",17);
+				}
+				RCC->CSR |= RCC_CSR_RMVF;
+				continue;
+			}
 			vcp_buf_len = strlen(vcp_buffer);
 			if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
 			{
@@ -715,9 +752,10 @@ void User_PWMTIM_IRQ(void)
 	DAC->DHR12L2 = (uint16_t)(fangle*65536.0f);
 #endif
 	// USB Debugging outputs
-	usbdacvals[0] = (uint32_t)((Mobv.iA+5.0f)*6553.6f);
-	usbdacvals[1] = (uint32_t)((Mobv.iB+5.0f)*6553.6f);
-	usbdacvals[2] = (uint32_t)((Mobv.iC+5.0f)*6553.6f);
+	// Current is scaled from +- 20 amps to 0->65536 (0 = -20A, 65536 = +20A)
+	usbdacvals[0] = (uint32_t)((Mobv.iA+20.0f)*1638.4f);
+	usbdacvals[1] = (uint32_t)((Mobv.iB+20.0f)*1638.4f);
+	usbdacvals[2] = (uint32_t)((Mobv.iC+20.0f)*1638.4f);
 	usbdacvals[3] = tA;
 	usbdacvals[4] = tB;
 	usbdacvals[5] = tC;
@@ -725,14 +763,11 @@ void User_PWMTIM_IRQ(void)
 	usbdacvals[7] = g_rampAngle;
 	usbdacvals[8] = HallSensor_Get_Angle();
 	usbdacvals[9] = HallSensor_Get_Speed();
-	if(g_rampAngle > usbdacvals[8])
-		usbdacvals[10] = (g_rampAngle - usbdacvals[8]);
-	else
-		usbdacvals[10] = (usbdacvals[8] - g_rampAngle);
-	usbdacvals[11] = (uint32_t)((Mfoc.Park_D+5.0f)*6553.6f);
-	usbdacvals[12] = (uint32_t)((Mfoc.Park_Q+5.0f)*6553.6f);
-	usbdacvals[13] = (uint32_t)((Id_Filt.Y + 5.0f)*6553.6f);
-	usbdacvals[14] = (uint32_t)((Iq_Filt.Y + 5.0f)*6553.6f);
+	usbdacvals[10] = (uint32_t)(adcGetVbus()*655.36f); // Bus voltage scaled to 0->100V
+	usbdacvals[11] = (uint32_t)((Mfoc.Park_D+20.0f)*1638.4f);
+	usbdacvals[12] = (uint32_t)((Mfoc.Park_Q+20.0f)*1638.4f);
+	usbdacvals[13] = (uint32_t)((Id_Filt.Y + 20.0f)*1638.4f);
+	usbdacvals[14] = (uint32_t)((Iq_Filt.Y + 20.0f)*1638.4f);
 	//usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
 	//usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
 	usbdacvals[15] = g_errorCode;
