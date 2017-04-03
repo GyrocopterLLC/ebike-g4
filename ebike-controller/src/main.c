@@ -11,6 +11,7 @@
 
 #define SERIAL_DATA_RATE			(10)
 #define SERIAL_DUMP_RATE			(5)
+#define TEMP_CONVERSION_RATE		(100)
 
 #define MAIN_STARTUP_SPEED_MAX		(65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT	(256)
@@ -20,6 +21,7 @@
 #define MAINFLAG_DUMPRECORD			((uint32_t)0x00000004)
 #define MAINFLAG_DUMPDATAPRINT		((uint32_t)0x00000008)
 #define MAINFLAG_DUMPDATAON			((uint32_t)0x00000010)
+#define MAINFLAG_CONVERTTEMPERATURE	((uint32_t)0x00000020)
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -47,6 +49,8 @@ FOC_StateVariables Mfoc;
 
 uint16_t DumpData[32768] __attribute__((section(".bss_CCMRAM")));
 uint16_t DumpLoc;
+
+float g_FetTemp;
 
 /** Debugging outputs **
  *
@@ -351,6 +355,11 @@ int main(void)
 			// Change data output state
 			g_MainFlags ^= MAINFLAG_SERIALDATAON;
 		}
+		if(g_MainFlags & MAINFLAG_CONVERTTEMPERATURE)
+		{
+			g_MainFlags &= ~MAINFLAG_CONVERTTEMPERATURE;
+			g_FetTemp = adcGetTempDegC();
+		}
 		if(g_MainFlags & MAINFLAG_SERIALDATAON)
 		{
 			if(g_MainFlags & MAINFLAG_SERIALDATAPRINT)
@@ -574,6 +583,10 @@ void SYSTICK_IRQHandler(void)
 	if((g_MainSysTick % SERIAL_DUMP_RATE) == 0)
 	{
 		g_MainFlags |= MAINFLAG_DUMPDATAPRINT;
+	}
+	if((g_MainSysTick % TEMP_CONVERSION_RATE) == 0)
+	{
+		g_MainFlags |= MAINFLAG_CONVERTTEMPERATURE;
 	}
 }
 

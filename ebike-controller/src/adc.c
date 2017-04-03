@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "main.h"
 #include "project_parameters.h"
+#include <math.h>
 
 uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[NUM_CUR_CH];
@@ -218,4 +219,18 @@ float adcGetVref(void)
 void adcSetNull(uint8_t which_cur, uint16_t nullVal)
 {
 	adc_current_null[which_cur] = nullVal;
+}
+
+float adcGetTempDegC(void)
+{
+	// Convert 12-bit to float
+	float temp = ((float)adc_conv[ADC_TEMP])/MAXCOUNTF;
+	// Calculate resistance
+	temp = TEMP_FIXED_RESISTOR / (temp) - TEMP_FIXED_RESISTOR;
+	// Convert to Kelvins using thermistor equation
+	temp = (1.0f/298.15f) + log(temp / THERM_R25) / THERM_B_VALUE;
+	temp = 1.0f / temp;
+	temp -= 273.15f; // Convert from K to °C
+
+	return temp;
 }

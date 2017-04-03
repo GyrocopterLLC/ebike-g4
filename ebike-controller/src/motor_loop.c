@@ -1,6 +1,8 @@
 #include "motor_loop.h"
 #include "project_parameters.h"
 
+uint8_t lastHallState = 0;
+
 void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 		FOC_StateVariables* foc, Motor_PWMDuties* duty)
 {
@@ -25,57 +27,59 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 		//		1 -> +C, -B
 		// 		5 -> +A, -B
 		//		4 -> +A, -C
-		switch(obv->HallState)
+		duty->tA = cntl->ThrottleCommand;
+		duty->tB = cntl->ThrottleCommand;
+		duty->tC = cntl->ThrottleCommand;
+		if(lastHallState != obv->HallState)
 		{
-			// Set duty cycles - only one phase is PWM'd. Throttle command is directly
-			// sent as power demand (in form of PWM duty cycle)
-			// Enable the "participating" phases. One phase pwm, one phase low-side on,
-			// and the third phase completely turned off
-			// TODO: These should only change when Hall change happens
-		case 6:
-			duty->tB = cntl->ThrottleCommand;
-			PHASE_A_OFF();
-			PHASE_C_LOW();
-			PHASE_B_PWM();
-			break;
-		case 2:
-			duty->tB = cntl->ThrottleCommand;
-			PHASE_C_OFF();
-			PHASE_A_LOW();
-			PHASE_B_PWM();
-			break;
-		case 3:
-			duty->tC = cntl->ThrottleCommand;
-			PHASE_B_OFF();
-			PHASE_A_LOW();
-			PHASE_C_PWM();
-			break;
-		case 1:
-			duty->tC = cntl->ThrottleCommand;
-			PHASE_A_OFF();
-			PHASE_B_LOW();
-			PHASE_C_PWM();
-			break;
-		case 5:
-			duty->tA = cntl->ThrottleCommand;
-			PHASE_C_OFF();
-			PHASE_B_LOW();
-			PHASE_A_PWM();
-			break;
-		case 4:
-			duty->tA = cntl->ThrottleCommand;
-			PHASE_B_OFF();
-			PHASE_C_LOW();
-			PHASE_A_PWM();
-			break;
-		default:
-			// Oh shit damage control
-			cntl->state = Motor_Fault;
-			duty->tA = 0.0f;
-			duty->tB = 0.0f;
-			duty->tC = 0.0f;
-			PWM_MotorOFF();
-			break;
+			lastHallState = obv->HallState;
+
+			switch(obv->HallState)
+			{
+				// Set duty cycles - only one phase is PWM'd. Throttle command is directly
+				// sent as power demand (in form of PWM duty cycle)
+				// Enable the "participating" phases. One phase pwm, one phase low-side on,
+				// and the third phase completely turned off
+				// TODO: These should only change when Hall change happens
+			case 6:
+				PHASE_A_OFF();
+				PHASE_C_LOW();
+				PHASE_B_PWM();
+				break;
+			case 2:
+				PHASE_C_OFF();
+				PHASE_A_LOW();
+				PHASE_B_PWM();
+				break;
+			case 3:
+				PHASE_B_OFF();
+				PHASE_A_LOW();
+				PHASE_C_PWM();
+				break;
+			case 1:
+				PHASE_A_OFF();
+				PHASE_B_LOW();
+				PHASE_C_PWM();
+				break;
+			case 5:
+				PHASE_C_OFF();
+				PHASE_B_LOW();
+				PHASE_A_PWM();
+				break;
+			case 4:
+				PHASE_B_OFF();
+				PHASE_C_LOW();
+				PHASE_A_PWM();
+				break;
+			default:
+				// Oh shit damage control
+				cntl->state = Motor_Fault;
+				duty->tA = 0.0f;
+				duty->tB = 0.0f;
+				duty->tC = 0.0f;
+				PWM_MotorOFF();
+				break;
+			}
 		}
 		break;
 	case Motor_AtSpeed:

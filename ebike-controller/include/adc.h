@@ -49,6 +49,10 @@
 #define INAGAIN_INV		(0.02f) // Inverse of 50x gain (INA213 current amplifier)
 #define VBUS_RESISTOR_RATIO	(33.36246f) // Inverse of resistor gain (3.09 / 103.09)
 
+#define TEMP_FIXED_RESISTOR	(10000.0f)
+#define THERM_R25			(10000.0f)
+#define THERM_B_VALUE		(3435.0f)
+
 #define ADC_HACKY_OFFSET		(15) // The zero-current points shift by this amount when motor is running
 
 typedef enum
@@ -72,6 +76,7 @@ float adcGetThrottle(void);
 float adcGetVbus(void);
 float adcGetVref(void);
 void adcSetNull(uint8_t which_cur, uint16_t nullVal);
+float adcGetTempDegC(void);
 
 #if defined(USING_OLD_ADC_VER)
 void ADC_Init_OldVer(void);
