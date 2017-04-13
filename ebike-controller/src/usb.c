@@ -158,16 +158,25 @@ void USB_Init(void)
 	}
 
 
+	// Buffer settings:
+	// Addr(0): RX buffer, size = RX_FIFO_BUF_SIZE
+	// Addr(RX_FIFO_BUF_SIZE): Tx EP0 buffer, size = CMD_FIFO_BUF_SIZE
+	// Addr(RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE): Tx EP1 buffer, size = TX_FIFO_BUF_SIZE
+	// For example...
+	// Addr(0) = Rx buffer, size = 512 (0 -> 511)
+	// Addr(512) = Tx EP0 buffer, size = 128 (512 -> 639)
+	// Addr(640) = Tx EP1 buffer, size = 512 (640 -> 1151)
+
 	// Set RX (OUT packets) FIFO buffer size
 	USB_CORE->GRXFSIZ = RX_FIFO_BUF_SIZE;
 
 	// Set TX (IN packets) FIFO buffer size for Endpoint 0
 	// Start address is equal to RX buffer size
-	USB_CORE->DIEPTXF0_HNPTXFSIZ = (TX_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE);
+	USB_CORE->DIEPTXF0_HNPTXFSIZ = (CMD_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE);
 	// Set TX (IN packets) FIFO buffer size for Endpoint 1
 	// Start address is offset by RX buffer and TX EP0 buffer
-	USB_CORE->DIEPTXF[0] = (TX_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE + TX_FIFO_BUF_SIZE);
-	USB_CORE->DIEPTXF[1] = 0;
+	USB_CORE->DIEPTXF[0] = (TX_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE);
+	USB_CORE->DIEPTXF[1] = (16 << 16) | (TX_FIFO_BUF_SIZE + RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE);
 	USB_CORE->DIEPTXF[2] = 0;
 
 	USB_InEPs[0].mps = USB_MAX_EP0_SIZE;
