@@ -7,8 +7,10 @@
 
 #include "throttle.h"
 
-Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
+Biquad_Float_Type Throttle_filt=THROTTLE_LPF_DEFAULTS;
 volatile Throttle_Type sThrottle=THROTTLE_DEFAULTS;
+// Last output value, used for rate limiting
+float prev_output = 0.0f;
 
 float throttle_process(float raw_voltage)
 {
@@ -76,6 +78,7 @@ float throttle_process(float raw_voltage)
 		}
 		// Regular throttle processing
 		temp_cmd = (Throttle_filt.Y - sThrottle.throttle_min) * (sThrottle.throttle_scale_factor);
+		// Clip at 0% and 100%
 		if(temp_cmd < 0.0f) temp_cmd = 0.0f;
 		if(temp_cmd > 1.0f) temp_cmd = 1.0f;
 		if(sThrottle.throttle_state)
@@ -99,6 +102,13 @@ float throttle_process(float raw_voltage)
 				temp_cmd = 0.0f;
 			}
 		}
+		// Rate limit (upward only! no limit on how fast the throttle can fall)
+      float delta = temp_cmd - prev_output;
+      if(delta > THROTTLE_SLEW_RATE)
+      {
+        temp_cmd = prev_output + THROTTLE_SLEW_RATE;
+      }
+		prev_output = temp_cmd;
 		return temp_cmd;
 	}
 }
