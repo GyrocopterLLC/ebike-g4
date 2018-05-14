@@ -50,11 +50,19 @@ void dfsl_pid_defaults(PID_Type* pid)
 	pid->Out = 0;
 	pid->Up1 = 0;
 }
+void dfsl_pid_reset(PID_Type* pid)
+{
+  pid->Err = 0;
+  pid->Ui = 0;
+  pid->SatErr = 0;
+  pid->Out = 0;
+  pid->Up1 = 0;
+}
 void dfsl_pid_defaultsf(PID_Float_Type* pid)
 {
 	pid->Err = 0.0f;
 	pid->Ui = 0.0f;
-	pid->Kp = 0.1f;
+	pid->Kp = 0.01f;
 	pid->Ki = 0.001f;
 	pid->Kd = 0.0f;
 	pid->Kc = 0.05f;
@@ -63,6 +71,14 @@ void dfsl_pid_defaultsf(PID_Float_Type* pid)
 	pid->SatErr = 0.0f;
 	pid->Out = 0.0f;
 	pid->Up1 = 0.0f;
+}
+void dfsl_pid_resetf(PID_Float_Type* pid)
+{
+  pid->Err = 0.0f;
+  pid->Ui = 0.0f;
+  pid->SatErr = 0.0f;
+  pid->Out = 0.0f;
+  pid->Up1 = 0.0f;
 }
 
 /**

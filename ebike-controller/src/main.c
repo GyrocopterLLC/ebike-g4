@@ -10,7 +10,7 @@
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 
 #define SERIAL_DATA_RATE			(10)
-#define SERIAL_DUMP_RATE			(5)
+#define SERIAL_DUMP_RATE			(2)
 #define TEMP_CONVERSION_RATE		(100)
 
 #define MAIN_STARTUP_SPEED_MAX		(65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
@@ -75,7 +75,11 @@ float g_FetTemp;
  */
 #define MAX_USB_VALS	17
 #define MAX_USB_OUTPUTS	5
-uint32_t usbdacvals[MAX_USB_VALS];
+#if USB_MONITOR_FIXED_POINT
+  uint32_t usbdacvals[MAX_USB_VALS];
+#else
+  float usbdacvals[MAX_USB_VALS];
+#endif
 uint8_t usbdacassignments[MAX_USB_OUTPUTS];
 char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 
@@ -255,8 +259,8 @@ int main(void)
 	DumpLoc = 0;
 
 	/* Set defaults for D, Q current filters */
-	dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 500.0f, 0.707f);
-	dfsl_biquadcalc_lpf(&Iq_Filt, 20000.0f, 500.0f, 0.707f);
+	dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 2000.0f, 0.707f);
+	dfsl_biquadcalc_lpf(&Iq_Filt, 20000.0f, 2000.0f, 0.707f);
 
 	/* Initialize watchdog timer */
 	WDT_init();
@@ -375,7 +379,11 @@ int main(void)
 					else
 					{
 						//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
-						itoa(string, (int)usbdacvals[usbdacassignments[i]-1]);
+#if USB_MONITOR_FIXED_POINT
+						_itoa(string, (int)usbdacvals[usbdacassignments[i]-1], 0);
+#else
+						_ftoa(string, usbdacvals[usbdacassignments[i]-1], 3);
+#endif
 						strcat(usbstring,string);
 						strcat(usbstring," ");
 					}
@@ -396,7 +404,7 @@ int main(void)
 				usbstring[0] = 0;
 				for(uint8_t i = 0; i < 4; i++)
 				{
-					itoa(string, (int)DumpData[DumpLoc+i]);
+					_itoa(string, (int)DumpData[DumpLoc+i], 0);
 					strcat(usbstring,string);
 					strcat(usbstring," ");
 				}
@@ -602,7 +610,7 @@ void User_PWMTIM_IRQ(void)
 {
 	// Debug: Blink RLED to show how much processor time is used
 	RLED_PORT->BSRR = (1 << RLED_PIN);
-#if 1
+#if 0
 	// Testing mode starts here
 	uint16_t tA, tB, tC;
 	Mobv.iA = adcGetCurrent(ADC_IA);
@@ -619,7 +627,7 @@ void User_PWMTIM_IRQ(void)
 		g_rampAngle -= g_rampInc;
 	}
 
-	Mobv.RotorAngle = ((float)HallSensor_Get_Angle())/65536.0f;
+	Mobv.RotorAngle = HallSensor_Get_Anglef();
 	Mobv.HallState = HallSensor_Get_State();
 	/*
 	Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
@@ -670,12 +678,11 @@ void User_PWMTIM_IRQ(void)
 	PWM_SetDuty(tA,tB,tC);
 #endif
 
-#if 0
+#if 1
 	// Regular mode below here
-	float fangle, ipark_a, ipark_b;
+	float ipark_a, ipark_b;
 	float tAf, tBf, tCf;
 	uint16_t tA, tB, tC;
-	float Ia, Ib, Ic;
 	float clarke_alpha, clarke_beta;
 	float park_d, park_q;
 
@@ -708,14 +715,20 @@ void User_PWMTIM_IRQ(void)
 	 */
 
 // **************** FORWARD PATH *****************
+  Mctrl.ThrottleCommand = Throttle_cmd;
 	// Read angle from Hall sensors
-	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
+  Mobv.RotorAngle = HallSensor_Get_Anglef();
+  Mobv.HallState = HallSensor_Get_State();
+//	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
 	// Feed to inverse Park
-	//dfsl_iparkf(Id_control.Out,Iq_control.Out,fangle,&ipark_a, &ipark_b);
-	dfsl_iparkf(0, Throttle_cmd, fangle, &ipark_a, &ipark_b);
+	dfsl_iparkf(Id_control.Out,Iq_control.Out,Mobv.RotorAngle,&ipark_a, &ipark_b);
+//	dfsl_iparkf(0, Throttle_cmd, Mobv.RotorAngle, &ipark_a, &ipark_b);
 	// Inverse Park outputs to space vector modulation, output three-phase waveforms
 	dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
 	// Convert from floats to 16-bit ints
+	Mpwm.tA = tAf;
+	Mpwm.tB = tBf;
+	Mpwm.tC = tCf;
 	tA = (uint16_t)(tAf*65535.0f);
 	tB = (uint16_t)(tBf*65535.0f);
 	tC = (uint16_t)(tCf*65535.0f);
@@ -737,11 +750,15 @@ void User_PWMTIM_IRQ(void)
 
 // **************** FEEDBACK PATH *****************
 	// Transform sensor readings
-	Ia = adcGetCurrent(ADC_IA);
-	Ib = adcGetCurrent(ADC_IB);
-	Ic = adcGetCurrent(ADC_IC);
-	dfsl_clarkef(Ia, Ib, &clarke_alpha, &clarke_beta);
-	dfsl_parkf(clarke_alpha,clarke_beta,fangle, &park_d, &park_q);
+
+  Mobv.iA = adcGetCurrent(ADC_IA);
+  Mobv.iB = adcGetCurrent(ADC_IB);
+  Mobv.iC = adcGetCurrent(ADC_IC);
+//	Ia = adcGetCurrent(ADC_IA);
+//	Ib = adcGetCurrent(ADC_IB);
+//	Ic = adcGetCurrent(ADC_IC);
+	dfsl_clarkef(Mobv.iA, Mobv.iB, &clarke_alpha, &clarke_beta);
+	dfsl_parkf(clarke_alpha,clarke_beta,Mobv.RotorAngle, &park_d, &park_q);
 	// Input feedbacks to the Id and Iq controllers
 	// Filter the currents
 	Id_Filt.X = park_d;
@@ -749,23 +766,29 @@ void User_PWMTIM_IRQ(void)
 	dfsl_biquadf(&Id_Filt);
 	dfsl_biquadf(&Iq_Filt);
 	// Pass filtered current to the PI(D)s
-	Id_control.Err = 0.0f - park_d;
-	Iq_control.Err = (3.0f)*Throttle_cmd - park_q;
-	//Id_control.Err = 0.0f - Id_Filt.Y;
-	//Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
+	Id_control.Err = 0.0f - Id_Filt.Y;
+	Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - Iq_Filt.Y;
+//	Id_control.Err = 0.0f - park_d;
+//	Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - park_q;
 	// Don't integrate unless the throttle is active
-	if(Throttle_cmd > 0.0f)
+	if(Mctrl.ThrottleCommand > 0.0f)
 	{
 		dfsl_pidf(&Id_control);
 		dfsl_pidf(&Iq_control);
 	}
+	else
+	{
+	  dfsl_pid_resetf(&Id_control);
+	  dfsl_pid_resetf(&Iq_control);
+	}
 
 	// DAC debugging outputs
 	DAC->DHR12L1 = g_rampAngle;
-	DAC->DHR12L2 = (uint16_t)(fangle*65536.0f);
+	DAC->DHR12L2 = (uint16_t)((Mobv.RotorAngle)*65536.0f);
 #endif
 	// USB Debugging outputs
 	// Current is scaled from +- 20 amps to 0->65536 (0 = -20A, 65536 = +20A)
+#if USB_MONITOR_FIXED_POINT
 	usbdacvals[0] = (uint32_t)((Mobv.iA+20.0f)*1638.4f);
 	usbdacvals[1] = (uint32_t)((Mobv.iB+20.0f)*1638.4f);
 	usbdacvals[2] = (uint32_t)((Mobv.iC+20.0f)*1638.4f);
@@ -785,15 +808,36 @@ void User_PWMTIM_IRQ(void)
 	//usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
 	usbdacvals[15] = g_errorCode;
 	usbdacvals[16] = adcRaw(ADC_VREFINT);
+#else
+  usbdacvals[0] = Mobv.iA;
+  usbdacvals[1] = Mobv.iB;
+  usbdacvals[2] = Mobv.iC;
+  usbdacvals[3] = Mpwm.tA;
+  usbdacvals[4] = Mpwm.tB;
+  usbdacvals[5] = Mpwm.tC;
+  usbdacvals[6] = Throttle_cmd;
+  usbdacvals[7] = ((float)g_rampAngle) / 65535.0f;
+  usbdacvals[8] = HallSensor_Get_Anglef();
+  usbdacvals[9] = HallSensor_Get_Speedf();
+  usbdacvals[10] = adcGetVbus();
+  usbdacvals[11] = Mfoc.Park_D;
+  usbdacvals[12] = Mfoc.Park_Q;
+  usbdacvals[13] = Id_Filt.Y;
+  usbdacvals[14] = Iq_Filt.Y;
+  //usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
+  //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
+  usbdacvals[15] = (float)(g_errorCode);
+  usbdacvals[16] = (float)(adcRaw(ADC_VREFINT));
+#endif
 
 	if(g_MainFlags & MAINFLAG_DUMPRECORD)
 	{
 		if(DumpLoc < 32768)
 		{
-			DumpData[DumpLoc] = usbdacvals[0];
-			DumpData[DumpLoc+1] = usbdacvals[1];
-			DumpData[DumpLoc+2] = usbdacvals[2];
-			DumpData[DumpLoc+3] = usbdacvals[8];
+			DumpData[DumpLoc] = (uint32_t)((Mobv.iA+20.0f)*1638.4f);
+			DumpData[DumpLoc+1] = (uint32_t)((Mobv.iB+20.0f)*1638.4f);
+			DumpData[DumpLoc+2] = (uint32_t)((Mobv.iC+20.0f)*1638.4f);
+			DumpData[DumpLoc+3] = HallSensor_Get_Angle();
 			DumpLoc+=4;
 		}
 		else
@@ -948,11 +992,73 @@ void MAIN_DumpRecord(void)
 		g_MainFlags |= MAINFLAG_DUMPRECORD;
 }
 
+void stringflip(char* buf, uint32_t len)
+{
+  uint32_t i = 0, j = len - 1;
+  char temp;
+  while (i < j)
+  {
+    temp = buf[i];
+    buf[i] = buf[j];
+    buf[j] = temp;
+    i++;
+    j--;
+  }
+}
+
+uint32_t _itoa(char* buf, int32_t num, uint32_t min_digits)
+{
+  uint32_t i = 0;
+  uint8_t is_neg = 0;
+  if(num < 0){
+    is_neg = 1;
+    num = -num;
+  }
+
+  do
+  {
+    buf[i++] = (num % 10) + '0';
+    num = num / 10;
+  }while(num);
+
+  while( i < min_digits)
+  {
+    buf[i++] = '0';
+  }
+  if(is_neg)
+  {
+    buf[i++] = '-';
+  }
+  stringflip(buf,i);
+  buf[i] = '\0';
+  return i;
+}
+
+uint32_t _ftoa(char* buf, float num, uint32_t precision)
+{
+  int32_t ipart;
+  float fpart;
+  uint32_t pos = 0;
+  // Grab the integer part
+  ipart = (int32_t)num;
+  pos = _itoa(buf, ipart, 0);
+  // and the fraction part
+  if(precision > 0)
+  {
+    fpart = num - ((float)ipart);
+    fpart = fabsf( fpart * powf( 10.0f, ((float)(precision))));
+    buf[pos++] = '.';
+    pos += _itoa(&(buf[pos]), ((int32_t)fpart), precision);
+  }
+  return pos;
+}
+
 /* Convert num into ASCII in base 10
  * Result in buf as a null terminated string
  * Returns number of digits in buf, including
  * negative sign when present.
  */
+/*
 uint32_t itoa(char* buf, int32_t num)
 {
 	char* going_out = buf;
@@ -990,6 +1096,7 @@ uint32_t itoa(char* buf, int32_t num)
 
 	return retval + is_neg;
 }
+*/
 
 void Delay(__IO uint32_t Delay)
 {

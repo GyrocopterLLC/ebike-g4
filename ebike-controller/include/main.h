@@ -31,6 +31,7 @@
 #include "wdt.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -47,7 +48,10 @@ typedef enum
 #define MAIN_ERR_HALL_STATE		(0x00000800)
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-uint32_t itoa(char* buf, int32_t num);
+//uint32_t itoa(char* buf, int32_t num);
+void stringflip(char* buf, uint32_t len);
+uint32_t _itoa(char* buf, int32_t num, uint32_t min_digits);
+uint32_t _ftoa(char* buf, float num, uint32_t precision);
 void SYSTICK_IRQHandler(void);
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);

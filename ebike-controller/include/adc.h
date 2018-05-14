@@ -45,7 +45,7 @@
 #define VREFINTDEFAULT	(1.21f) // From the STM32F4 spec sheet
 #define VREFINTCAL_MIN	(1400) // Approximately 1.13V. Spec sheet minimum is 1.18V
 #define VREFINTCAL_MAX	(1600) // Approximately 1.29V. Spec sheet minimum is 1.24V
-#define RSHUNT_INV		(1000.0f) // Inverse of 0.001 Ohms
+#define RSHUNT_INV		(200.0f) // Inverse of 0.001 Ohms
 #define INAGAIN_INV		(0.02f) // Inverse of 50x gain (INA213 current amplifier)
 #define VBUS_RESISTOR_RATIO	(33.36246f) // Inverse of resistor gain (3.09 / 103.09)
 
@@ -53,7 +53,8 @@
 #define THERM_R25			(10000.0f)
 #define THERM_B_VALUE		(3435.0f)
 
-#define ADC_HACKY_OFFSET		(15) // The zero-current points shift by this amount when motor is running
+//#define ADC_HACKY_OFFSET		(15) // The zero-current points shift by this amount when motor is running
+#define ADC_HACKY_OFFSET (0) // Seems to working okay with the .005 resistor...
 
 typedef enum
 {

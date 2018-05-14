@@ -78,10 +78,10 @@
 // This table equates the 6 valid Hall states (1 - 6) with
 // motor rotation angles. The Hall state is assumed to be
 // equivalent to the angle that is halfway between state
-// changes. Since the state changes are spaced every 60°
+// changes. Since the state changes are spaced every 60Â°
 // around the motor, and the transitions start at zero,
-// the halfway points are at 30°, 90°, 150°, 210°, 270°,
-// and 330°.
+// the halfway points are at 30Â°, 90Â°, 150Â°, 210Â°, 270Â°,
+// and 330Â°.
 // Angle associations per state are...
 //			330->030: State 1
 //			030->090: State 5

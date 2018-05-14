@@ -89,7 +89,9 @@ typedef struct
 uint8_t HallSensor_Get_State(void);
 void HallSensor_Inc_Angle(void);
 uint16_t HallSensor_Get_Angle(void);
+float HallSensor_Get_Anglef(void);
 uint32_t HallSensor_Get_Speed(void);
+float HallSensor_Get_Speedf(void);
 uint8_t HallSensor_Get_Direction(void);
 void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);

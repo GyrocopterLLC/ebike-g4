@@ -14,6 +14,9 @@
 /*################### Private variables #####################################*/
 
 HallSensor_HandleTypeDef HallSensor;
+#ifdef TESTING_2X
+HallSensor_HandleTypeDef HallSensor_2x;
+#endif
 
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
@@ -42,15 +45,19 @@ uint8_t HallSensor_Get_State(void)
 
 /** HallSensor_Inc_Angle
  * Speed and timing info, plus hall state at the last captured edge,
- * are used to interpolate the angle within a 60° sector.
+ * are used to interpolate the angle within a 60Â° sector.
  */
 void HallSensor_Inc_Angle(void)
 {
 	// Increment the angle by the pre-calculated increment amount
 	if(HallSensor.RotationDirection == HALL_ROT_FORWARD)
+	{
 		HallSensor.Angle += HallSensor.AngleIncrement;
+	}
 	else if(HallSensor.RotationDirection == HALL_ROT_REVERSE)
+	{
 		HallSensor.Angle -= HallSensor.AngleIncrement;
+	}
 	// Don't do anything if rotation is unknown.
 #if defined(USE_FLOATING_POINT)
 	// Wraparound for floating point. Fixed point simply overflows the 16 bit variable.
@@ -81,6 +88,16 @@ uint16_t HallSensor_Get_Angle(void)
 	return HallSensor.Angle;
 #endif
 }
+
+/** HallSensor_Get_Angle
+ * Retrieves the motor electrical angle as a function of the Hall state.
+ * Returns the floating point representation (0.0 -> 1.0)
+ */
+float HallSensor_Get_Anglef(void)
+{
+  return HallSensor.Angle;
+}
+
 /** HallSensor_Get_Speed
  * Returns the electrical speed in Hz in the form Q16.16 (32 bit number, where the
  * least significant 16 bits are fractional).
@@ -92,6 +109,14 @@ uint32_t HallSensor_Get_Speed(void)
 #else
 	return HallSensor.Speed;
 #endif
+}
+
+/** HallSensor_Get_Speed
+ * Returns the electrical speed in Hz as a floating point value.
+ */
+float HallSensor_Get_Speedf(void)
+{
+  return HallSensor.Speed;
 }
 
 uint8_t HallSensor_Get_Direction(void)
@@ -163,6 +188,15 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 	HallSensor.OverflowCount = 0;
 	HallSensor.Status |= HALL_STOPPED;
 	HallSensor.CurrentState = 0;
+#ifdef TESTING_2X
+  HallSensor_2x.Prescaler = HALL_PSC_MAX;
+  HallSensor_2x.Status = 0;
+  HallSensor_2x.Speed = 0;
+  HallSensor_2x.CallingFrequency = callingFrequency;
+  HallSensor_2x.OverflowCount = 0;
+  HallSensor_2x.Status |= HALL_STOPPED;
+  HallSensor_2x.CurrentState = 0;
+#endif
 
 	// Initialization for the Hall state measuring method.
 	// Timer starts, triggered by Hall_Timer Capture, which then repeatedly moves
@@ -197,6 +231,11 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency)
 	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_A)) != 0 ? 1 : 0;
 	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_B)) != 0 ? 2 : 0;
 	HallSensor.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_C)) != 0 ? 4 : 0;
+#ifdef TESTING_2X
+  HallSensor_2x.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_A)) != 0 ? 1 : 0;
+  HallSensor_2x.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_B)) != 0 ? 2 : 0;
+  HallSensor_2x.CurrentState += (HALL_PORT->IDR & (1 << HALL_PIN_C)) != 0 ? 4 : 0;
+#endif
 }
 
 /** HallSensor_CalcSpeed
@@ -214,6 +253,10 @@ static void HallSensor_CalcSpeed(void)
 #if defined(USE_FLOATING_POINT)
 	HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
 	HallSensor.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+#ifdef TESTING_2X
+	HallSensor_2x.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
+  HallSensor_2x.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+#endif
 #else
 
 	uint32_t freq = ((uint32_t)HALL_TIMER_INPUT_CLOCK) << 4; // Clock input frequency in (Hz * 2^4)
@@ -260,6 +303,23 @@ void HallSensor_UpdateCallback(void)
 		HallSensor.Status |= HALL_STOPPED;
 		HallSensor.Prescaler = HALL_PSC_MAX;
 		HALL_TIMER->PSC = HALL_PSC_MAX;
+
+#ifdef TESTING_2X
+	  HallSensor_2x.OverflowCount++;
+	  if(HallSensor_2x.OverflowCount >= HALL_MAX_OVERFLOWS)
+	  {
+	    // Limit overflow counter
+	    HallSensor_2x.OverflowCount = HALL_MAX_OVERFLOWS;
+	    // Set speed to zero - stopped motor
+	#if defined(USE_FLOATING_POINT)
+	    HallSensor_2x.Speed = 0.0f;
+	    HallSensor_2x.AngleIncrement = 0.0f;
+	#else
+	    HallSensor_2x.Speed = 0;
+	    HallSensor_2x.AngleIncrement = 0;
+	#endif
+	    HallSensor_2x.Status |= HALL_STOPPED;
+#endif
 	}
 }
 
@@ -290,9 +350,9 @@ void HallSensor_CaptureCallback(void)
 	*/
 	// Update the angle - just encountered a 60deg marker (the Hall state change)
 	// If we're rotating forward, the actual angle will be at the beginning of the state.
-	// For example, if we entered State 5 (0->60°), we will be at 0°. Since State 5
-	// is defined as the middle of its range (30°), we need to subtract 30°. In the
-	// reverse rotation case, we would instead add 30°. If we can't trust which way
+	// For example, if we entered State 5 (0->60Â°), we will be at 0Â°. Since State 5
+	// is defined as the middle of its range (30Â°), we need to subtract 30Â°. In the
+	// reverse rotation case, we would instead add 30Â°. If we can't trust which way
 	// the motor is turning, just choose the middle of the range (don't add or subtract
 	// anything).
 #if defined(USE_FLOATING_POINT)
