@@ -93,6 +93,15 @@ float HallSensor_Get_Anglef(void);
 uint32_t HallSensor_Get_Speed(void);
 float HallSensor_Get_Speedf(void);
 uint8_t HallSensor_Get_Direction(void);
+#ifdef TESTING_2X
+uint8_t HallSensor2_Get_State(void);
+void HallSensor2_Inc_Angle(void);
+uint16_t HallSensor2_Get_Angle(void);
+float HallSensor2_Get_Anglef(void);
+uint32_t HallSensor2_Get_Speed(void);
+float HallSensor2_Get_Speedf(void);
+uint8_t HallSensor2_Get_Direction(void);
+#endif
 void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
 void HallSensor_UpdateCallback(void);
