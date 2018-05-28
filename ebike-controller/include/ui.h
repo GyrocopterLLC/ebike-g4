@@ -4,7 +4,7 @@
 #define UI_OK				1
 #define UI_ERROR			0
 
-#define UI_MAX_BUFFER_LENGTH	32
+#define UI_MAX_BUFFER_LENGTH	512
 #define UI_PREAMBLE			"MCU+"
 #define UI_LENGTH_PREAMBLE	4
 #define UI_NUM_OPTIONS		8
@@ -17,13 +17,13 @@
 								"BOOTRESET",\
 								"DUMP"}
 #define UI_OPTIONS_LENGTHSLIST	{	3,\
-								   10,\
-								    9,\
-									7,\
-									3,\
-									5,\
-									9,\
-									4}
+                10,\
+                9,\
+                7,\
+                3,\
+                5,\
+                9,\
+                4}
 
 typedef enum
 {
@@ -57,6 +57,43 @@ typedef enum
 								"TQ",\
 								"ER",\
 								"VR"}
+
+#define UI_USB_OPTDESCRIPTIONS    { "PhA Current",\
+                                    "PhB Current",\
+                                    "PhC Current",\
+                                    "PhA Duty Cycle",\
+                                    "PhB Duty Cycle",\
+                                    "PhC Duty Cycle",\
+                                    "Throttle",\
+                                    "Simulated Ramp Angle",\
+                                    "Hall Sensor Angle",\
+                                    "Hall Sensor Speed",\
+                                    "DC Bus Voltage",\
+                                    "FOC D Current",\
+                                    "FOC Q Current",\
+                                    "Low-Pass Filtered D Current",\
+                                    "Low-Pass Filtered Q Current",\
+                                    "Error Code",\
+                                    "ADC Vrefint (raw)"}
+
+#define UI_USB_OPTDESC_LENGTHSLIST  {11,\
+                                     11,\
+                                     11,\
+                                     14,\
+                                     14,\
+                                     14,\
+                                     8,\
+                                     20,\
+                                     17,\
+                                     17,\
+                                     14,\
+                                     13,\
+                                     13,\
+                                     27,\
+                                     27,\
+                                     10,\
+                                     17}
+
 #define UI_VAR_NUMOPTIONS	4
 #define UI_VAR_LENGTH		2
 #define UI_VAR_OPTIONLIST	{	"KP",\
@@ -73,7 +110,7 @@ typedef enum
 #define UI_LENGTH_RESPBAD	5
 
 uint8_t UI_Process(char* inputstring);
-uint8_t UI_RespLen(void);
+uint32_t UI_RespLen(void);
 char* UI_SendBuf(void);
 
 

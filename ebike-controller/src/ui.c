@@ -24,11 +24,13 @@ char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
 uint8_t ui_option_lengths[UI_NUM_OPTIONS] = UI_OPTIONS_LENGTHSLIST;
 
 char* ui_usb_options[UI_USB_NUMOPTIONS] = UI_USB_OPTIONLIST;
+char* ui_usb_optdescriptions[UI_USB_NUMOPTIONS] = UI_USB_OPTDESCRIPTIONS;
+uint8_t ui_usb_optdesc_lengths[UI_USB_NUMOPTIONS] = UI_USB_OPTDESC_LENGTHSLIST;
 
 char* ui_var_options[UI_VAR_NUMOPTIONS] = UI_VAR_OPTIONLIST;
 
 char ui_response_buf[UI_MAX_BUFFER_LENGTH];
-uint8_t ui_response_len;
+uint32_t ui_response_len;
 
 static int strcmp_s(const char* in1, const char* in2, int count)
 {
@@ -145,16 +147,24 @@ static float UI_atof(char* in)
 static void UI_SerialOut(char* str, uint8_t len)
 {
 	if(len > 0)
-		memcpy(ui_response_buf, str, len+1); // +1 for the terminating null char
-	ui_response_len = len;
+	{
+	  memcpy((&ui_response_buf[ui_response_len]), str, len);
+	  // Add terminating null
+	  ui_response_buf[ui_response_len + len] = 0;
+	  // Save new response length
+	  ui_response_len += len;
+	}
 }
 
-uint8_t UI_RespLen(void)
+uint32_t UI_RespLen(void)
 {
 	return ui_response_len;
 }
+
 char* UI_SendBuf(void)
 {
+  // Clear the response length when sent.
+  ui_response_len = 0;
 	return ui_response_buf;
 }
 
@@ -234,6 +244,43 @@ uint8_t UI_Process(char* inputstring)
 			break;
 		}
 		break;
+  case UI_QUERYCMD:
+    inputstring++; // Move past the set character (default '=')
+    switch(ui_cmd)
+    {
+    case USB_Command:
+      ui_error = UI_USB_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case SerialData_Command:
+      ui_error = UI_SerialData_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case RampSpeed_Command:
+      ui_error = UI_RampSpeed_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case RampDir_Command:
+      ui_error = UI_RampDir_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case Variable_Command:
+      ui_error = UI_Variable_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case Reset_Command:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    case Bootreset_Command:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    case Dump_Command:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    case UI_NoCmd:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
+    break;
 	default:
 		UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
 		return UI_ERROR;
@@ -246,6 +293,8 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 {
 	uint8_t ui_error;
 	uint8_t usb_var=255, usb_place=0;
+	char temp_buf[8];
+	uint32_t temp_len;
 	if(cmdtype == UI_SETCMD)
 	{
 		for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
@@ -285,6 +334,32 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 		UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 		return UI_OK;
 	}
+	if(cmdtype == UI_QUERYCMD)
+	{
+	  // If 1 through 5 is selected, returns the current parameter in that slot.
+	  // Otherwise returns all the available parameters for logging.
+	  if(*options >= '1' && *options <= '5')
+	  {
+	    usb_place = *options -'0';
+	    usb_var = MAIN_GetUSBDebugOutput(usb_place-1);
+	    UI_SerialOut(ui_usb_options[usb_var-1], UI_USB_LENGTH);
+	  }
+	  else
+	  {
+	    for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+	    {
+	      temp_len = _itoa(temp_buf, i+1, 2);
+	      UI_SerialOut(temp_buf,temp_len);
+	      UI_SerialOut(": ",2);
+	      UI_SerialOut(ui_usb_options[i],UI_USB_LENGTH);
+	      UI_SerialOut(", ",2);
+	      UI_SerialOut(ui_usb_optdescriptions[i],ui_usb_optdesc_lengths[i]);
+	      UI_SerialOut("\r\n",2);
+	    }
+	  }
+
+
+	}
 	return UI_ERROR;
 }
 
@@ -297,12 +372,12 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options)
 		if(*options == '1')
 		{
 			MAIN_SetUSBDebugging(1);
-			UI_SerialOut("", 0);
+			//UI_SerialOut("", 0);
 		}
 		else if(*options == '0')
 		{
 			MAIN_SetUSBDebugging(0);
-			UI_SerialOut("", 0);
+			//UI_SerialOut("", 0);
 		}
 		else
 		{

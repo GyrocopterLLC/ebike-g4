@@ -508,6 +508,7 @@ int32_t VCP_Read(void* data, int32_t len)
 
 int32_t VCP_Write(const void* data, int32_t len)
 {
+  /* Fuck recursion
 	if(USB_GetDevState() != USB_STATE_CONFIGURED)
 		return 0;
     if (len > CDC_DATA_FS_MAX_PACKET_SIZE)
@@ -535,4 +536,29 @@ int32_t VCP_Write(const void* data, int32_t len)
 
     //while(USB_CDC_ClassData.TxState) { } //Wait until transfer is done
     return len;
+    */
+  int32_t len_remaining = len;
+  void* data_remaining = data;
+  if(USB_GetDevState() != USB_STATE_CONFIGURED)
+    return 0;
+  while( len_remaining > CDC_DATA_FS_MAX_PACKET_SIZE)
+  {
+    while(USB_CDC_ClassData.TxState) {} // Wait for previous transfer
+    memcpy(USB_CDC_TxBuffer, data_remaining, CDC_DATA_FS_MAX_PACKET_SIZE);
+    USB_CDC_ClassData.TxBuffer = USB_CDC_TxBuffer;
+    USB_CDC_ClassData.TxLength = CDC_DATA_FS_MAX_PACKET_SIZE;
+    USB_CDC_ClassData.TxState = 1;
+    USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
+    data_remaining += CDC_DATA_FS_MAX_PACKET_SIZE;
+    len_remaining -= CDC_DATA_FS_MAX_PACKET_SIZE;
+  }
+
+  while(USB_CDC_ClassData.TxState) {} // Wait for previous transfer
+  memcpy(USB_CDC_TxBuffer, data_remaining, len_remaining);
+  USB_CDC_ClassData.TxBuffer = USB_CDC_TxBuffer;
+  USB_CDC_ClassData.TxLength = len_remaining;
+  USB_CDC_ClassData.TxState = 1;
+  USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
+
+  return len;
 }

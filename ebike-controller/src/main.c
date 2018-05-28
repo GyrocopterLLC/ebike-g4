@@ -189,6 +189,7 @@ static void BootloaderStartup(void)
 int main(void)
 {
 	char byte;
+	uint32_t resplen;
 	char string[32];
 	char usbstring[64];
 	Throttle_cmd = 0.0f;
@@ -284,6 +285,7 @@ int main(void)
 			// Echo it
 			VCP_Write(&byte, 1);
 			// Add it to the VCP buffer
+#ifdef DEBUG_RESET_SOURCE
 			if(byte == '?')
 			{
 				// Quick debugging of reset source
@@ -318,6 +320,7 @@ int main(void)
 				RCC->CSR |= RCC_CSR_RMVF;
 				continue;
 			}
+#endif
 			vcp_buf_len = strlen(vcp_buffer);
 			if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
 			{
@@ -339,9 +342,10 @@ int main(void)
 				vcp_buffer[0] = 0;
 
 				// Send response if it exists
-				if(UI_RespLen() > 0)
+				resplen = UI_RespLen();
+				if(resplen > 0)
 				{
-					VCP_Write(UI_SendBuf(), UI_RespLen());
+					VCP_Write(UI_SendBuf(), resplen);
 				}
 			}
 		}
@@ -910,6 +914,11 @@ void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)
 {
 	// Set the new output
 	usbdacassignments[outputnum] = valuenum+1;
+}
+
+uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum)
+{
+  return usbdacassignments[outputnum];
 }
 
 void MAIN_SetUSBDebugging(uint8_t on_or_off)
