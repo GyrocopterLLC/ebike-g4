@@ -18,6 +18,7 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampDir_Command_Req(char cmdtype, char* options);
 uint8_t UI_Variable_Command_Req(char cmdtype, char* options);
+uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options);
 
 /* Private Variables */
 char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
@@ -238,6 +239,9 @@ uint8_t UI_Process(char* inputstring)
 		case Dump_Command:
 			MAIN_DumpRecord();
 			break;
+		case DumpVar_Command:
+		  ui_error = UI_DumpVar_Command_Req(UI_SETCMD, inputstring);
+		  break;
 		case UI_NoCmd:
 			UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
 			return UI_ERROR;
@@ -274,6 +278,9 @@ uint8_t UI_Process(char* inputstring)
     case Dump_Command:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
       return UI_ERROR;
+      break;
+    case DumpVar_Command:
+      ui_error = UI_DumpVar_Command_Req(UI_QUERYCMD, inputstring);
       break;
     case UI_NoCmd:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -357,14 +364,15 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 	      UI_SerialOut("\r\n",2);
 	    }
 	  }
-
-
+	  return UI_OK;
 	}
 	return UI_ERROR;
 }
 
 uint8_t UI_SerialData_Command_Req(char cmdtype, char* options)
 {
+  char tempbuf[4];
+  uint16_t templen;
 	if(cmdtype == UI_SETCMD)
 	{
 		// Only two valid options here, '0' or '1'
@@ -385,6 +393,14 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options)
 			return UI_ERROR;
 		}
 		return UI_OK;
+	}
+	else if(cmdtype == UI_QUERYCMD)
+	{
+	  // Just returns whether the USB debugging is currently on or off
+	  templen =_itoa(tempbuf, MAIN_GetUSBDebugging(), 0);
+	  UI_SerialOut(tempbuf, templen);
+	  UI_SerialOut("\r\n",2);
+	  return UI_OK;
 	}
 	return UI_ERROR;
 }
@@ -472,5 +488,109 @@ uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
 		UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
 		return UI_OK;
 	}
+	if(cmdtype == UI_QUERYCMD)
+	{
+	  char tempbuf[16];
+	  uint16_t templen;
+	  // Which variable?
+    for(uint8_t i = 0; i < UI_VAR_NUMOPTIONS; i++)
+    {
+      ui_error = strcmp_s(options,ui_var_options[i],UI_VAR_LENGTH);
+      if(ui_error == 0)
+      {
+        // Setting this variable!
+        ui_var = i;
+        break;
+      }
+    }
+    if(ui_error != 0)
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+    else
+    {
+      // Read the current value of this variable
+      newval = MAIN_GetVar(ui_var);
+      templen = _ftoa(tempbuf, newval, 6);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut("\r\n",2);
+
+      return UI_OK;
+    }
+	}
 	return UI_ERROR;
+}
+
+uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
+{
+  uint8_t ui_error;
+  uint8_t usb_var=255, usb_place=0;
+  char temp_buf[8];
+  uint32_t temp_len;
+  if(cmdtype == UI_SETCMD)
+  {
+    for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+    {
+      ui_error = strcmp_s(options,ui_usb_options[i],UI_USB_LENGTH);
+      if(ui_error == 0)
+      {
+        // Setting this variable!
+        usb_var = i;
+        break;
+      }
+    }
+    if(ui_error != 0)
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+    // Next, make sure syntax is right (should be a comma)
+    options += UI_USB_LENGTH;
+    if(*options != ',')
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+    options++; // go past the comma
+    // Check if the output place is correct
+    if(*options >= '1' && *options <= '4')
+    {
+      usb_place = *options - '0';
+      MAIN_SetDumpDebugOutput(usb_place-1, usb_var);
+    }
+    else
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+    UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+    return UI_OK;
+  }
+  if(cmdtype == UI_QUERYCMD)
+  {
+    // If 1 through 5 is selected, returns the current parameter in that slot.
+    // Otherwise returns all the available parameters for logging.
+    if(*options >= '1' && *options <= '4')
+    {
+      usb_place = *options -'0';
+      usb_var = MAIN_GetDumpDebugOutput(usb_place-1);
+      UI_SerialOut(ui_usb_options[usb_var-1], UI_USB_LENGTH);
+    }
+    else
+    {
+      for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+      {
+        temp_len = _itoa(temp_buf, i+1, 2);
+        UI_SerialOut(temp_buf,temp_len);
+        UI_SerialOut(": ",2);
+        UI_SerialOut(ui_usb_options[i],UI_USB_LENGTH);
+        UI_SerialOut(", ",2);
+        UI_SerialOut(ui_usb_optdescriptions[i],ui_usb_optdesc_lengths[i]);
+        UI_SerialOut("\r\n",2);
+      }
+    }
+    return UI_OK;
+  }
+  return UI_ERROR;
 }

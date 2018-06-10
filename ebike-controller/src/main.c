@@ -9,7 +9,8 @@
 
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 
-#define SERIAL_DATA_RATE			(10)
+//#define SERIAL_DATA_RATE			(10)
+#define SERIAL_DATA_RATE      (5) // Trying a little faster
 #define SERIAL_DUMP_RATE			(2)
 #define TEMP_CONVERSION_RATE		(100)
 
@@ -47,9 +48,6 @@ Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
 FOC_StateVariables Mfoc;
 
-uint16_t DumpData[32768] __attribute__((section(".bss_CCMRAM")));
-uint16_t DumpLoc;
-
 float g_FetTemp;
 
 /** Debugging outputs **
@@ -72,15 +70,33 @@ float g_FetTemp;
  * 15 - ErrorCode
  * 16 - Vrefint
  *
+ * These debugging outputs can be monitored over the USB debug using the
+ * "USB" series of commands, or by the data dump (which records at the full
+ * 20kHz rate) using the "DUMP" command series.
+ *
  */
 #define MAX_USB_VALS	17
 #define MAX_USB_OUTPUTS	5
+
+/* Default dump outputs */
+
+/* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Error Code */
+#define DEFAULT_USB_ASSIGNMENTS   {1, 2, 3, 7, 16}
 #if USB_MONITOR_FIXED_POINT
   uint32_t usbdacvals[MAX_USB_VALS];
 #else
   float usbdacvals[MAX_USB_VALS];
 #endif
-uint8_t usbdacassignments[MAX_USB_OUTPUTS];
+uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
+
+#define MAX_DUMP_OUTPUTS    4
+#define MAX_DUMP_LENGTH     32768 // 64k of CCMRAM / 2-byte variables = 32k
+int16_t DumpData[MAX_DUMP_LENGTH] __attribute__((section(".bss_CCMRAM")));
+uint16_t DumpLoc;
+/* Default dump outputs: Ia, Ib, Ic, Hall Angle */
+#define DEFAULT_DUMP_ASSIGNMENTS    {1, 2, 3, 9}
+
+uint8_t dumpassignments[MAX_DUMP_OUTPUTS] = DEFAULT_DUMP_ASSIGNMENTS;
 char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 
 uint32_t systick_debounce_counter;
@@ -251,12 +267,7 @@ int main(void)
 	dfsl_pid_defaultsf(&Id_control);
 	dfsl_pid_defaultsf(&Iq_control);
 
-	/* Default USB debugging outputs */
-	usbdacassignments[0] = 1; // Ia
-	usbdacassignments[1] = 2; // Ib
-	usbdacassignments[2] = 3; // Ic
-	usbdacassignments[3] = 7; // Throttle
-	usbdacassignments[4] = 16; // Error code
+
 	DumpLoc = 0;
 
 	/* Set defaults for D, Q current filters */
@@ -275,7 +286,7 @@ int main(void)
 	/* Run Application (Interrupt mode) */
 	while (1)
 	{
-		uint8_t vcp_buf_len;
+		uint32_t vcp_buf_len;
 		// Feed the watchdog!
 		WDT_feed();
 
@@ -408,7 +419,7 @@ int main(void)
 				usbstring[0] = 0;
 				for(uint8_t i = 0; i < 4; i++)
 				{
-					_itoa(string, (int)DumpData[DumpLoc+i], 0);
+					_itoa(string, (int32_t)DumpData[DumpLoc+i], 0);
 					strcat(usbstring,string);
 					strcat(usbstring," ");
 				}
@@ -838,10 +849,16 @@ void User_PWMTIM_IRQ(void)
 	{
 		if(DumpLoc < 32768)
 		{
-			DumpData[DumpLoc] = (uint32_t)((Mobv.iA+20.0f)*1638.4f);
-			DumpData[DumpLoc+1] = (uint32_t)((Mobv.iB+20.0f)*1638.4f);
-			DumpData[DumpLoc+2] = (uint32_t)((Mobv.iC+20.0f)*1638.4f);
+		  /*
+			DumpData[DumpLoc] = (int32_t)((Mobv.iA)*1638.4f);
+			DumpData[DumpLoc+1] = (int32_t)((Mobv.iB)*1638.4f);
+			DumpData[DumpLoc+2] = (int32_t)((Mobv.iC)*1638.4f);
 			DumpData[DumpLoc+3] = HallSensor_Get_Angle();
+			*/
+		  DumpData[DumpLoc] = (int16_t)(usbdacvals[dumpassignments[0]-1]*1638.4f);
+		  DumpData[DumpLoc+1] = (int16_t)(usbdacvals[dumpassignments[1]-1]*1638.4f);
+		  DumpData[DumpLoc+2] = (int16_t)(usbdacvals[dumpassignments[2]-1]*1638.4f);
+		  DumpData[DumpLoc+3] = (int16_t)(usbdacvals[dumpassignments[3]-1]*1638.4f);
 			DumpLoc+=4;
 		}
 		else
@@ -929,6 +946,14 @@ void MAIN_SetUSBDebugging(uint8_t on_or_off)
 		g_MainFlags |= MAINFLAG_SERIALDATAON;
 }
 
+uint8_t MAIN_GetUSBDebugging(void)
+{
+  if(g_MainFlags & MAINFLAG_SERIALDATAON)
+    return 1;
+  else
+    return 0;
+}
+
 void MAIN_SetRampSpeed(uint32_t newspeed)
 {
 	g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, newspeed);
@@ -974,6 +999,30 @@ void MAIN_SetVar(uint8_t var, float newval)
 	}
 }
 
+float MAIN_GetVar(uint8_t var)
+{
+  switch(var)
+  {
+  case 0:
+    // Kp
+    return Id_control.Kp;
+    break;
+  case 1:
+    // Ki
+    return Id_control.Ki;
+    break;
+  case 2:
+    // Kd
+    return Id_control.Kd;
+    break;
+  case 3:
+    // Kc
+    return Id_control.Kc;
+    break;
+  }
+  return 0.0f;
+}
+
 void MAIN_SetError(uint32_t errorCode)
 {
 	g_errorCode |= errorCode;
@@ -999,6 +1048,17 @@ void MAIN_DumpRecord(void)
 {
 	if(!(g_MainFlags & MAINFLAG_DUMPDATAON))
 		g_MainFlags |= MAINFLAG_DUMPRECORD;
+}
+
+void MAIN_SetDumpDebugOutput(uint8_t outputnum, uint8_t valuenum)
+{
+  // Set the new output
+  dumpassignments[outputnum] = valuenum+1;
+}
+
+uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum)
+{
+  return dumpassignments[outputnum];
 }
 
 void stringflip(char* buf, uint32_t len)
