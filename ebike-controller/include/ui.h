@@ -41,7 +41,7 @@ typedef enum
 	UI_NoCmd = 127
 } UI_CommandType;
 
-#define UI_USB_NUMOPTIONS	17
+#define UI_USB_NUMOPTIONS	18
 #define UI_USB_LENGTH		2
 #define UI_USB_OPTIONLIST 	{ 	"IA",\
 								"IB",\
@@ -59,7 +59,8 @@ typedef enum
 								"TD",\
 								"TQ",\
 								"ER",\
-								"VR"}
+								"VR",\
+                "2A"}
 
 #define UI_USB_OPTDESCRIPTIONS    { "PhA Current",\
                                     "PhB Current",\
@@ -77,7 +78,8 @@ typedef enum
                                     "Low-Pass Filtered D Current",\
                                     "Low-Pass Filtered Q Current",\
                                     "Error Code",\
-                                    "ADC Vrefint (raw)"}
+                                    "ADC Vrefint (raw)",\
+                                    "Hall Sensor2 Angle"}
 
 #define UI_USB_OPTDESC_LENGTHSLIST  {11,\
                                      11,\
@@ -95,7 +97,8 @@ typedef enum
                                      27,\
                                      27,\
                                      10,\
-                                     17}
+                                     17,\
+                                     18}
 
 #define UI_VAR_NUMOPTIONS	4
 #define UI_VAR_LENGTH		2

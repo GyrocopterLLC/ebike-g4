@@ -15,6 +15,7 @@
 #include "stm32f4xx.h"
 
 #define USE_FLOATING_POINT
+#define TESTING_2X
 
 /*
 #define HALL_PIN_A						GPIO_PIN_6

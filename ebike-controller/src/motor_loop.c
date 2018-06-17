@@ -2,6 +2,7 @@
 #include "project_parameters.h"
 
 uint8_t lastHallState = 0;
+Motor_RunState lastRunState = Motor_Off;
 
 void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 		FOC_StateVariables* foc, Motor_PWMDuties* duty)
@@ -83,11 +84,19 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 		}
 		break;
 	case Motor_AtSpeed:
+	  if(lastRunState != Motor_AtSpeed)
+	  {
+	    PHASE_A_PWM();
+	    PHASE_B_PWM();
+	    PHASE_C_PWM();
+	    dfsl_pid_resetf(foc->Id_PID);
+	    dfsl_pid_resetf(foc->Iq_PID);
+	  }
 		// Running full-fledged FOC algorithm now!
 
 		// **************** FEEDBACK PATH *****************
 		// Read angle from Hall sensors
-		obv->RotorAngle = ((float)HallSensor_Get_Angle())/65536.0f;
+//		obv->RotorAngle = ((float)HallSensor_Get_Angle())/65536.0f;
 		// Transform sensor readings
 		dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha), &(foc->Clarke_Beta));
 		dfsl_parkf(foc->Clarke_Alpha,foc->Clarke_Beta,obv->RotorAngle, &(foc->Park_D), &(foc->Park_Q));
@@ -126,4 +135,5 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 		duty->tC = 0.0f;
 		break;
 	}
+	lastRunState = cntl->state;
 }

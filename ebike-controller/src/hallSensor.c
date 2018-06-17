@@ -149,7 +149,7 @@ float HallSensor_Get_Anglef(void)
 #ifdef TESTING_2X
 float HallSensor2_Get_Anglef(void)
 {
-  return HallSensor2.Angle;
+  return HallSensor_2x.Angle;
 }
 #endif
 
@@ -451,6 +451,8 @@ void HallSensor_CaptureCallback(void)
 		  {
 		    HallSensor2_CalcSpeed();
 		  }
+		  else
+		    HallSensor_2x.Status &= ~(HALL_STOPPED);
 		}
 #endif
 		break;

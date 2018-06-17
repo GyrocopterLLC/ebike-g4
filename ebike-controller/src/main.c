@@ -14,6 +14,9 @@
 #define SERIAL_DUMP_RATE			(2)
 #define TEMP_CONVERSION_RATE		(100)
 
+#define SPEED_COUNTS_TO_FOC     (1000)
+#define MIN_SPEED_TO_FOC        (10.0f)
+
 #define MAIN_STARTUP_SPEED_MAX		(65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT	(256)
 
@@ -42,6 +45,8 @@ uint32_t cur_a_sum;
 uint32_t cur_b_sum;
 uint32_t cur_c_sum;
 uint32_t cur_sum_count;
+
+uint32_t speed_cycle_integrator;
 
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
@@ -75,7 +80,7 @@ float g_FetTemp;
  * 20kHz rate) using the "DUMP" command series.
  *
  */
-#define MAX_USB_VALS	17
+#define MAX_USB_VALS	18
 #define MAX_USB_OUTPUTS	5
 
 /* Default dump outputs */
@@ -278,7 +283,7 @@ int main(void)
 	WDT_init();
 
 	// Testing only!
-	Mctrl.state = Motor_Startup;
+	Mctrl.state = Motor_Off;
 	//Mctrl.state = Motor_AtSpeed;
 	Mfoc.Id_PID = &Id_control;
 	Mfoc.Iq_PID = &Iq_control;
@@ -625,7 +630,7 @@ void User_PWMTIM_IRQ(void)
 {
 	// Debug: Blink RLED to show how much processor time is used
 	RLED_PORT->BSRR = (1 << RLED_PIN);
-#if 0
+#if 1
 	// Testing mode starts here
 	uint16_t tA, tB, tC;
 	Mobv.iA = adcGetCurrent(ADC_IA);
@@ -633,6 +638,9 @@ void User_PWMTIM_IRQ(void)
 	Mobv.iC = adcGetCurrent(ADC_IC);
 
 	HallSensor_Inc_Angle();
+#ifdef TESTING_2X
+  HallSensor2_Inc_Angle();
+#endif
 	if(g_rampdir == 0)
 	{
 		g_rampAngle += g_rampInc;
@@ -641,9 +649,26 @@ void User_PWMTIM_IRQ(void)
 	{
 		g_rampAngle -= g_rampInc;
 	}
-
+#ifdef TESTING_2X
+	Mobv.RotorAngle = HallSensor2_Get_Anglef();
+#else
 	Mobv.RotorAngle = HallSensor_Get_Anglef();
+#endif
 	Mobv.HallState = HallSensor_Get_State();
+	if(Mctrl.state == Motor_Startup)
+	{
+	  if(HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC)
+	    speed_cycle_integrator++;
+	  else
+	  {
+	    if(speed_cycle_integrator > 0)
+	      speed_cycle_integrator--;
+	  }
+	  if(speed_cycle_integrator > SPEED_COUNTS_TO_FOC)
+	  {
+	    Mctrl.state = Motor_AtSpeed;
+	  }
+	}
 	/*
 	Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
 	if(Mobv.RotorAngle >= 0.0f && Mobv.RotorAngle < .1667f)
@@ -675,25 +700,31 @@ void User_PWMTIM_IRQ(void)
 		Mobv.HallState = 0;
 	}
 	*/
+  if(Throttle_cmd <= 0.0f)
+  {
+    PWM_MotorOFF();
+    Throttle_cmd = 0.0f;
+    speed_cycle_integrator = 0;
+    Mctrl.state = Motor_Off;
+  }
+  else
+  {
+    PWM_MotorON();
+    if(Mctrl.state == Motor_Off)
+      Mctrl.state = Motor_Startup;
+  }
+
 	Mctrl.ThrottleCommand = Throttle_cmd;
 	Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
 	tA = (uint16_t)(Mpwm.tA*65535.0f);
 	tB = (uint16_t)(Mpwm.tB*65535.0f);
 	tC = (uint16_t)(Mpwm.tC*65535.0f);
 	// Is throttle at zero? Motor off
-	if(Throttle_cmd <= 0.0f)
-	{
-		PWM_MotorOFF();
-		Throttle_cmd = 0.0f;
-	}
-	else
-	{
-		PWM_MotorON();
-	}
+
 	PWM_SetDuty(tA,tB,tC);
 #endif
 
-#if 1
+#if 0
 	// Regular mode below here
 	float ipark_a, ipark_b;
 	float tAf, tBf, tCf;
@@ -713,6 +744,9 @@ void User_PWMTIM_IRQ(void)
 	}
 	// Update Hall sensor angle
 	HallSensor_Inc_Angle();
+#ifdef TESTING_2X
+	HallSensor2_Inc_Angle();
+#endif
 
 	/* Connections:
 	 * Everything connected in final configuration
@@ -843,6 +877,9 @@ void User_PWMTIM_IRQ(void)
   //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
   usbdacvals[15] = (float)(g_errorCode);
   usbdacvals[16] = (float)(adcRaw(ADC_VREFINT));
+#ifdef TESTING_2X
+  usbdacvals[17] = HallSensor2_Get_Anglef();
+#endif
 #endif
 
 	if(g_MainFlags & MAINFLAG_DUMPRECORD)
