@@ -55,6 +55,8 @@ FOC_StateVariables Mfoc;
 
 float g_FetTemp;
 
+PowerCalcs Mpc;
+
 /** Debugging outputs **
  *
  * 0 - Ia
@@ -636,6 +638,7 @@ void User_PWMTIM_IRQ(void)
 	Mobv.iA = adcGetCurrent(ADC_IA);
 	Mobv.iB = adcGetCurrent(ADC_IB);
 	Mobv.iC = adcGetCurrent(ADC_IC);
+	Mctrl.BusVoltage = adcGetVbus();
 
 	HallSensor_Inc_Angle();
 #ifdef TESTING_2X
@@ -868,7 +871,7 @@ void User_PWMTIM_IRQ(void)
   usbdacvals[7] = ((float)g_rampAngle) / 65535.0f;
   usbdacvals[8] = HallSensor_Get_Anglef();
   usbdacvals[9] = HallSensor_Get_Speedf();
-  usbdacvals[10] = adcGetVbus();
+  usbdacvals[10] = Mctrl.BusVoltage;
   usbdacvals[11] = Mfoc.Park_D;
   usbdacvals[12] = Mfoc.Park_Q;
   usbdacvals[13] = Id_Filt.Y;
@@ -911,6 +914,8 @@ void User_PWMTIM_IRQ(void)
 }
 
 // Simple application timer (1kHz)
+// Does all the throttle processing
+// Calculates power usage
 void User_BasicTIM_IRQ(void)
 {
 
@@ -962,6 +967,15 @@ void User_BasicTIM_IRQ(void)
 			pb_state = PB_RELEASED;
 		}
 	}
+
+	// Power calcs
+	Mpc.Ta = Mpwm.tA;
+	Mpc.Tb = Mpwm.tB;
+	Mpc.Tc = Mpwm.tC;
+	Mpc.Vbus = Mctrl.BusVoltage;
+	Mpc.Ialpha = Mfoc.Clarke_Alpha;
+	Mpc.Ibeta = Mfoc.Clarke_Beta;
+	power_calc(&Mpc);
 }
 
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)

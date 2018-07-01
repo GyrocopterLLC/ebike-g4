@@ -18,6 +18,7 @@ typedef struct _Motor_Controls
 {
 	Motor_RunState state;
 	float ThrottleCommand;
+	float BusVoltage;
 } Motor_Controls;
 
 typedef struct _Motor_Observations
