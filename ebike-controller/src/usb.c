@@ -447,11 +447,9 @@ void USB_DataINCallback(uint8_t epnum)
 {
 	USB_EndpointType *pep;
 
+	pep = &USB_InEPs[epnum];
 	  if(epnum == 0)
 	  {
-	    pep = &USB_InEPs[0];
-
-
 	    if ( USB_EP0_State == USB_EP0_DATA_IN)
 	    {
 	      if(pep->xfer_remaining > pep->mps)
@@ -482,6 +480,11 @@ void USB_DataINCallback(uint8_t epnum)
 	  // See if there's a DataIn stage callback
 	  else if(USB_ClassCallbackData != NULLPTR && (USB_ClassCallbackData->DataIn != NULLPTR))
 	  {
+	    if((pep->total_xfer_len % pep->mps == 0) &&
+          (pep->total_xfer_len >= pep->mps))
+	    {
+	      USB_Start_INEP_Transfer(epnum, 0);
+	    }
 		  USB_ClassCallbackData->DataIn(epnum);
 	  }
 }

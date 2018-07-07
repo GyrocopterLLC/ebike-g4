@@ -47,7 +47,7 @@
 
 typedef struct
 {
-  uint32_t data[CDC_DATA_HS_MAX_PACKET_SIZE/4];      // Buffer for control transfers
+  uint32_t data[CDC_CMD_PACKET_SIZE*2];      // Buffer for control transfers
   uint8_t  CmdOpCode;
   uint8_t  CmdLength;
   uint8_t  *RxBuffer;
@@ -57,6 +57,8 @@ typedef struct
 
   __IO uint32_t TxState;
   __IO uint32_t RxState;
+
+  void(*App_TxCompleteCallback)(void);
 }
 USBD_CDC_HandleTypeDef;
 
@@ -97,6 +99,7 @@ void CDC_EP0_RxReady(void);
 void CDC_DataIn(uint8_t epnum);
 void CDC_DataOut(uint8_t epnum);
 void CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length);
+void CDC_SetTxCompleteCallback(void(*Callback)(void));
 
 int32_t VCP_Read(void* data, int32_t len);
 int32_t VCP_Write(const void* data, int32_t len);

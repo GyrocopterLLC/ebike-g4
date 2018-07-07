@@ -32,7 +32,7 @@
 #define PRIO_USB			6
 #define CMD_FIFO_BUF_SIZE	128
 #define RX_FIFO_BUF_SIZE	128
-#define TX_FIFO_BUF_SIZE	128
+#define TX_FIFO_BUF_SIZE	512 // Up to 8 packets in the fifo at once
 #define NUM_ENDPOINTS		4 // Default EP0 plus 3 additional endpoints
 
 #define  USB_LEN_DEV_QUALIFIER_DESC                     0x0A

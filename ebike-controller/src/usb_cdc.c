@@ -172,7 +172,7 @@ uint8_t USB_LangIDDesc[USB_LEN_LANGID_STR_DESC] __attribute__ ((aligned (4)))= {
 
 USBD_CDC_HandleTypeDef USB_CDC_ClassData; // Buffer to hold all the class data for its specific transactions
 USB_CDC_RxBufferTypedef USB_CDC_RxBuffer;
-uint8_t USB_CDC_TxBuffer[DATA_ENDPOINT_FIFO_SIZE];
+uint8_t USB_CDC_TxBuffer[TX_FIFO_BUF_SIZE];
 
 USBD_CDC_LineCodingTypeDef LineCoding =
   {
@@ -319,6 +319,10 @@ void CDC_DataIn(uint8_t epnum)
 	{
 		//CDC.TransmitState = 0;
 		USB_CDC_ClassData.TxState = 0;
+		if(USB_CDC_ClassData.App_TxCompleteCallback != NULLPTR)
+		{
+		  USB_CDC_ClassData.App_TxCompleteCallback();
+		}
 	}
 
 }
@@ -414,6 +418,11 @@ void CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 	default:
 		break;
 	}
+}
+
+void CDC_SetTxCompleteCallback(void(*Callback)(void))
+{
+  USB_CDC_ClassData.App_TxCompleteCallback = Callback;
 }
 
 static void Get_SerialNum(void)
@@ -537,28 +546,22 @@ int32_t VCP_Write(const void* data, int32_t len)
     //while(USB_CDC_ClassData.TxState) { } //Wait until transfer is done
     return len;
     */
-  int32_t len_remaining = len;
-  void* data_remaining = data;
+  if(USB_CDC_ClassData.TxState)
+  {
+    // Fail if still sending last data
+    return -1;
+  }
+  int32_t len_to_send = len;
   if(USB_GetDevState() != USB_STATE_CONFIGURED)
     return 0;
-  while( len_remaining > CDC_DATA_FS_MAX_PACKET_SIZE)
+  if(len_to_send > (TX_FIFO_BUF_SIZE/2))
   {
-    while(USB_CDC_ClassData.TxState) {} // Wait for previous transfer
-    memcpy(USB_CDC_TxBuffer, data_remaining, CDC_DATA_FS_MAX_PACKET_SIZE);
-    USB_CDC_ClassData.TxBuffer = USB_CDC_TxBuffer;
-    USB_CDC_ClassData.TxLength = CDC_DATA_FS_MAX_PACKET_SIZE;
-    USB_CDC_ClassData.TxState = 1;
-    USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
-    data_remaining += CDC_DATA_FS_MAX_PACKET_SIZE;
-    len_remaining -= CDC_DATA_FS_MAX_PACKET_SIZE;
+    len_to_send = (TX_FIFO_BUF_SIZE/2);
   }
-
-  while(USB_CDC_ClassData.TxState) {} // Wait for previous transfer
-  memcpy(USB_CDC_TxBuffer, data_remaining, len_remaining);
+  memcpy(USB_CDC_TxBuffer, data, len_to_send);
   USB_CDC_ClassData.TxBuffer = USB_CDC_TxBuffer;
-  USB_CDC_ClassData.TxLength = len_remaining;
+  USB_CDC_ClassData.TxLength = len_to_send;
   USB_CDC_ClassData.TxState = 1;
   USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
-
-  return len;
+  return len_to_send;
 }

@@ -10,8 +10,8 @@
 #define BOOTLOADER_RESET_FLAG	0xDEADBEEF
 
 //#define SERIAL_DATA_RATE			(10)
-#define SERIAL_DATA_RATE      (5) // Trying a little faster
-#define SERIAL_DUMP_RATE			(2)
+#define SERIAL_DATA_RATE      (1) // Trying a little faster
+#define SERIAL_DUMP_RATE			(1)
 #define TEMP_CONVERSION_RATE		(100)
 
 #define SPEED_COUNTS_TO_FOC     (1000)
@@ -301,7 +301,7 @@ int main(void)
 		if(VCP_Read(&byte, 1) != 0)
 		{
 			// Echo it
-			VCP_Write(&byte, 1);
+			while(VCP_Write(&byte, 1) < 0) ;
 			// Add it to the VCP buffer
 #ifdef DEBUG_RESET_SOURCE
 			if(byte == '?')
@@ -363,7 +363,7 @@ int main(void)
 				resplen = UI_RespLen();
 				if(resplen > 0)
 				{
-					VCP_Write(UI_SendBuf(), resplen);
+					while(VCP_Write(UI_SendBuf(), resplen) < 0);
 				}
 			}
 		}
