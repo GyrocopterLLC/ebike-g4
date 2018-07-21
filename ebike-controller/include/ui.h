@@ -7,8 +7,10 @@
 #define UI_MAX_BUFFER_LENGTH	512
 #define UI_PREAMBLE			"MCU+"
 #define UI_LENGTH_PREAMBLE	4
-#define UI_NUM_OPTIONS		9
-#define UI_OPTIONS			{ "USB",\
+#define UI_NUM_OPTIONS		11
+#define UI_OPTIONS			{ "USBSPEED",\
+                          "USBNUMVARS",\
+                          "USB",\
 								          "SERIALDATA",\
 								          "RAMPSPEED",\
 								          "RAMPDIR",\
@@ -17,28 +19,32 @@
 								          "BOOTRESET",\
 								          "DUMPVAR",\
 								          "DUMP"}
-#define UI_OPTIONS_LENGTHSLIST	{	3,\
-                10,\
-                9,\
-                7,\
-                3,\
-                5,\
-                9,\
-                7,\
-                4}
+#define UI_OPTIONS_LENGTHSLIST	{	8,\
+                                  10,\
+                                  3,\
+                                  10,\
+                                  9,\
+                                  7,\
+                                  3,\
+                                  5,\
+                                  9,\
+                                  7,\
+                                  4}
 
 typedef enum
 {
-	USB_Command = 0,
-	SerialData_Command = 1,
-	RampSpeed_Command = 2,
-	RampDir_Command = 3,
-	Variable_Command = 4,
-	Reset_Command = 5,
-	Bootreset_Command = 6,
-	DumpVar_Command = 7,
-	Dump_Command = 8,
-	UI_NoCmd = 127
+  USB_Speed_Command,
+  USB_NumVars_Command,
+	USB_Command,
+	SerialData_Command,
+	RampSpeed_Command,
+	RampDir_Command,
+	Variable_Command,
+	Reset_Command,
+	Bootreset_Command,
+	DumpVar_Command,
+	Dump_Command,
+	UI_NoCmd
 } UI_CommandType;
 
 #define UI_USB_NUMOPTIONS	18
@@ -108,12 +114,14 @@ typedef enum
 								"KC"}
 
 
-#define UI_SETCMD			'='
-#define UI_QUERYCMD			'?'
-#define UI_RESPGOOD			"OK"
-#define UI_LENGTH_RESPGOOD	2
-#define UI_RESPBAD			"ERROR"
-#define UI_LENGTH_RESPBAD	5
+#define UI_SETCMD			      '='
+#define UI_QUERYCMD			    '?'
+#define UI_RESPGOOD			    "OK\r\n"
+#define UI_LENGTH_RESPGOOD	4
+#define UI_RESPBAD			    "ERROR\r\n"
+#define UI_LENGTH_RESPBAD	  7
+#define UI_ENDLINE          "\r\n"
+#define UI_LENGTH_ENDLINE   2
 
 uint8_t UI_Process(char* inputstring);
 uint32_t UI_RespLen(void);

@@ -46,6 +46,32 @@ typedef enum
 #define DEBOUNCE_INTERVAL		10 // 10 milliseconds ==> 100Hz timer
 #define DEBOUNCE_MAX			5 // Must get integrator up to 5 to count as "pressed"
 
+#define RAMP_CALLFREQ   (20000)
+#define RAMP_DEFAULTSPEED (5)
+
+#define BOOTLOADER_RESET_FLAG 0xDEADBEEF
+
+//#define SERIAL_DATA_RATE      (10)
+
+#define SERIAL_DUMP_RATE        (1)
+#define TEMP_CONVERSION_RATE    (100)
+
+#define SPEED_COUNTS_TO_FOC     (1000)
+#define MIN_SPEED_TO_FOC        (10.0f)
+
+#define MAIN_STARTUP_SPEED_MAX      (65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
+#define MAIN_STARTUP_CUR_AVG_COUNT  (256)
+
+#define MAX_USB_VALS              18
+#define MAX_USB_OUTPUTS           10
+#define DEFAULT_USB_OUTPUTS       5
+#define DEFAULT_USB_ASSIGNMENTS   {1, 2, 3, 7, 11, 4, 5, 6, 9, 18}
+#define USB_PREFIX_LENGTH         4
+#define DEFAULT_USB_PREFIX        "DB05"
+#define MAX_USB_SPEED_CHOICES     6
+#define USB_SPEED_RELOAD_VALS     {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
+#define DEFAULT_SERIAL_DATA_RATE  (400) // (20kHz/400 = 50Hz)
+
 #define MAIN_ERR_HALL_STATE		(0x00000800)
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
@@ -58,6 +84,10 @@ void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum);
+void MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs);
+uint8_t MAIN_GetNumUSBDebugOutputs(void);
+void MAIN_SetUSBDebugSpeed(uint8_t speedChoice);
+uint8_t MAIN_GetUSBDebugSpeed(void);
 void MAIN_SetUSBDebugging(uint8_t on_or_off);
 uint8_t MAIN_GetUSBDebugging(void);
 void MAIN_SetRampSpeed(uint32_t newspeed);

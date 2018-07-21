@@ -13,6 +13,8 @@
 #include "main.h"
 
 /* Function Definitions */
+uint8_t UI_USB_Speed_Command_Req(char cmdtype, char* options);
+uint8_t UI_USB_NumVars_Command_Req(char cmdtype, char* options);
 uint8_t UI_USB_Command_Req(char cmdtype, char* options);
 uint8_t UI_SerialData_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
@@ -100,6 +102,27 @@ static int32_t UI_atoi(char* in)
 	return retval;
 }
 
+// Companion to UI_atoi. Returns the length of the string representing an integer
+// Allows the parser to skip past this int to the rest of the string
+static uint8_t UI_lengthofint(char* in)
+{
+  uint8_t lengthint = 0;
+  while(*in != 0) // Don't go past null terminator
+  {
+    // Only valid characters are negative sign and zero through nine
+    if(((*in) >= '0' && (*in <= '9')) || *in == '-')
+    {
+      lengthint++;
+      in++;
+    }
+    else
+    {
+      return lengthint;
+    }
+  }
+  return lengthint;
+}
+
 // Converts input string to single-precision floating point
 static float UI_atof(char* in)
 {
@@ -141,6 +164,28 @@ static float UI_atof(char* in)
 	}
 	return (retval * divfactor);
 }
+
+// Companion to UI_atof. Returns the length of the string representing a float
+// Allows the parser to skip past this float to the rest of the string
+static uint8_t UI_lengthoffloat(char* in)
+{
+  uint8_t lengthint = 0;
+  while(*in != 0) // Don't go past null terminator
+  {
+    // Only valid characters are negative sign, decimal,  and zero through nine
+    if(((*in) >= '0' && (*in <= '9')) || *in == '-' || *in == '.')
+    {
+      lengthint++;
+      in++;
+    }
+    else
+    {
+      return lengthint;
+    }
+  }
+  return lengthint;
+}
+
 
 // Doesn't actually send any output, just adds it to the output buffer
 // Function that called UI_Process can call UI_BufLen to see if there's
@@ -215,6 +260,12 @@ uint8_t UI_Process(char* inputstring)
 		inputstring++; // Move past the set character (default '=')
 		switch(ui_cmd)
 		{
+		case USB_Speed_Command:
+		  ui_error = UI_USB_Speed_Command_Req(UI_SETCMD, inputstring);
+		  break;
+		case USB_NumVars_Command:
+		  ui_error = UI_USB_NumVars_Command_Req(UI_SETCMD, inputstring);
+		  break;
 		case USB_Command:
 			ui_error = UI_USB_Command_Req(UI_SETCMD, inputstring);
 			break;
@@ -249,9 +300,15 @@ uint8_t UI_Process(char* inputstring)
 		}
 		break;
   case UI_QUERYCMD:
-    inputstring++; // Move past the set character (default '=')
+    inputstring++; // Move past the query character (default '?')
     switch(ui_cmd)
     {
+    case USB_Speed_Command:
+      ui_error = UI_USB_Speed_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case USB_NumVars_Command:
+      ui_error = UI_USB_NumVars_Command_Req(UI_QUERYCMD, inputstring);
+      break;
     case USB_Command:
       ui_error = UI_USB_Command_Req(UI_QUERYCMD, inputstring);
       break;
@@ -296,10 +353,71 @@ uint8_t UI_Process(char* inputstring)
 	return ui_error;
 }
 
+uint8_t UI_USB_Speed_Command_Req(char cmdtype, char* options)
+{
+  int32_t speedChoice;
+  char tempbuf[8];
+  uint8_t templen;
+  if(cmdtype == UI_SETCMD)
+  {
+    speedChoice = UI_atoi(options);
+    if((speedChoice >= 0) && (speedChoice < MAX_USB_SPEED_CHOICES))
+    {
+      MAIN_SetUSBDebugSpeed(speedChoice);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      return UI_OK;
+    }
+    else
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+  }
+  else if(cmdtype == UI_QUERYCMD)
+  {
+    templen = _itoa(tempbuf, MAIN_GetUSBDebugSpeed(), 0);
+    UI_SerialOut(tempbuf,templen);
+    UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+uint8_t UI_USB_NumVars_Command_Req(char cmdtype, char* options)
+{
+  int32_t numVars;
+  char tempbuf[8];
+  uint8_t templen;
+  if(cmdtype == UI_SETCMD)
+  {
+    numVars = UI_atoi(options);
+    if((numVars >= 0) && (numVars <= MAX_USB_OUTPUTS))
+    {
+      MAIN_SetNumUSBDebugOutputs(numVars);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      return UI_OK;
+    }
+    else
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+  }
+  else if(cmdtype == UI_QUERYCMD)
+  {
+    templen = _itoa(tempbuf, MAIN_GetNumUSBDebugOutputs(), 0);
+    UI_SerialOut(tempbuf,templen);
+    UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
 uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 {
 	uint8_t ui_error;
-	uint8_t usb_var=255, usb_place=0;
+	uint8_t usb_var=255;
+	int32_t usb_place=0;
 	char temp_buf[8];
 	uint32_t temp_len;
 	if(cmdtype == UI_SETCMD)
@@ -328,10 +446,10 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 		}
 		options++; // go past the comma
 		// Check if the output place is correct
-		if(*options >= '1' && *options <= '5')
+		usb_place = UI_atoi(options);
+		if((usb_place >= 1) && (usb_place <= MAIN_GetNumUSBDebugOutputs()))
 		{
-			usb_place = *options - '0';
-			MAIN_SetUSBDebugOutput(usb_place-1, usb_var);
+			MAIN_SetUSBDebugOutput(usb_place-1, usb_var+1);
 		}
 		else
 		{
@@ -343,13 +461,14 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 	}
 	if(cmdtype == UI_QUERYCMD)
 	{
-	  // If 1 through 5 is selected, returns the current parameter in that slot.
+	  // If 1 through <Number of Debug Outputs> is selected, returns the current parameter in that slot.
 	  // Otherwise returns all the available parameters for logging.
-	  if(*options >= '1' && *options <= '5')
+	  usb_place = UI_atoi(options);
+	  if((usb_place >= 1) && (usb_place <= MAIN_GetNumUSBDebugOutputs()))
 	  {
-	    usb_place = *options -'0';
 	    usb_var = MAIN_GetUSBDebugOutput(usb_place-1);
 	    UI_SerialOut(ui_usb_options[usb_var-1], UI_USB_LENGTH);
+	    UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
 	  }
 	  else
 	  {
@@ -361,7 +480,7 @@ uint8_t UI_USB_Command_Req(char cmdtype, char* options)
 	      UI_SerialOut(ui_usb_options[i],UI_USB_LENGTH);
 	      UI_SerialOut(", ",2);
 	      UI_SerialOut(ui_usb_optdescriptions[i],ui_usb_optdesc_lengths[i]);
-	      UI_SerialOut("\r\n",2);
+	      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
 	    }
 	  }
 	  return UI_OK;
@@ -399,7 +518,7 @@ uint8_t UI_SerialData_Command_Req(char cmdtype, char* options)
 	  // Just returns whether the USB debugging is currently on or off
 	  templen =_itoa(tempbuf, MAIN_GetUSBDebugging(), 0);
 	  UI_SerialOut(tempbuf, templen);
-	  UI_SerialOut("\r\n",2);
+	  UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
 	  return UI_OK;
 	}
 	return UI_ERROR;
@@ -514,7 +633,7 @@ uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
       newval = MAIN_GetVar(ui_var);
       templen = _ftoa(tempbuf, newval, 6);
       UI_SerialOut(tempbuf, templen);
-      UI_SerialOut("\r\n",2);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
 
       return UI_OK;
     }
@@ -587,7 +706,7 @@ uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
         UI_SerialOut(ui_usb_options[i],UI_USB_LENGTH);
         UI_SerialOut(", ",2);
         UI_SerialOut(ui_usb_optdescriptions[i],ui_usb_optdesc_lengths[i]);
-        UI_SerialOut("\r\n",2);
+        UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       }
     }
     return UI_OK;
