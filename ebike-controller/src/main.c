@@ -358,7 +358,32 @@ int main(void)
         resplen = UI_RespLen();
         if(resplen > 0)
         {
-          while(VCP_Write(UI_SendBuf(), resplen) < 0);
+          if(resplen <= CDC_DATA_FS_MAX_PACKET_SIZE)
+          {
+            while(VCP_Write(UI_SendBuf(), resplen) < 0);
+          }
+          else
+          {
+            // Copy to local memory
+            memcpy(vcp_buffer, UI_SendBuf(), resplen);
+            vcp_buf_len = resplen;
+            uint32_t vcp_pointer = 0;
+            while(vcp_buf_len > 0)
+            {
+              if(vcp_buf_len > (CDC_DATA_FS_MAX_PACKET_SIZE-4))
+              {
+                while(VCP_Write(&(vcp_buffer[vcp_pointer]), (CDC_DATA_FS_MAX_PACKET_SIZE-4)) < 0);
+                vcp_pointer += (CDC_DATA_FS_MAX_PACKET_SIZE-4);
+                vcp_buf_len -= (CDC_DATA_FS_MAX_PACKET_SIZE-4);
+              }
+              else
+              {
+                while(VCP_Write(&(vcp_buffer[vcp_pointer]), vcp_buf_len) < 0);
+                vcp_buf_len = 0;
+                vcp_buffer[0] = 0;
+              }
+            }
+          }
         }
       }
     }
