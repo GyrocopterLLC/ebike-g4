@@ -9,8 +9,9 @@
 typedef enum _Motor_RunState
 {
 	Motor_Off,		// All switching disabled.
-	Motor_Startup,	// Running in trapezoidal contol
-	Motor_AtSpeed,	// Switched to FOC
+	Motor_SixStep,  // Running in trapezoidal mode
+	Motor_Startup,	// In FOC, but with untrustworthy angle
+	Motor_AtSpeed,	// Switched to FOC full control
 	Motor_Fault		// Something fd up
 } Motor_RunState;
 
