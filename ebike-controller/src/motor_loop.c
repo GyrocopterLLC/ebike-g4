@@ -4,7 +4,7 @@
 uint8_t lastHallState = 0;
 Motor_RunState lastRunState = Motor_Off;
 
-float HallStateToDriveFloat[8] = HALL_ANGLES_TO_DRIVE_FLOAT;
+float HallStateToDriveFloat[8] = HALL_ANGLES_FLOAT;
 
 void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
             FOC_StateVariables* foc, Motor_PWMDuties* duty)
