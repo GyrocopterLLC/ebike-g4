@@ -7,9 +7,9 @@
 #define __MAIN_H
 
 /* Constants */
-#define THROTTLE_MIN	(0.7f) // Less than 0.7V is zero throttle
-#define THROTTLE_MAX	(2.8f) // Above 2.8V is 100% throttle
-#define THROTTLE_SCALE	(0.47619f)
+#define THROTTLE_MIN  (0.7f) // Less than 0.7V is zero throttle
+#define THROTTLE_MAX  (2.8f) // Above 2.8V is 100% throttle
+#define THROTTLE_SCALE  (0.47619f)
 #define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
 
 /* Includes ------------------------------------------------------------------*/
@@ -38,13 +38,13 @@
 /* Exported types ------------------------------------------------------------*/
 typedef enum
 {
-	PB_RELEASED,
-	PB_PRESSED
+  PB_RELEASED,
+  PB_PRESSED
 }PB_TypeDef;
 /* Exported constants --------------------------------------------------------*/
-#define MAXLEDCOUNT		1000
-#define DEBOUNCE_INTERVAL		10 // 10 milliseconds ==> 100Hz timer
-#define DEBOUNCE_MAX			5 // Must get integrator up to 5 to count as "pressed"
+#define MAXLEDCOUNT   1000
+#define DEBOUNCE_INTERVAL   10 // 10 milliseconds ==> 100Hz timer
+#define DEBOUNCE_MAX      5 // Must get integrator up to 5 to count as "pressed"
 
 #define RAMP_CALLFREQ   (20000)
 #define RAMP_DEFAULTSPEED (5)
@@ -62,7 +62,7 @@ typedef enum
 #define MAIN_STARTUP_SPEED_MAX      (65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT  (256)
 
-#define MAX_USB_VALS              18
+#define MAX_USB_VALS              19
 #define MAX_USB_OUTPUTS           10
 #define DEFAULT_USB_OUTPUTS       5
 #define DEFAULT_USB_ASSIGNMENTS   {1, 2, 3, 7, 11, 4, 5, 6, 9, 18}
@@ -72,7 +72,7 @@ typedef enum
 #define USB_SPEED_RELOAD_VALS     {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
 #define DEFAULT_SERIAL_DATA_RATE  (400) // (20kHz/400 = 50Hz)
 
-#define MAIN_ERR_HALL_STATE		(0x00000800)
+#define MAIN_ERR_HALL_STATE   (0x00000800)
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 //uint32_t itoa(char* buf, int32_t num);

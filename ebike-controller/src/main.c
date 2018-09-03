@@ -5,12 +5,12 @@
 
 /* Private define ------------------------------------------------------------*/
 
-//#define MAINFLAG_SERIALDATAPRINT	((uint32_t)0x00000001)
-#define MAINFLAG_SERIALDATAON		((uint32_t)0x00000002)
-#define MAINFLAG_DUMPRECORD			((uint32_t)0x00000004)
-#define MAINFLAG_DUMPDATAPRINT		((uint32_t)0x00000008)
-#define MAINFLAG_DUMPDATAON			((uint32_t)0x00000010)
-#define MAINFLAG_CONVERTTEMPERATURE	((uint32_t)0x00000020)
+//#define MAINFLAG_SERIALDATAPRINT  ((uint32_t)0x00000001)
+#define MAINFLAG_SERIALDATAON   ((uint32_t)0x00000002)
+#define MAINFLAG_DUMPRECORD     ((uint32_t)0x00000004)
+#define MAINFLAG_DUMPDATAPRINT    ((uint32_t)0x00000008)
+#define MAINFLAG_DUMPDATAON     ((uint32_t)0x00000010)
+#define MAINFLAG_CONVERTTEMPERATURE ((uint32_t)0x00000020)
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -62,7 +62,9 @@ PowerCalcs Mpc;
  * 15 - Tq
  * 16 - ErrorCode
  * 17 - Vrefint
- * 18 - HallSensor2 Angle (if enabled)
+ * 18 - HallState
+ * 19 - HallSensor2 Angle (if enabled)
+ *
  *
  * These debugging outputs can be monitored over the USB debug using the
  * "USB" series of commands, or by the data dump (which records at the full
@@ -388,11 +390,11 @@ int main(void)
       }
     }
     /*
-		if(HBD_Receive(&byte, 1) != 0)
-		{
-		// Read a byte from the HBD UART
-		UI_Process(byte);
-		}
+    if(HBD_Receive(&byte, 1) != 0)
+    {
+    // Read a byte from the HBD UART
+    UI_Process(byte);
+    }
      */
     if(pb_state == PB_PRESSED)
     {
@@ -419,29 +421,29 @@ int main(void)
       /**** Old version ****
       if(g_MainFlags & MAINFLAG_SERIALDATAPRINT)
       {
-				g_MainFlags &= ~MAINFLAG_SERIALDATAPRINT;
-				usbstring[0] = 0;
-				for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
-				{
-					if(usbdacassignments[i] == 0)
-					{
-						strcat(usbstring,"0 ");
-					}
-					else
-					{
-						//sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
+        g_MainFlags &= ~MAINFLAG_SERIALDATAPRINT;
+        usbstring[0] = 0;
+        for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
+        {
+          if(usbdacassignments[i] == 0)
+          {
+            strcat(usbstring,"0 ");
+          }
+          else
+          {
+            //sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
 #if USB_MONITOR_FIXED_POINT
-						_itoa(string, (int)usbdacvals[usbdacassignments[i]-1], 0);
+            _itoa(string, (int)usbdacvals[usbdacassignments[i]-1], 0);
 #else
-						_ftoa(string, usbdacvals[usbdacassignments[i]-1], 3);
+            _ftoa(string, usbdacvals[usbdacassignments[i]-1], 3);
 #endif
-						strcat(usbstring,string);
-						strcat(usbstring," ");
-					}
+            strcat(usbstring,string);
+            strcat(usbstring," ");
+          }
 
-				}
-				strcat(usbstring,"\r\n");
-				VCP_Write(usbstring,strlen(usbstring));
+        }
+        strcat(usbstring,"\r\n");
+        VCP_Write(usbstring,strlen(usbstring));
 
       }
        */
@@ -541,10 +543,10 @@ static void SystemClock_Config(void)
   plln = 336;
   // Set PLL multipliers with HSE selected as input source
   RCC->PLLCFGR = (pllq << 24)
-			            | RCC_PLLCFGR_PLLSRC
-			            | (pllp << 16)
-			            | (plln << 6)
-			            | (pllm);
+                  | RCC_PLLCFGR_PLLSRC
+                  | (pllp << 16)
+                  | (plln << 6)
+                  | (pllm);
 
   // Enable PLL
   RCC->CR |= RCC_CR_PLLON;
@@ -653,7 +655,7 @@ void SYSTICK_IRQHandler(void)
 /*
 void User_HallTIM_IRQ(void)
 {
-	HallSensor_UpdateCallback();
+  HallSensor_UpdateCallback();
 }
  */
 
@@ -703,35 +705,35 @@ void User_PWMTIM_IRQ(void)
     }
   }
   /*
-	Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
-	if(Mobv.RotorAngle >= 0.0f && Mobv.RotorAngle < .1667f)
-	{
-		Mobv.HallState = 6;
-	}
-	else if(Mobv.RotorAngle >= .1667f && Mobv.RotorAngle < .3333f)
-	{
-		Mobv.HallState = 2;
-	}
-	else if(Mobv.RotorAngle >= .3333f && Mobv.RotorAngle < .5f)
-	{
-		Mobv.HallState = 3;
-	}
-	else if(Mobv.RotorAngle >= .5f && Mobv.RotorAngle < .6667f)
-	{
-		Mobv.HallState = 1;
-	}
-	else if(Mobv.RotorAngle >= .6667f && Mobv.RotorAngle < .8333f)
-	{
-		Mobv.HallState = 5;
-	}
-	else if(Mobv.RotorAngle >= .8333f && Mobv.RotorAngle < 1.0f)
-	{
-		Mobv.HallState = 4;
-	}
-	else
-	{
-		Mobv.HallState = 0;
-	}
+  Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
+  if(Mobv.RotorAngle >= 0.0f && Mobv.RotorAngle < .1667f)
+  {
+    Mobv.HallState = 6;
+  }
+  else if(Mobv.RotorAngle >= .1667f && Mobv.RotorAngle < .3333f)
+  {
+    Mobv.HallState = 2;
+  }
+  else if(Mobv.RotorAngle >= .3333f && Mobv.RotorAngle < .5f)
+  {
+    Mobv.HallState = 3;
+  }
+  else if(Mobv.RotorAngle >= .5f && Mobv.RotorAngle < .6667f)
+  {
+    Mobv.HallState = 1;
+  }
+  else if(Mobv.RotorAngle >= .6667f && Mobv.RotorAngle < .8333f)
+  {
+    Mobv.HallState = 5;
+  }
+  else if(Mobv.RotorAngle >= .8333f && Mobv.RotorAngle < 1.0f)
+  {
+    Mobv.HallState = 4;
+  }
+  else
+  {
+    Mobv.HallState = 0;
+  }
    */
   if(Throttle_cmd <= 0.0f)
   {
@@ -801,10 +803,10 @@ void User_PWMTIM_IRQ(void)
   // Read angle from Hall sensors
   Mobv.RotorAngle = HallSensor_Get_Anglef();
   Mobv.HallState = HallSensor_Get_State();
-  //	fangle = ((float)HallSensor_Get_Angle())/65536.0f;
+  //  fangle = ((float)HallSensor_Get_Angle())/65536.0f;
   // Feed to inverse Park
   dfsl_iparkf(Id_control.Out,Iq_control.Out,Mobv.RotorAngle,&ipark_a, &ipark_b);
-  //	dfsl_iparkf(0, Throttle_cmd, Mobv.RotorAngle, &ipark_a, &ipark_b);
+  //  dfsl_iparkf(0, Throttle_cmd, Mobv.RotorAngle, &ipark_a, &ipark_b);
   // Inverse Park outputs to space vector modulation, output three-phase waveforms
   dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
   // Convert from floats to 16-bit ints
@@ -836,9 +838,9 @@ void User_PWMTIM_IRQ(void)
   Mobv.iA = adcGetCurrent(ADC_IA);
   Mobv.iB = adcGetCurrent(ADC_IB);
   Mobv.iC = adcGetCurrent(ADC_IC);
-  //	Ia = adcGetCurrent(ADC_IA);
-  //	Ib = adcGetCurrent(ADC_IB);
-  //	Ic = adcGetCurrent(ADC_IC);
+  //  Ia = adcGetCurrent(ADC_IA);
+  //  Ib = adcGetCurrent(ADC_IB);
+  //  Ic = adcGetCurrent(ADC_IC);
   dfsl_clarkef(Mobv.iA, Mobv.iB, &clarke_alpha, &clarke_beta);
   dfsl_parkf(clarke_alpha,clarke_beta,Mobv.RotorAngle, &park_d, &park_q);
   // Input feedbacks to the Id and Iq controllers
@@ -850,8 +852,8 @@ void User_PWMTIM_IRQ(void)
   // Pass filtered current to the PI(D)s
   Id_control.Err = 0.0f - Id_Filt.Y;
   Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - Iq_Filt.Y;
-  //	Id_control.Err = 0.0f - park_d;
-  //	Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - park_q;
+  //  Id_control.Err = 0.0f - park_d;
+  //  Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - park_q;
   // Don't integrate unless the throttle is active
   if(Mctrl.ThrottleCommand > 0.0f)
   {
@@ -910,8 +912,9 @@ void User_PWMTIM_IRQ(void)
   //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
   usbdacvals[15] = (float)(g_errorCode);
   usbdacvals[16] = (float)(adcRaw(ADC_VREFINT));
+  usbdacvals[17] = (float)HallSensor_Get_State();
 #ifdef TESTING_2X
-  usbdacvals[17] = HallSensor2_Get_Anglef();
+  usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif
 #endif
 
@@ -942,10 +945,10 @@ void User_PWMTIM_IRQ(void)
     if(DumpLoc < 32768)
     {
       /*
-			DumpData[DumpLoc] = (int32_t)((Mobv.iA)*1638.4f);
-			DumpData[DumpLoc+1] = (int32_t)((Mobv.iB)*1638.4f);
-			DumpData[DumpLoc+2] = (int32_t)((Mobv.iC)*1638.4f);
-			DumpData[DumpLoc+3] = HallSensor_Get_Angle();
+      DumpData[DumpLoc] = (int32_t)((Mobv.iA)*1638.4f);
+      DumpData[DumpLoc+1] = (int32_t)((Mobv.iB)*1638.4f);
+      DumpData[DumpLoc+2] = (int32_t)((Mobv.iC)*1638.4f);
+      DumpData[DumpLoc+3] = HallSensor_Get_Angle();
        */
       DumpData[DumpLoc] = (int16_t)(usbdacvals[dumpassignments[0]-1]*1638.4f);
       DumpData[DumpLoc+1] = (int16_t)(usbdacvals[dumpassignments[1]-1]*1638.4f);
@@ -1268,40 +1271,40 @@ uint32_t _ftoa(char* buf, float num, uint32_t precision)
 /*
 uint32_t itoa(char* buf, int32_t num)
 {
-	char* going_out = buf;
-	uint32_t retval = 0;
-	uint8_t is_neg = 0;
-	if(num < 0)
-	{
+  char* going_out = buf;
+  uint32_t retval = 0;
+  uint8_t is_neg = 0;
+  if(num < 0)
+  {
  *going_out = '-';
-		going_out++;
-		is_neg = 1;
-		num = -num;
-	}
+    going_out++;
+    is_neg = 1;
+    num = -num;
+  }
 
-	// Start assembling the string, in backwards order
-	// do..while is required so that a zero value
-	// will print at least one character
-	do
-	{
+  // Start assembling the string, in backwards order
+  // do..while is required so that a zero value
+  // will print at least one character
+  do
+  {
  *going_out = (num % 10) + '0';
-		going_out++;
-		retval++;
-		num = num / 10;
-	}while(num != 0);
-	// Null terminate
+    going_out++;
+    retval++;
+    num = num / 10;
+  }while(num != 0);
+  // Null terminate
  *going_out = 0;
-	// Now, flip the string around
-	// Swapping characters using a dummy byte
-	char dummy;
-	for(uint8_t i = 0; i < retval / 2; i++)
-	{
-		dummy = buf[is_neg + i];
-		buf[is_neg + i] = buf[is_neg + retval - 1 - i];
-		buf[is_neg + retval - 1 - i] = dummy;
-	}
+  // Now, flip the string around
+  // Swapping characters using a dummy byte
+  char dummy;
+  for(uint8_t i = 0; i < retval / 2; i++)
+  {
+    dummy = buf[is_neg + i];
+    buf[is_neg + i] = buf[is_neg + retval - 1 - i];
+    buf[is_neg + retval - 1 - i] = dummy;
+  }
 
-	return retval + is_neg;
+  return retval + is_neg;
 }
  */
 
