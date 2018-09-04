@@ -21,6 +21,7 @@ uint8_t UI_RampSpeed_Command_Req(char cmdtype, char* options);
 uint8_t UI_RampDir_Command_Req(char cmdtype, char* options);
 uint8_t UI_Variable_Command_Req(char cmdtype, char* options);
 uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options);
+uint8_t UI_Reset_Source_Query(void);
 
 /* Private Variables */
 char* ui_options[UI_NUM_OPTIONS] = UI_OPTIONS;
@@ -325,8 +326,9 @@ uint8_t UI_Process(char* inputstring)
       ui_error = UI_Variable_Command_Req(UI_QUERYCMD, inputstring);
       break;
     case Reset_Command:
-      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-      return UI_ERROR;
+      // Respond with the last known reset source
+      // This can help with debugging, but only right after a reset
+      ui_error = UI_Reset_Source_Query();
       break;
     case Bootreset_Command:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -712,4 +714,45 @@ uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
     return UI_OK;
   }
   return UI_ERROR;
+}
+
+/*
+ * Writes to the output buffer the last known reset source.
+ * This function is useful for debugging purposes when the MCU resets for
+ * an unknown reason. Of course, this will only work if the reset query
+ * is sent right after reset. The next reset (power cycle, whatever) will
+ * clear this info!
+ */
+uint8_t UI_Reset_Source_Query(void)
+{
+  if (RCC->CSR & RCC_CSR_LPWRRSTF)
+  {
+    UI_SerialOut("Low-power reset\r\n", 17);
+  }
+  if (RCC->CSR & RCC_CSR_WWDGRSTF)
+  {
+    UI_SerialOut("Window watchdog reset\r\n", 23);
+  }
+  if (RCC->CSR & RCC_CSR_WDGRSTF)
+  {
+    UI_SerialOut("Independent watchdog reset\r\n", 28);
+  }
+  if (RCC->CSR & RCC_CSR_SFTRSTF)
+  {
+    UI_SerialOut("Software reset\r\n", 16);
+  }
+  if (RCC->CSR & RCC_CSR_PORRSTF)
+  {
+    UI_SerialOut("Power on reset\r\n", 16);
+  }
+  if (RCC->CSR & RCC_CSR_PADRSTF)
+  {
+    UI_SerialOut("Pin reset\r\n", 11);
+  }
+  if (RCC->CSR & RCC_CSR_BORRSTF)
+  {
+    UI_SerialOut("Brown out reset\r\n", 17);
+  }
+
+  return UI_OK;
 }
