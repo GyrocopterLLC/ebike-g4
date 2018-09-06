@@ -5,7 +5,7 @@
 
 /* Private define ------------------------------------------------------------*/
 
-//#define MAINFLAG_SERIALDATAPRINT  ((uint32_t)0x00000001)
+#define MAINFLAG_SERIALDATAPRINT  ((uint32_t)0x00000001)
 #define MAINFLAG_SERIALDATAON   ((uint32_t)0x00000002)
 #define MAINFLAG_DUMPRECORD     ((uint32_t)0x00000004)
 #define MAINFLAG_DUMPDATAPRINT    ((uint32_t)0x00000008)
@@ -94,14 +94,7 @@ float usbdacvals[MAX_USB_VALS];
 /* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
 uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
 
-#define MAX_DUMP_OUTPUTS    4
-#define MAX_DUMP_LENGTH     32768 // 64k of CCMRAM / 2-byte variables = 32k
-int16_t DumpData[MAX_DUMP_LENGTH] __attribute__((section(".bss_CCMRAM")));
-uint16_t DumpLoc;
-/* Default dump outputs: Ia, Ib, Ic, Hall Angle */
-#define DEFAULT_DUMP_ASSIGNMENTS    {1, 2, 3, 9}
 
-uint8_t dumpassignments[MAX_DUMP_OUTPUTS] = DEFAULT_DUMP_ASSIGNMENTS;
 char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 
 uint32_t systick_debounce_counter;
@@ -272,8 +265,9 @@ int main(void)
   dfsl_pid_defaultsf(&Id_control);
   dfsl_pid_defaultsf(&Iq_control);
 
-
-  DumpLoc = 0;
+#ifdef DEBUG_DUMP_USED
+  DumpReset();
+#endif // DEBUG_DUMP_USED
 
   /* Set defaults for D, Q current filters */
   dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 2000.0f, 0.707f);
@@ -300,42 +294,7 @@ int main(void)
       // Echo it
       while(VCP_Write(&byte, 1) < 0) ;
       // Add it to the VCP buffer
-#ifdef DEBUG_RESET_SOURCE
-      if(byte == '?')
-      {
-        // Quick debugging of reset source
-        if(RCC->CSR & RCC_CSR_LPWRRSTF)
-        {
-          VCP_Write("Low-power reset\r\n",17);
-        }
-        if(RCC->CSR & RCC_CSR_WWDGRSTF)
-        {
-          VCP_Write("Window watchdog reset\r\n",23);
-        }
-        if(RCC->CSR & RCC_CSR_WDGRSTF)
-        {
-          VCP_Write("Independent watchdog reset\r\n",28);
-        }
-        if(RCC->CSR & RCC_CSR_SFTRSTF)
-        {
-          VCP_Write("Software reset\r\n",16);
-        }
-        if(RCC->CSR & RCC_CSR_PORRSTF)
-        {
-          VCP_Write("Power on reset\r\n",16);
-        }
-        if(RCC->CSR & RCC_CSR_PADRSTF)
-        {
-          VCP_Write("Pin reset\r\n",11);
-        }
-        if(RCC->CSR & RCC_CSR_BORRSTF)
-        {
-          VCP_Write("Brown out reset\r\n",17);
-        }
-        RCC->CSR |= RCC_CSR_RMVF;
-        continue;
-      }
-#endif
+
       vcp_buf_len = strlen(vcp_buffer);
       if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
       {
@@ -417,37 +376,8 @@ int main(void)
           usb_debug_buffer_pos = 0;
         }
       }
-
-      /**** Old version ****
-      if(g_MainFlags & MAINFLAG_SERIALDATAPRINT)
-      {
-        g_MainFlags &= ~MAINFLAG_SERIALDATAPRINT;
-        usbstring[0] = 0;
-        for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++)
-        {
-          if(usbdacassignments[i] == 0)
-          {
-            strcat(usbstring,"0 ");
-          }
-          else
-          {
-            //sprintf(string,"%d ",(int)usbdacvals[usbdacassignments[i]-1]);
-#if USB_MONITOR_FIXED_POINT
-            _itoa(string, (int)usbdacvals[usbdacassignments[i]-1], 0);
-#else
-            _ftoa(string, usbdacvals[usbdacassignments[i]-1], 3);
-#endif
-            strcat(usbstring,string);
-            strcat(usbstring," ");
-          }
-
-        }
-        strcat(usbstring,"\r\n");
-        VCP_Write(usbstring,strlen(usbstring));
-
-      }
-       */
     }
+#ifdef DEBUG_DUMP_USED
     if(g_MainFlags & MAINFLAG_DUMPDATAON)
     {
       if(g_MainFlags & MAINFLAG_DUMPDATAPRINT)
@@ -456,21 +386,21 @@ int main(void)
         usbstring[0] = 0;
         for(uint8_t i = 0; i < 4; i++)
         {
-          _itoa(string, (int32_t)DumpData[DumpLoc+i], 0);
+          _itoa(string, (int32_t)GetDumpData(), 0);
           strcat(usbstring,string);
           strcat(usbstring," ");
         }
-        DumpLoc+=4;
         strcat(usbstring,"\r\n");
         VCP_Write(usbstring,strlen(usbstring));
-        if(DumpLoc >= 32768)
+        if(DumpDone())
         {
-          DumpLoc = 0;
+          DumpReset();
           g_MainFlags &= ~(MAINFLAG_DUMPDATAON);
         }
-
       }
     }
+#endif // DEBUG_DUMP_USED
+
   }
 }
 
@@ -704,37 +634,7 @@ void User_PWMTIM_IRQ(void)
       Mctrl.state = Motor_AtSpeed;
     }
   }
-  /*
-  Mobv.RotorAngle = ((float)g_rampAngle)/65536.0f;
-  if(Mobv.RotorAngle >= 0.0f && Mobv.RotorAngle < .1667f)
-  {
-    Mobv.HallState = 6;
-  }
-  else if(Mobv.RotorAngle >= .1667f && Mobv.RotorAngle < .3333f)
-  {
-    Mobv.HallState = 2;
-  }
-  else if(Mobv.RotorAngle >= .3333f && Mobv.RotorAngle < .5f)
-  {
-    Mobv.HallState = 3;
-  }
-  else if(Mobv.RotorAngle >= .5f && Mobv.RotorAngle < .6667f)
-  {
-    Mobv.HallState = 1;
-  }
-  else if(Mobv.RotorAngle >= .6667f && Mobv.RotorAngle < .8333f)
-  {
-    Mobv.HallState = 5;
-  }
-  else if(Mobv.RotorAngle >= .8333f && Mobv.RotorAngle < 1.0f)
-  {
-    Mobv.HallState = 4;
-  }
-  else
-  {
-    Mobv.HallState = 0;
-  }
-   */
+
   if(Throttle_cmd <= 0.0f)
   {
     PWM_MotorOFF();
@@ -758,118 +658,6 @@ void User_PWMTIM_IRQ(void)
 
   PWM_SetDuty(tA,tB,tC);
 #endif
-
-#if 0
-  // Regular mode below here
-  float ipark_a, ipark_b;
-  float tAf, tBf, tCf;
-  uint16_t tA, tB, tC;
-  float clarke_alpha, clarke_beta;
-  float park_d, park_q;
-
-  // Generate ramp angle
-  // dfsl_rampgen(&g_rampAngle, g_rampInc); // Can use the dfsl library later, following code is simpler
-  if(g_rampdir == 0)
-  {
-    g_rampAngle += g_rampInc;
-  }
-  else
-  {
-    g_rampAngle -= g_rampInc;
-  }
-  // Update Hall sensor angle
-  HallSensor_Inc_Angle();
-#ifdef TESTING_2X
-  HallSensor2_Inc_Angle();
-#endif
-
-  /* Connections:
-   * Everything connected in final configuration
-   * Hall sensor angle->Ipark
-   * Vd, Vq feedback PIDs ->Ipark
-   * Ipark->SVM
-   * Motor currents->ADCs
-   * ADC results->Clarke
-   * Clarke Outputs, Hall sensor angle ->Park
-   * Park -> Vd, Vq feedback PIDs
-   * Motor is connected.
-   * Make sure that current does not exceed safe levels!
-   * Place series power resistors!
-   * Heatsinks on the power FETs!
-   */
-
-  // **************** FORWARD PATH *****************
-  Mctrl.ThrottleCommand = Throttle_cmd;
-  // Read angle from Hall sensors
-  Mobv.RotorAngle = HallSensor_Get_Anglef();
-  Mobv.HallState = HallSensor_Get_State();
-  //  fangle = ((float)HallSensor_Get_Angle())/65536.0f;
-  // Feed to inverse Park
-  dfsl_iparkf(Id_control.Out,Iq_control.Out,Mobv.RotorAngle,&ipark_a, &ipark_b);
-  //  dfsl_iparkf(0, Throttle_cmd, Mobv.RotorAngle, &ipark_a, &ipark_b);
-  // Inverse Park outputs to space vector modulation, output three-phase waveforms
-  dfsl_svmf(ipark_a, ipark_b, &tAf, &tBf, &tCf);
-  // Convert from floats to 16-bit ints
-  Mpwm.tA = tAf;
-  Mpwm.tB = tBf;
-  Mpwm.tC = tCf;
-  tA = (uint16_t)(tAf*65535.0f);
-  tB = (uint16_t)(tBf*65535.0f);
-  tC = (uint16_t)(tCf*65535.0f);
-
-  // Is throttle at zero? Motor off
-  if(Throttle_cmd <= 0.0f)
-  {
-    PWM_MotorOFF();
-    Throttle_cmd = 0.0f;
-  }
-  if(Throttle_cmd > 0.0f)
-  {
-    PWM_MotorON();
-  }
-
-  // Set PWM duty cycles
-  PWM_SetDuty(tA,tB,tC);
-
-
-  // **************** FEEDBACK PATH *****************
-  // Transform sensor readings
-
-  Mobv.iA = adcGetCurrent(ADC_IA);
-  Mobv.iB = adcGetCurrent(ADC_IB);
-  Mobv.iC = adcGetCurrent(ADC_IC);
-  //  Ia = adcGetCurrent(ADC_IA);
-  //  Ib = adcGetCurrent(ADC_IB);
-  //  Ic = adcGetCurrent(ADC_IC);
-  dfsl_clarkef(Mobv.iA, Mobv.iB, &clarke_alpha, &clarke_beta);
-  dfsl_parkf(clarke_alpha,clarke_beta,Mobv.RotorAngle, &park_d, &park_q);
-  // Input feedbacks to the Id and Iq controllers
-  // Filter the currents
-  Id_Filt.X = park_d;
-  Iq_Filt.X = park_q;
-  dfsl_biquadf(&Id_Filt);
-  dfsl_biquadf(&Iq_Filt);
-  // Pass filtered current to the PI(D)s
-  Id_control.Err = 0.0f - Id_Filt.Y;
-  Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - Iq_Filt.Y;
-  //  Id_control.Err = 0.0f - park_d;
-  //  Iq_control.Err = (3.0f)*(Mctrl.ThrottleCommand) - park_q;
-  // Don't integrate unless the throttle is active
-  if(Mctrl.ThrottleCommand > 0.0f)
-  {
-    dfsl_pidf(&Id_control);
-    dfsl_pidf(&Iq_control);
-  }
-  else
-  {
-    dfsl_pid_resetf(&Id_control);
-    dfsl_pid_resetf(&Iq_control);
-  }
-
-  // DAC debugging outputs
-  DAC->DHR12L1 = g_rampAngle;
-  DAC->DHR12L2 = (uint16_t)((Mobv.RotorAngle)*65536.0f);
-#endif
   // USB Debugging outputs
   // Current is scaled from +- 20 amps to 0->65536 (0 = -20A, 65536 = +20A)
 #if USB_MONITOR_FIXED_POINT
@@ -892,7 +680,13 @@ void User_PWMTIM_IRQ(void)
   //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
   usbdacvals[15] = g_errorCode;
   usbdacvals[16] = adcRaw(ADC_VREFINT);
-#else
+  usbdacvals[17] = HallSensor_Get_State();
+
+#ifdef TESTING_2X
+  usbdacvals[18] = HallSensor2_Get_Angle();
+#endif // TESTING_2X
+
+#else // !USB_MONITOR_FIXED_POINT
   usbdacvals[0] = Mobv.iA;
   usbdacvals[1] = Mobv.iB;
   usbdacvals[2] = Mobv.iC;
@@ -915,8 +709,8 @@ void User_PWMTIM_IRQ(void)
   usbdacvals[17] = (float)HallSensor_Get_State();
 #ifdef TESTING_2X
   usbdacvals[18] = HallSensor2_Get_Anglef();
-#endif
-#endif
+#endif // TESTING_2X
+#endif // !USB_MONITOR_FIXED_POINT
 
   // Load up the output buffer
   if(g_MainFlags & MAINFLAG_SERIALDATAON)
@@ -940,29 +734,16 @@ void User_PWMTIM_IRQ(void)
     }
   }
 
+#ifdef DEBUG_DUMP_USED
   if(g_MainFlags & MAINFLAG_DUMPRECORD)
   {
-    if(DumpLoc < 32768)
+    if(DumpGeneration(usbdacvals) == 1)
     {
-      /*
-      DumpData[DumpLoc] = (int32_t)((Mobv.iA)*1638.4f);
-      DumpData[DumpLoc+1] = (int32_t)((Mobv.iB)*1638.4f);
-      DumpData[DumpLoc+2] = (int32_t)((Mobv.iC)*1638.4f);
-      DumpData[DumpLoc+3] = HallSensor_Get_Angle();
-       */
-      DumpData[DumpLoc] = (int16_t)(usbdacvals[dumpassignments[0]-1]*1638.4f);
-      DumpData[DumpLoc+1] = (int16_t)(usbdacvals[dumpassignments[1]-1]*1638.4f);
-      DumpData[DumpLoc+2] = (int16_t)(usbdacvals[dumpassignments[2]-1]*1638.4f);
-      DumpData[DumpLoc+3] = (int16_t)(usbdacvals[dumpassignments[3]-1]*1638.4f);
-      DumpLoc+=4;
-    }
-    else
-    {
-      DumpLoc = 0;
       g_MainFlags &= ~(MAINFLAG_DUMPRECORD); // Stop recording
       g_MainFlags |= MAINFLAG_DUMPDATAON; // Start pushing data via USB serial port
     }
   }
+#endif // DEBUG_DUMP_USED
 
   RLED_PORT->BSRR = (1 << (RLED_PIN+16));
 
@@ -1191,6 +972,7 @@ void MAIN_DumpRecord(void)
     g_MainFlags |= MAINFLAG_DUMPRECORD;
 }
 
+#ifdef DEBUG_DUMP_USED
 void MAIN_SetDumpDebugOutput(uint8_t outputnum, uint8_t valuenum)
 {
   // Set the new output
@@ -1201,6 +983,7 @@ uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum)
 {
   return dumpassignments[outputnum];
 }
+#endif // DEBUG_DUMP_USED
 
 void stringflip(char* buf, uint32_t len)
 {

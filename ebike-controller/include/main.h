@@ -97,8 +97,10 @@ float MAIN_GetVar(uint8_t var);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 void MAIN_DumpRecord(void);
+#ifdef DEBUG_DUMP_USED
 void MAIN_SetDumpDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum);
+#endif // DEBUG_DUMP_USED
 void Delay(__IO uint32_t Delay);
 uint32_t GetTick(void);
 //void User_HallTIM_IRQ(void);

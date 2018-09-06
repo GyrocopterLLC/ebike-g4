@@ -642,7 +642,7 @@ uint8_t UI_Variable_Command_Req(char cmdtype, char* options)
   }
   return UI_ERROR;
 }
-
+#ifdef DEBUG_DUMP_USED
 uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
 {
   uint8_t ui_error;
@@ -715,6 +715,14 @@ uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
   }
   return UI_ERROR;
 }
+#else// !DEBUG_DUMP_USED
+uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
+{
+  UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+  return UI_ERROR;
+}
+#endif // !DEBUG_DUMP_USED
+
 
 /*
  * Writes to the output buffer the last known reset source.
