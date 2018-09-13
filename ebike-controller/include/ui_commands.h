@@ -47,7 +47,7 @@
                                       "HALLANG3",\
                                       "HALLANG4",\
                                       "HALLANG5",\
-                                      "HALLANG6",
+                                      "HALLANG6",\
                                 }
 #define UI_MOTOR_NUMCMD         10
 #define UI_MOTOR_CMDLEN         {2,2,2,4,8,8,8,8,8,8}
