@@ -764,3 +764,173 @@ uint8_t UI_Reset_Source_Query(void)
 
   return UI_OK;
 }
+
+// ******************  UI Version 2 starts here ****************
+
+/***
+ * UI_FindInOptionList
+ * Compares the input string to a list of possible options for this UI level.
+ * The input string must begin with exactly the same string as in the option list.
+ * If the string is longer than the option, that's okay - still a match. This allows
+ * for additional parameters to be sent after the option.
+ * Inputs:
+ * -- char* inputstring: character string from UI stream to compare against list of options
+ * -- char** options: list of strings of possible options
+ * -- uint8_t** option_lengths: the length in bytes of each option in the previous list
+ * -- uint16_t numOptions: the number of options in the list
+ * Returns:
+ * -- int16_t: if the string matches an options, the position in the list of that option
+ *            otherwise, -1
+ */
+int16_t UI_FindInOptionList(char* inputstring, char** options,
+    uint8_t** option_lengths, uint16_t numOptions) {
+  int16_t retval = -1;
+  for (uint16_t i = 0; i < numOptions; i++) {
+    if (strcmp_s(inputstring, options[i], option_lengths[i]) == 0) {
+      // It's a match!
+      retval = i;
+      break;
+    }
+  }
+  return retval;
+}
+
+uint8_t UI_TopLevelProcess(char* inputstring) {
+  uint8_t ui_error = 0;
+  UI_CommandType ui_cmd = UI_NoCmd;
+
+  // Convert to upper case
+  to_upper(inputstring);
+  // First, check for the top level option in the UI list
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_top_level_commands,
+      ui_top_level_cmdlen, ui_top_level_numcmd);
+  if(command_num == -1)
+  {
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+
+
+  ui_error = strcmp_s(inputstring, UI_PREAMBLE, UI_LENGTH_PREAMBLE);
+  if (ui_error != 0) {
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  // Next, check all the options
+  inputstring += UI_LENGTH_PREAMBLE;
+
+  for (uint8_t i = 0; i < UI_NUM_OPTIONS; i++) {
+    ui_error = strcmp_s(inputstring, ui_options[i], ui_option_lengths[i]);
+    if (ui_error == 0) {
+      // It's a match!
+      ui_cmd = i;
+      break;
+    }
+  }
+  if (ui_error != 0) {
+    // There was no match :(
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+
+  // Proceed past the command part of the string
+  inputstring += ui_option_lengths[ui_cmd];
+
+  // Do something based on the command type
+  switch (*inputstring) {
+  case UI_SETCMD:
+    // Set the variable to a thing!
+    inputstring++; // Move past the set character (default '=')
+    switch (ui_cmd) {
+    case USB_Speed_Command:
+      ui_error = UI_USB_Speed_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case USB_NumVars_Command:
+      ui_error = UI_USB_NumVars_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case USB_Command:
+      ui_error = UI_USB_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case SerialData_Command:
+      ui_error = UI_SerialData_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case RampSpeed_Command:
+      ui_error = UI_RampSpeed_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case RampDir_Command:
+      ui_error = UI_RampDir_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case Variable_Command:
+      ui_error = UI_Variable_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case Reset_Command:
+      MAIN_SoftReset(0);
+      break;
+    case Bootreset_Command:
+      MAIN_SoftReset(1);
+      break;
+    case Dump_Command:
+      MAIN_DumpRecord();
+      break;
+    case DumpVar_Command:
+      ui_error = UI_DumpVar_Command_Req(UI_SETCMD, inputstring);
+      break;
+    case UI_NoCmd:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
+    break;
+  case UI_QUERYCMD:
+    inputstring++; // Move past the query character (default '?')
+    switch (ui_cmd) {
+    case USB_Speed_Command:
+      ui_error = UI_USB_Speed_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case USB_NumVars_Command:
+      ui_error = UI_USB_NumVars_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case USB_Command:
+      ui_error = UI_USB_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case SerialData_Command:
+      ui_error = UI_SerialData_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case RampSpeed_Command:
+      ui_error = UI_RampSpeed_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case RampDir_Command:
+      ui_error = UI_RampDir_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case Variable_Command:
+      ui_error = UI_Variable_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case Reset_Command:
+      // Respond with the last known reset source
+      // This can help with debugging, but only right after a reset
+      ui_error = UI_Reset_Source_Query();
+      break;
+    case Bootreset_Command:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    case Dump_Command:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    case DumpVar_Command:
+      ui_error = UI_DumpVar_Command_Req(UI_QUERYCMD, inputstring);
+      break;
+    case UI_NoCmd:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
+    break;
+  default:
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+    break;
+  }
+  return ui_error;
+}
