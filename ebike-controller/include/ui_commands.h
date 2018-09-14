@@ -3,6 +3,9 @@
 
 #define UI_MENU_SEPARATOR     ':'
 
+#define UI_MENU_SET           '='
+#define UI_MENU_QUERY         '?'
+
 #define UI_TOP_LEVEL_COMMANDS   {     "DATA",\
                                       "FOC",\
                                       "MOTOR",\
@@ -11,6 +14,8 @@
                                 }
 #define UI_TOP_LEVEL_NUMCMD     5
 #define UI_TOP_LEVEL_CMDLEN     {4,3,5,4,4}
+
+#define UI_NUM_2ND_LEVELS     5
 
 #define UI_DATA_COMMANDS        {     "SPEED",\
                                       "NUMVARS",\

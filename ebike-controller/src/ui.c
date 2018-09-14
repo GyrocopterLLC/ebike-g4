@@ -191,7 +191,7 @@ static uint8_t UI_lengthoffloat(char* in)
 // Doesn't actually send any output, just adds it to the output buffer
 // Function that called UI_Process can call UI_BufLen to see if there's
 // some info to send, and then call UI_SendBuf to retrieve it.
-static void UI_SerialOut(char* str, uint8_t len)
+static void UI_SerialOut(const char* str, uint8_t len)
 {
   if(len > 0)
   {
@@ -767,8 +767,31 @@ uint8_t UI_Reset_Source_Query(void)
 
 // ******************  UI Version 2 starts here ****************
 #include "ui_commands.h"
-const char* const ui_top_level_commands[UI_TOP_LEVEL_NUMCMD] = UI_TOP_LEVEL_COMMANDS;
+
+// Level 1: Top Level Commands
+const char* ui_top_level_commands[UI_TOP_LEVEL_NUMCMD] = UI_TOP_LEVEL_COMMANDS;
 const uint16_t ui_top_level_cmdlen[UI_TOP_LEVEL_NUMCMD] = UI_TOP_LEVEL_CMDLEN;
+
+// Level 2-1: Data Commands
+const char* ui_2nd_level_data_commands[UI_DATA_NUMCMD] = UI_DATA_COMMANDS;
+const uint16_t ui_2nd_level_data_cmdlen[UI_DATA_NUMCMD] = UI_DATA_CMDLEN;
+
+// Level 2-2: FOC Commands
+const char* ui_2nd_level_foc_commands[UI_FOC_NUMCMD] = UI_FOC_COMMANDS;
+const uint16_t ui_2nd_level_foc_cmdlen[UI_FOC_NUMCMD] = UI_FOC_CMDLEN;
+
+// Level 2-3: Motor Commands
+const char* ui_2nd_level_motor_commands[UI_MOTOR_NUMCMD] = UI_MOTOR_COMMANDS;
+const uint16_t ui_2nd_level_motor_cmdlen[UI_MOTOR_NUMCMD] = UI_MOTOR_CMDLEN;
+
+// Level 2-4: Utility Commands
+const char* ui_2nd_level_util_commands[UI_UTIL_NUMCMD] = UI_UTIL_COMMANDS;
+const uint16_t ui_2nd_level_util_cmdlen[UI_UTIL_NUMCMD] = UI_UTIL_CMDLEN;
+
+// Level 2-5: Control Commands
+const char* ui_2nd_level_ctrl_commands[UI_CTRL_NUMCMD] = UI_CTRL_COMMANDS;
+const uint16_t ui_2nd_level_ctrl_cmdlen[UI_CTRL_NUMCMD] = UI_CTRL_CMDLEN;
+
 
 uint8_t UI_2nd_Level_Process_Data(char* inputstring);
 uint8_t UI_2nd_Level_Process_FOC(char* inputstring);
@@ -782,6 +805,30 @@ uint8_t (*ui_2nd_level_fcns[UI_TOP_LEVEL_NUMCMD])(char* inputstring) = {
     UI_2nd_Level_Process_Motor,
     UI_2nd_Level_Process_Util,
     UI_2nd_Level_Process_Ctrl
+};
+
+const char* *ui_2nd_level_commands[UI_NUM_2ND_LEVELS] = {
+    ui_2nd_level_data_commands,
+    ui_2nd_level_foc_commands,
+    ui_2nd_level_motor_commands,
+    ui_2nd_level_util_commands,
+    ui_2nd_level_ctrl_commands
+};
+
+const uint16_t* ui_2nd_level_cmdlen[UI_NUM_2ND_LEVELS] = {
+    ui_2nd_level_data_cmdlen,
+    ui_2nd_level_foc_cmdlen,
+    ui_2nd_level_motor_cmdlen,
+    ui_2nd_level_util_cmdlen,
+    ui_2nd_level_ctrl_cmdlen
+};
+
+const uint16_t ui_2nd_level_numcmd[UI_NUM_2ND_LEVELS] = {
+    UI_DATA_NUMCMD,
+    UI_FOC_NUMCMD,
+    UI_MOTOR_NUMCMD,
+    UI_UTIL_NUMCMD,
+    UI_CTRL_NUMCMD
 };
 
 /***
@@ -820,13 +867,51 @@ uint8_t UI_TopLevelProcess(char* inputstring) {
   // First, check for the top level option in the UI list
   int16_t command_num = UI_FindInOptionList(inputstring, ui_top_level_commands,
       ui_top_level_cmdlen, UI_TOP_LEVEL_NUMCMD);
-  if((command_num < 0)  || (command_num >= UI_TOP_LEVEL_NUMCMD))
-  {
+  if ((command_num < 0) || (command_num >= UI_TOP_LEVEL_NUMCMD)) {
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
     return UI_ERROR;
   }
   // Go to the selected submenu
   inputstring += ui_top_level_cmdlen[command_num]; // move past the command
+  // Is there a valid separator?
+  if (inputstring[0] != UI_MENU_SEPARATOR) {
+    // This is an error, unless the query character is here.
+    // In that case, we output the valid commands for this sublevel
+    if (inputstring[0] == UI_MENU_QUERY) {
+      UI_SerialOut("Menu items:\r\n", 13);
+      for (uint16_t i = 0; i < ui_2nd_level_numcmd[command_num]; i++) {
+        UI_SerialOut(ui_2nd_level_commands[command_num][i],
+            ui_2nd_level_cmdlen[command_num][i]);
+        UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      }
+      return UI_OK;
+    }
+    else
+    {
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+    }
+  }
   ui_error = (*ui_2nd_level_fcns[command_num])(inputstring);
   return ui_error;
+}
+
+uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
+  return UI_ERROR;
+}
+
+uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
+  return UI_ERROR;
+}
+
+uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
+  return UI_ERROR;
+}
+
+uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
+  return UI_ERROR;
+}
+
+uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
+  return UI_ERROR;
 }
