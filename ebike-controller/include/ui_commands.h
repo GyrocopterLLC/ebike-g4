@@ -19,6 +19,7 @@
 
 #define UI_DATA_COMMANDS        {     "SPEED",\
                                       "NUMVARS",\
+                                      "LISTVARS",\
                                       "VAR1",\
                                       "VAR2",\
                                       "VAR3",\
@@ -30,8 +31,8 @@
                                       "VAR9",\
                                       "VAR10"\
                                 }
-#define UI_DATA_NUMCMD          12
-#define UI_DATA_CMDLEN          {5,7,4,4,4,4,4,4,4,4,4,5}
+#define UI_DATA_NUMCMD          13
+#define UI_DATA_CMDLEN          {5,7,8,4,4,4,4,4,4,4,4,4,5}
 
 #define UI_FOC_COMMANDS         {     "KP",\
                                       "KI",\

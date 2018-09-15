@@ -840,13 +840,13 @@ const uint16_t ui_2nd_level_numcmd[UI_NUM_2ND_LEVELS] = {
  * Inputs:
  * -- char* inputstring: character string from UI stream to compare against list of options
  * -- char** options: list of strings of possible options
- * -- uint8_t** option_lengths: the length in bytes of each option in the previous list
+ * -- uint8_t* option_lengths: the length in bytes of each option in the previous list
  * -- uint16_t numOptions: the number of options in the list
  * Returns:
  * -- int16_t: if the string matches an options, the position in the list of that option
  *            otherwise, -1
  */
-int16_t UI_FindInOptionList(char* inputstring, const char* const *options,
+int16_t UI_FindInOptionList(char* inputstring, const char** options,
     const uint16_t* option_lengths, uint16_t numOptions) {
   int16_t retval = -1;
   for (uint16_t i = 0; i < numOptions; i++) {
@@ -860,7 +860,7 @@ int16_t UI_FindInOptionList(char* inputstring, const char* const *options,
 }
 
 uint8_t UI_TopLevelProcess(char* inputstring) {
-  uint8_t ui_error = 0;
+  uint8_t ui_error = UI_ERROR;
 
   // Convert to upper case
   to_upper(inputstring);
@@ -892,26 +892,129 @@ uint8_t UI_TopLevelProcess(char* inputstring) {
       return UI_ERROR;
     }
   }
+  inputstring++; // Move past the separator character
   ui_error = (*ui_2nd_level_fcns[command_num])(inputstring);
   return ui_error;
 }
 
 uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
-  return UI_ERROR;
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring,
+      ui_2nd_level_data_commands, ui_2nd_level_data_cmdlen, UI_DATA_NUMCMD);
+
+  inputstring += ui_2nd_level_data_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
+  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
+      || (inputstring[0] == '\n')) {
+    // Process if this is a blank command
+    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+
+  return ui_error;
 }
 
 uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
-  return UI_ERROR;
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_foc_commands,
+      ui_2nd_level_foc_cmdlen, UI_FOC_NUMCMD);
+  inputstring += ui_2nd_level_foc_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
+  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
+      || (inputstring[0] == '\n')) {
+    // Process if this is a blank command
+    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  return ui_error;
 }
 
 uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
-  return UI_ERROR;
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_motor_commands,
+      ui_2nd_level_motor_cmdlen, UI_MOTOR_NUMCMD);
+  inputstring += ui_2nd_level_motor_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
+  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
+      || (inputstring[0] == '\n')) {
+    // Process if this is a blank command
+    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  return ui_error;
 }
 
 uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
-  return UI_ERROR;
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_util_commands,
+      ui_2nd_level_util_cmdlen, UI_UTIL_NUMCMD);
+  inputstring += ui_2nd_level_util_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
+  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
+      || (inputstring[0] == '\n')) {
+    // Process if this is a blank command
+    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  return ui_error;
 }
 
 uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
-  return UI_ERROR;
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_ctrl_commands,
+      ui_2nd_level_ctrl_cmdlen, UI_CTRL_NUMCMD);
+  inputstring += ui_2nd_level_ctrl_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
+  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
+      || (inputstring[0] == '\n')) {
+    // Process if this is a blank command
+    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  return ui_error;
 }
