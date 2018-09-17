@@ -792,43 +792,52 @@ const uint16_t ui_2nd_level_util_cmdlen[UI_UTIL_NUMCMD] = UI_UTIL_CMDLEN;
 const char* ui_2nd_level_ctrl_commands[UI_CTRL_NUMCMD] = UI_CTRL_COMMANDS;
 const uint16_t ui_2nd_level_ctrl_cmdlen[UI_CTRL_NUMCMD] = UI_CTRL_CMDLEN;
 
+// Level 2-6: Throttle Commands
+const char* ui_2nd_level_thr_commands[UI_THR_NUMCMD] = UI_THR_COMMANDS;
+const uint16_t ui_2nd_level_thr_cmdlen[UI_THR_NUMCMD] = UI_THR_CMDLEN;
+
 
 uint8_t UI_2nd_Level_Process_Data(char* inputstring);
 uint8_t UI_2nd_Level_Process_FOC(char* inputstring);
 uint8_t UI_2nd_Level_Process_Motor(char* inputstring);
 uint8_t UI_2nd_Level_Process_Util(char* inputstring);
 uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring);
+uint8_t UI_2nd_Level_Process_Thr(char* inputstring);
 
 uint8_t (*ui_2nd_level_fcns[UI_TOP_LEVEL_NUMCMD])(char* inputstring) = {
     UI_2nd_Level_Process_Data,
     UI_2nd_Level_Process_FOC,
     UI_2nd_Level_Process_Motor,
     UI_2nd_Level_Process_Util,
-    UI_2nd_Level_Process_Ctrl
+    UI_2nd_Level_Process_Ctrl,
+    UI_2nd_Level_Process_Thr
 };
 
-const char* *ui_2nd_level_commands[UI_NUM_2ND_LEVELS] = {
+const char* *ui_2nd_level_commands[UI_TOP_LEVEL_NUMCMD] = {
     ui_2nd_level_data_commands,
     ui_2nd_level_foc_commands,
     ui_2nd_level_motor_commands,
     ui_2nd_level_util_commands,
-    ui_2nd_level_ctrl_commands
+    ui_2nd_level_ctrl_commands,
+    ui_2nd_level_thr_commands
 };
 
-const uint16_t* ui_2nd_level_cmdlen[UI_NUM_2ND_LEVELS] = {
+const uint16_t* ui_2nd_level_cmdlen[UI_TOP_LEVEL_NUMCMD] = {
     ui_2nd_level_data_cmdlen,
     ui_2nd_level_foc_cmdlen,
     ui_2nd_level_motor_cmdlen,
     ui_2nd_level_util_cmdlen,
-    ui_2nd_level_ctrl_cmdlen
+    ui_2nd_level_ctrl_cmdlen,
+    ui_2nd_level_thr_cmdlen
 };
 
-const uint16_t ui_2nd_level_numcmd[UI_NUM_2ND_LEVELS] = {
+const uint16_t ui_2nd_level_numcmd[UI_TOP_LEVEL_NUMCMD] = {
     UI_DATA_NUMCMD,
     UI_FOC_NUMCMD,
     UI_MOTOR_NUMCMD,
     UI_UTIL_NUMCMD,
-    UI_CTRL_NUMCMD
+    UI_CTRL_NUMCMD,
+    UI_THR_NUMCMD
 };
 
 /***
@@ -898,22 +907,145 @@ uint8_t UI_TopLevelProcess(char* inputstring) {
 }
 
 uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
+  int32_t newval;
   uint8_t ui_error = UI_ERROR;
+  char tempbuf[8];
+  uint8_t templen;
 
   // Which command?
   int16_t command_num = UI_FindInOptionList(inputstring,
       ui_2nd_level_data_commands, ui_2nd_level_data_cmdlen, UI_DATA_NUMCMD);
 
   inputstring += ui_2nd_level_data_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
+  char command_type = inputstring[0];
+  inputstring++;
+  if (command_type == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
-  } else if (inputstring[0] == UI_MENU_QUERY) {
+    switch(command_num) {
+    case 0: // SPEED
+      newval = UI_atoi(inputstring);
+      if ((newval >= 0) && (newval < MAX_USB_SPEED_CHOICES)) {
+        MAIN_SetUSBDebugSpeed(newval);
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+      } else {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      break;
+    case 1: // NUMVARS
+      newval = UI_atoi(inputstring);
+      if ((newval >= 0) && (newval <= MAX_USB_OUTPUTS)) {
+        MAIN_SetNumUSBDebugOutputs(newval);
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+      } else {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      break;
+    case 3: // VAR1
+    case 4: // VAR2
+    case 5: // VAR3
+    case 6: // VAR4
+    case 7: // VAR5
+    case 8: // VAR6
+    case 9: // VAR7
+    case 10: // VAR8
+    case 11: // VAR9
+    case 12: // VAR10
+      newval = -1;
+      for (uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++) {
+        ui_error = strcmp_s(inputstring, ui_usb_options[i], UI_USB_LENGTH);
+        if (ui_error == 0) {
+          // Setting this variable!
+          newval = i;
+          break;
+        }
+      }
+      if (ui_error != 0) {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      MAIN_SetUSBDebugOutput(command_num-3, newval+1);
+      ui_error = UI_OK;
+      break;
+
+    case 13: // SEND
+      // Only two valid options here, '0' or '1'
+      // '0' turns off the output, '1' turns it on
+      if(*inputstring == '1')
+      {
+        MAIN_SetUSBDebugging(1);
+      }
+      else if(*inputstring == '0')
+      {
+        MAIN_SetUSBDebugging(0);
+      }
+      else
+      {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      ui_error = UI_OK;
+      break;
+
+    case 2: // LISTVARS invalid in set
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
+
+  } else if (command_type == UI_MENU_QUERY) {
     // Return the current value of the variable
-  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
-      || (inputstring[0] == '\n')) {
-    // Process if this is a blank command
-    // - might not be valid for a particular entry
+    switch(command_num) {
+    case 0: // SPEED
+      templen = _itoa(tempbuf, MAIN_GetUSBDebugSpeed(), 0);
+      UI_SerialOut(tempbuf,templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
+      break;
+    case 1: // NUMVARS
+      templen = _itoa(tempbuf, MAIN_GetNumUSBDebugOutputs(), 0);
+      UI_SerialOut(tempbuf,templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
+      break;
+    case 2: // LISTVARS
+      for(uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++)
+      {
+        templen = _itoa(tempbuf, i+1, 2);
+        UI_SerialOut(tempbuf,templen);
+        UI_SerialOut(": ",2);
+        UI_SerialOut(ui_usb_options[i],UI_USB_LENGTH);
+        UI_SerialOut(", ",2);
+        UI_SerialOut(ui_usb_optdescriptions[i],ui_usb_optdesc_lengths[i]);
+        UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      }
+      ui_error = UI_OK;
+      break;
+    case 3: // VAR1
+    case 4: // VAR2
+    case 5: // VAR3
+    case 6: // VAR4
+    case 7: // VAR5
+    case 8: // VAR6
+    case 9: // VAR7
+    case 10: // VAR8
+    case 11: // VAR9
+    case 12: // VAR10
+      newval = MAIN_GetUSBDebugOutput(command_num-3);
+      UI_SerialOut(ui_usb_options[newval-1], UI_USB_LENGTH);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
+      break;
+    case 13: // SEND is invalid in query
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -925,20 +1057,88 @@ uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
 
 uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
   uint8_t ui_error = UI_ERROR;
+  float newval_f;
+  int32_t newval_i32;
+  char command_type;
+  char tempbuf[8];
+  uint8_t templen;
 
   // Which command?
   int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_foc_commands,
       ui_2nd_level_foc_cmdlen, UI_FOC_NUMCMD);
   inputstring += ui_2nd_level_foc_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
+  command_type = inputstring[0];
+  inputstring++;
+  if (command_type == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
-  } else if (inputstring[0] == UI_MENU_QUERY) {
+    switch (command_num) {
+    case 0: // KP
+    case 1: // KI
+    case 2: // KD
+    case 3: // KC
+      newval_f = UI_atof(inputstring);
+      ui_error = MAIN_SetVar(command_num, newval_f);
+      if(ui_error == UI_OK) {
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      }
+      else
+      {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      ui_error = UI_OK;
+      break;
+    case 4: // FREQ
+    case 5: // DT
+      newval_i32 = UI_atoi(inputstring);
+      if (command_num == 4) {
+        ui_error = MAIN_SetFreq(newval_i32);
+      } else {
+        ui_error = MAIN_SetDeadTime(newval_i32);
+      }
+      if (ui_error == UI_OK) {
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      } else {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      break;
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
+
+  } else if (command_type == UI_MENU_QUERY) {
     // Return the current value of the variable
-  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
-      || (inputstring[0] == '\n')) {
-    // Process if this is a blank command
-    // - might not be valid for a particular entry
+    switch(command_num)
+    {
+    case 0: // KP
+    case 1: // KI
+    case 2: // KD
+    case 3: // KC
+      newval_f = MAIN_GetVar(command_num);
+      templen = _ftoa(tempbuf, newval_f, 6);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 4: // FREQ
+      newval_i32 = MAIN_GetFreq();
+      templen = _itoa(tempbuf, newval_i32, 3);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 5: // DT
+      newval_i32 = MAIN_GetDeadTime();
+      templen = _itoa(tempbuf, newval_i32, 3);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -959,10 +1159,6 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
     float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
-  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
-      || (inputstring[0] == '\n')) {
-    // Process if this is a blank command
-    // - might not be valid for a particular entry
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -983,10 +1179,6 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
     float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
-  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
-      || (inputstring[0] == '\n')) {
-    // Process if this is a blank command
-    // - might not be valid for a particular entry
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1007,10 +1199,26 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
     float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
-  } else if ((inputstring[0] == 0) || (inputstring[0] == '\r')
-      || (inputstring[0] == '\n')) {
-    // Process if this is a blank command
-    // - might not be valid for a particular entry
+  } else {
+    // Ok, definitely invalid
+    UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+    return UI_ERROR;
+  }
+  return ui_error;
+}
+
+uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
+  uint8_t ui_error = UI_ERROR;
+
+  // Which command?
+  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_thr_commands,
+      ui_2nd_level_thr_cmdlen, UI_THR_NUMCMD);
+  inputstring += ui_2nd_level_thr_cmdlen[command_num];
+  if (inputstring[0] == UI_MENU_SET) {
+    // Perform setting variable
+    float newval = UI_atof(&(inputstring[1]));
+  } else if (inputstring[0] == UI_MENU_QUERY) {
+    // Return the current value of the variable
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);

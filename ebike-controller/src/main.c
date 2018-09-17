@@ -44,7 +44,7 @@ PowerCalcs Mpc;
 
 /** Debugging outputs **
  *
- * 0 - None
+ * 0 - None (outputs zero)
  * 1 - Ia
  * 2 - Ib
  * 3 - Ic
@@ -204,8 +204,10 @@ int main(void)
 {
   char byte;
   uint32_t resplen;
+#ifdef DEBUG_USED
   char string[32];
   char usbstring[64];
+#endif // DEBUG_USED
   Throttle_cmd = 0.0f;
 
   BootloaderStartup(); // Load bootloader if certain conditions are met
@@ -894,7 +896,7 @@ void MAIN_SetRampDir(uint8_t forwardOrBackwards)
   }
 }
 
-void MAIN_SetVar(uint8_t var, float newval)
+uint8_t MAIN_SetVar(uint8_t var, float newval)
 {
   switch(var)
   {
@@ -919,6 +921,7 @@ void MAIN_SetVar(uint8_t var, float newval)
     Iq_control.Kc = newval;
     break;
   }
+  return UI_OK;
 }
 
 float MAIN_GetVar(uint8_t var)
@@ -943,6 +946,27 @@ float MAIN_GetVar(uint8_t var)
     break;
   }
   return 0.0f;
+}
+
+uint8_t MAIN_SetFreq(int32_t newfreq)
+{
+  // Not yet implemented
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetFreq(void)
+{
+  return 20000; // Hz
+}
+
+uint8_t MAIN_SetDeadTime(int32_t newDT)
+{
+  // Not yet implemented
+  return UI_ERROR;
+}
+int32_t MAIN_GetDeadTime(void)
+{
+  return 500; // nanosec
 }
 
 void MAIN_SetError(uint32_t errorCode)
