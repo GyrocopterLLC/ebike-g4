@@ -78,21 +78,24 @@
 #define UI_CTRL_CMDLEN          {6,6,6,8,8,8,9}
 
 #define UI_THR_COMMANDS         {     "TYPE1",\
-                                      "MIN1",\
-                                      "MAX1",\
-                                      "HYST1",\
-                                      "FILT1",\
-                                      "RISE1",\
                                       "TYPE2",\
+                                      "MIN1",\
                                       "MIN2",\
+                                      "MAX1",\
                                       "MAX2",\
+                                      "HYST1",\
                                       "HYST2",\
+                                      "FILT1",\
                                       "FILT2",\
+                                      "RISE1",\
                                       "RISE2"\
                                 }
 #define UI_THR_NUMCMD           12
-#define UI_THR_CMDLEN           {5,4,4,5,5,5,5,4,4,5,5,5}
+#define UI_THR_CMDLEN           {5,5,4,4,4,4,5,5,5,5,5,5}
 
+#define UI_THR_TYPES            {"NONE","HALL","PAS"}
+#define UI_THR_NUMTYPES         3
+#define UI_THR_TYPESLEN         {4,4,3}
 
 
 #endif // UI_COMMANDS_H_

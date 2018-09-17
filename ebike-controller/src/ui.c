@@ -1124,13 +1124,13 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
       break;
     case 4: // FREQ
       newval_i32 = MAIN_GetFreq();
-      templen = _itoa(tempbuf, newval_i32, 3);
+      templen = _itoa(tempbuf, newval_i32, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 5: // DT
       newval_i32 = MAIN_GetDeadTime();
-      templen = _itoa(tempbuf, newval_i32, 3);
+      templen = _itoa(tempbuf, newval_i32, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
@@ -1156,7 +1156,6 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
   inputstring += ui_2nd_level_motor_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
   } else {
@@ -1176,7 +1175,6 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
   inputstring += ui_2nd_level_util_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
   } else {
@@ -1196,7 +1194,6 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
   inputstring += ui_2nd_level_ctrl_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
   } else {
@@ -1207,18 +1204,122 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
   return ui_error;
 }
 
+const char* ui_2nd_level_thr_types[UI_THR_NUMTYPES] = UI_THR_TYPES;
+const uint16_t ui_2nd_level_thr_typelen[UI_THR_NUMTYPES] = UI_THR_TYPESLEN;
+
 uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   uint8_t ui_error = UI_ERROR;
+  int16_t command_num;
+  char command_type;
+  int16_t thr_type;
+  int32_t newval_i32;
+  char tempbuf[8];
+  uint8_t templen;
 
   // Which command?
-  int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_thr_commands,
+  command_num = UI_FindInOptionList(inputstring, ui_2nd_level_thr_commands,
       ui_2nd_level_thr_cmdlen, UI_THR_NUMCMD);
   inputstring += ui_2nd_level_thr_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
+  command_type = inputstring[0];
+  inputstring++;
+  if (command_type == UI_MENU_SET) {
     // Perform setting variable
-    float newval = UI_atof(&(inputstring[1]));
-  } else if (inputstring[0] == UI_MENU_QUERY) {
+    switch(command_num) {
+    case 0: // TYPE1
+    case 1: // TYPE2
+      thr_type = UI_FindInOptionList(inputstring, ui_2nd_level_thr_types,
+          ui_2nd_level_thr_typelen, UI_THR_NUMTYPES);
+      if(thr_type == -1)
+      {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      else {
+        MAIN_SetThrType(thr_type, command_num+1);
+      }
+      break;
+    case 2: // MIN1
+    case 3: // MIN2
+      newval_i32 = UI_atoi(inputstring);
+      MAIN_SetThrMin(newval_i32, command_num-1);
+      break;
+    case 4: // MAX1
+    case 5: // MAX2
+      newval_i32 = UI_atoi(inputstring);
+      MAIN_SetThrMax(newval_i32, command_num-3);
+      break;
+    case 6: // HYST1
+    case 7: // HYST2
+      newval_i32 = UI_atoi(inputstring);
+      MAIN_SetThrHyst(newval_i32, command_num-5);
+      break;
+    case 8: // FILT1
+    case 9: // FILT2
+      newval_i32 = UI_atoi(inputstring);
+      MAIN_SetThrFilt(newval_i32, command_num-7);
+      break;
+    case 10: // RISE1
+    case 11: // RISE2
+      newval_i32 = UI_atoi(inputstring);
+      MAIN_SetThrRise(newval_i32, command_num-9);
+      break;
+    }
+  } else if (command_type == UI_MENU_QUERY) {
     // Return the current value of the variable
+    switch (command_num) {
+    case 0: // TYPE1
+    case 1: // TYPE2
+      switch (MAIN_GetThrType(command_num + 1)) {
+      case 0:
+        UI_SerialOut("NONE\r\n", 6);
+        break;
+      case 1:
+        UI_SerialOut("HALL\r\n", 6);
+        break;
+      case 2:
+        UI_SerialOut("PAS\r\n", 5);
+        break;
+      default:
+        UI_SerialOut("Invalid type\r\n", 14);
+        break;
+      }
+      break;
+    case 2: // MIN1
+    case 3: // MIN2
+      newval_i32 = MAIN_GetThrMin(command_num - 1);
+      templen = _itoa(tempbuf, newval_i32, 0);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 4: // MAX1
+    case 5: // MAX2
+      newval_i32 = MAIN_GetThrMax(command_num - 3);
+      templen = _itoa(tempbuf, newval_i32, 0);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 6: // HYST1
+    case 7: // HYST22
+      newval_i32 = MAIN_GetThrHyst(command_num - 5);
+      templen = _itoa(tempbuf, newval_i32, 0);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 8: // FILT1
+    case 9: // FILT2
+      newval_i32 = MAIN_GetThrFilt(command_num - 7);
+      templen = _itoa(tempbuf, newval_i32, 0);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 10: // RISE1
+    case 11: // RISE2
+      newval_i32 = MAIN_GetThrRise(command_num - 9);
+      templen = _itoa(tempbuf, newval_i32, 0);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
