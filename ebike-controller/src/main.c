@@ -72,8 +72,6 @@ PowerCalcs Mpc;
  *
  */
 
-
-
 uint8_t usb_num_output_vars = DEFAULT_USB_OUTPUTS;
 
 uint8_t usb_speed_choice = 0;
@@ -85,25 +83,24 @@ __IO uint32_t usb_debug_countdown_timer = DEFAULT_SERIAL_DATA_RATE;
 uint32_t usb_debug_countdown_reload = DEFAULT_SERIAL_DATA_RATE;
 uint8_t usb_debug_prefix[USB_PREFIX_LENGTH] = DEFAULT_USB_PREFIX;
 
-
 #if USB_MONITOR_FIXED_POINT
-uint32_t usbdacvals[MAX_USB_VALS];
+    uint32_t usbdacvals[MAX_USB_VALS];
 #else
-float usbdacvals[MAX_USB_VALS];
+    float usbdacvals[MAX_USB_VALS];
 #endif
-/* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
-uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
+    /* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
+    uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
 
+    char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 
-char vcp_buffer[UI_MAX_BUFFER_LENGTH];
-
-uint32_t systick_debounce_counter;
-uint8_t debounce_integrator;
-volatile PB_TypeDef pb_state;
+    uint32_t systick_debounce_counter;
+    uint8_t debounce_integrator;
+    volatile PB_TypeDef pb_state;
 
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
-PID_Float_Type Id_control, Iq_control;
+    PID_Float_Type Id_control,
+Iq_control;
 //Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
 Biquad_Float_Type Id_Filt, Iq_Filt;
 float Throttle_cmd;
@@ -117,13 +114,12 @@ static void User_LED_Init(void);
 static void User_DAC_Init(void);
 static void User_BasicTim_Init(void);
 
-/* Private functions ---------------------------------------------------------*/ 
+/* Private functions ---------------------------------------------------------*/
 
 /**
  * Enable backup domain write access.
  */
-static void BackupEnable(void)
-{
+static void BackupEnable(void) {
   // First, enable the clock to the power controller
   RCC->APB1ENR |= RCC_APB1ENR_PWREN;
   // Next, set the write protection disable bit in the power controller
@@ -140,8 +136,7 @@ static void BackupEnable(void)
  * ** A particular memory location has a bootloader reset flag enabled
  */
 
-static void BootloaderStartup(void)
-{
+static void BootloaderStartup(void) {
   void (*bootloader)(void) = (void(*)(void)) *((uint32_t *)(0x1FFF0004));
   // Breaking down that previous line...
   // Before the equals sign: declare a pointer to a function with no input arguments and no return value.
@@ -155,7 +150,7 @@ static void BootloaderStartup(void)
   uint8_t bootByte;
   uint8_t go_to_boot = 0;
 
-  User_PB_Init(); // Enable pushbutton so we can check if it's pressed
+  User_PB_Init();// Enable pushbutton so we can check if it's pressed
   if((PB_PORT->IDR & (1<<PB_PIN)) == 0)
   {
     // Make sure it really is pressed. Check 100x in a row.
@@ -192,7 +187,7 @@ static void BootloaderStartup(void)
   if(go_to_boot != 0)
   {
     __set_MSP(0x2001FFFF); // Change stack pointer to the end of ram.
-    bootloader(); // Call the bootloader.
+    bootloader();// Call the bootloader.
   }
 }
 /**
@@ -200,8 +195,7 @@ static void BootloaderStartup(void)
  * @param  None
  * @retval None
  */
-int main(void)
-{
+int main(void) {
   char byte;
   uint32_t resplen;
 #ifdef DEBUG_USED
@@ -229,15 +223,14 @@ int main(void)
   FLASH->ACR |= FLASH_ACR_DCEN;
 
   /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
-  if (((DBGMCU->IDCODE) >> 16) == 0x1001)
-  {
+  if (((DBGMCU->IDCODE) >> 16) == 0x1001) {
     /* Enable the Flash prefetch */
     FLASH->ACR |= FLASH_ACR_PRFTEN;
   }
 
   NVIC_SetPriorityGrouping(0); // Maximum number of priority bits (4 for this MCU), no sub-priority bits
 
-  SysTick_Config(SystemCoreClock/1000);
+  SysTick_Config(SystemCoreClock / 1000);
   NVIC_SetPriority(SysTick_IRQn, PRIO_SYSTICK);
 
   g_errorCode = 0;
@@ -246,7 +239,7 @@ int main(void)
   /* David's version */
   User_LED_Init();
   //GPIOD->ODR |= GPIO_PIN_12|GPIO_PIN_15;
-  GLED_PORT->ODR |= (1<<GLED_PIN);
+  GLED_PORT->ODR |= (1 << GLED_PIN);
   adcInit();
   User_DAC_Init();
   User_BasicTim_Init();
@@ -284,33 +277,28 @@ int main(void)
   Mfoc.Iq_PID = &Iq_control;
 
   /* Run Application (Interrupt mode) */
-  while (1)
-  {
+  while (1) {
     uint32_t vcp_buf_len;
     // Feed the watchdog!
     WDT_feed();
 
     //Toggle_Leds();
-    if(VCP_Read(&byte, 1) != 0)
-    {
+    if (VCP_Read(&byte, 1) != 0) {
       // Echo it
-      while(VCP_Write(&byte, 1) < 0) ;
+      while (VCP_Write(&byte, 1) < 0)
+        ;
       // Add it to the VCP buffer
 
       vcp_buf_len = strlen(vcp_buffer);
-      if(vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1))
-      {
+      if (vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1)) {
         vcp_buffer[vcp_buf_len] = byte;
         vcp_buffer[vcp_buf_len + 1] = 0;
-      }
-      else
-      {
+      } else {
         // Flush the buffer, just ignore overlong strings
         vcp_buffer[0] = 0;
       }
 
-      if(byte == '\n')
-      {
+      if (byte == '\n') {
         // Send it to the UI processor!
         UI_Process(vcp_buffer);
 
@@ -319,29 +307,25 @@ int main(void)
 
         // Send response if it exists
         resplen = UI_RespLen();
-        if(resplen > 0)
-        {
-          if(resplen <= CDC_DATA_FS_MAX_PACKET_SIZE)
-          {
-            while(VCP_Write(UI_SendBuf(), resplen) < 0);
-          }
-          else
-          {
+        if (resplen > 0) {
+          if (resplen <= CDC_DATA_FS_MAX_PACKET_SIZE) {
+            while (VCP_Write(UI_SendBuf(), resplen) < 0)
+              ;
+          } else {
             // Copy to local memory
             memcpy(vcp_buffer, UI_SendBuf(), resplen);
             vcp_buf_len = resplen;
             uint32_t vcp_pointer = 0;
-            while(vcp_buf_len > 0)
-            {
-              if(vcp_buf_len > (CDC_DATA_FS_MAX_PACKET_SIZE-4))
-              {
-                while(VCP_Write(&(vcp_buffer[vcp_pointer]), (CDC_DATA_FS_MAX_PACKET_SIZE-4)) < 0);
-                vcp_pointer += (CDC_DATA_FS_MAX_PACKET_SIZE-4);
-                vcp_buf_len -= (CDC_DATA_FS_MAX_PACKET_SIZE-4);
-              }
-              else
-              {
-                while(VCP_Write(&(vcp_buffer[vcp_pointer]), vcp_buf_len) < 0);
+            while (vcp_buf_len > 0) {
+              if (vcp_buf_len > (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) {
+                while (VCP_Write(&(vcp_buffer[vcp_pointer]),
+                    (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) < 0)
+                  ;
+                vcp_pointer += (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
+                vcp_buf_len -= (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
+              } else {
+                while (VCP_Write(&(vcp_buffer[vcp_pointer]), vcp_buf_len) < 0)
+                  ;
                 vcp_buf_len = 0;
                 vcp_buffer[0] = 0;
               }
@@ -351,30 +335,26 @@ int main(void)
       }
     }
     /*
-    if(HBD_Receive(&byte, 1) != 0)
-    {
-    // Read a byte from the HBD UART
-    UI_Process(byte);
-    }
+     if(HBD_Receive(&byte, 1) != 0)
+     {
+     // Read a byte from the HBD UART
+     UI_Process(byte);
+     }
      */
-    if(pb_state == PB_PRESSED)
-    {
+    if (pb_state == PB_PRESSED) {
       // Wait until release
-      while(pb_state == PB_PRESSED) {}
+      while (pb_state == PB_PRESSED) {
+      }
       // Change data output state
       g_MainFlags ^= MAINFLAG_SERIALDATAON;
     }
-    if(g_MainFlags & MAINFLAG_CONVERTTEMPERATURE)
-    {
+    if (g_MainFlags & MAINFLAG_CONVERTTEMPERATURE) {
       g_MainFlags &= ~MAINFLAG_CONVERTTEMPERATURE;
       g_FetTemp = adcGetTempDegC();
     }
-    if(g_MainFlags & MAINFLAG_SERIALDATAON)
-    {
-      if(usb_debug_buffer_pos > 0)
-      {
-        if(VCP_Write(usb_debug_buffer, usb_debug_buffer_pos) != -1)
-        {
+    if (g_MainFlags & MAINFLAG_SERIALDATAON) {
+      if (usb_debug_buffer_pos > 0) {
+        if (VCP_Write(usb_debug_buffer, usb_debug_buffer_pos) != -1) {
           usb_debug_buffer_pos = 0;
         }
       }
@@ -426,8 +406,7 @@ int main(void)
  * @param  None
  * @retval None
  */
-static void SystemClock_Config(void)
-{
+static void SystemClock_Config(void) {
   uint32_t timeout = 0;
   uint32_t tempreg, pllm, pllp, plln, pllq;
   // Enable Power Control clock
@@ -448,11 +427,11 @@ static void SystemClock_Config(void)
 
   // Make sure it switched over
   timeout = 20000;
-  do
-  {
+  do {
     timeout--;
-    if(timeout == 0) return;
-  }while((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI);
+    if (timeout == 0)
+      return;
+  } while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_HSI);
 
   // Disable PLL
   RCC->CR &= ~(RCC_CR_PLLON);
@@ -461,12 +440,11 @@ static void SystemClock_Config(void)
   RCC->CR |= RCC_CR_HSEON; // Turn on HSE
   // Wait for HSE to turn on
   timeout = 20000;
-  do
-  {
+  do {
     timeout--;
-    if(timeout == 0) return;
-  }
-  while(!(RCC->CR & RCC_CR_HSERDY));
+    if (timeout == 0)
+      return;
+  } while (!(RCC->CR & RCC_CR_HSERDY));
 
   // Configure PLL multipliers
   pllm = HSE_VALUE / 1000000u; // Set so the PLL input clock is 1MHz (HSE/pllm = 1MHz)
@@ -474,21 +452,18 @@ static void SystemClock_Config(void)
   pllq = 7;
   plln = 336;
   // Set PLL multipliers with HSE selected as input source
-  RCC->PLLCFGR = (pllq << 24)
-                  | RCC_PLLCFGR_PLLSRC
-                  | (pllp << 16)
-                  | (plln << 6)
-                  | (pllm);
+  RCC->PLLCFGR = (pllq << 24) | RCC_PLLCFGR_PLLSRC | (pllp << 16) | (plln << 6)
+      | (pllm);
 
   // Enable PLL
   RCC->CR |= RCC_CR_PLLON;
 
   timeout = 20000;
-  do
-  {
+  do {
     timeout--;
-    if(timeout==0) return;
-  }while(!(RCC->CR & RCC_CR_PLLRDY)); // Wait for PLL to start
+    if (timeout == 0)
+      return;
+  } while (!(RCC->CR & RCC_CR_PLLRDY)); // Wait for PLL to start
 
   // Set flash latency
   FLASH->ACR &= ~FLASH_ACR_LATENCY;
@@ -510,14 +485,12 @@ static void SystemClock_Config(void)
  * @param  None
  * @retval None
  */
-static void Toggle_Leds(void)
-{
+static void Toggle_Leds(void) {
   //RLED_PORT->ODR ^= (1<<RLED_PIN);
-  GLED_PORT->ODR ^= (1<<GLED_PIN);
+  GLED_PORT->ODR ^= (1 << GLED_PIN);
 }
 /* Configure PC9 and PB12 as LED outputs */
-static void User_LED_Init(void)
-{
+static void User_LED_Init(void) {
   // Enable clocks to GPIOB and C
   GPIO_Clk(GLED_PORT);
   GPIO_Clk(RLED_PORT);
@@ -526,38 +499,34 @@ static void User_LED_Init(void)
   GPIO_Output(RLED_PORT, RLED_PIN);
 }
 
-
 /* Configure PC12 as pushbutton input */
-static void User_PB_Init(void)
-{
+static void User_PB_Init(void) {
   // Start GPIOC clock
   GPIO_Clk(PB_PORT);
 
   // Enable pin PC12 as input with weak pullup turned on
-  GPIO_Input(PB_PORT,PB_PIN);
+  GPIO_Input(PB_PORT, PB_PIN);
   PB_PORT->PUPDR |= (GPIO_PUPDR_PUPDR0_0 << (PB_PIN * 2));
 }
 
-static void User_DAC_Init(void)
-{
+static void User_DAC_Init(void) {
   RCC->APB1ENR |= RCC_APB1ENR_DACEN;
   GPIO_Clk(DAC_PORT);
 
-  GPIO_Analog(DAC_PORT,DAC1_PIN);
-  GPIO_Analog(DAC_PORT,DAC2_PIN);
+  GPIO_Analog(DAC_PORT, DAC1_PIN);
+  GPIO_Analog(DAC_PORT, DAC2_PIN);
 
   DAC->CR = DAC_CR_BOFF2 | DAC_CR_BOFF1 | DAC_CR_EN2 | DAC_CR_EN1;
 
 }
 
-static void User_BasicTim_Init(void)
-{
+static void User_BasicTim_Init(void) {
   RCC->APB1ENR |= RCC_APB1ENR_TIM12EN;
 
   TIM12->PSC = 9; // 84MHz clock, divided by 9+1 = 8.4MHz
   TIM12->ARR = 8400; // 8.4MHz / 8400 = 1kHz clock
 
-  NVIC_SetPriority(TIM8_BRK_TIM12_IRQn,PRIO_APPTIMER);
+  NVIC_SetPriority(TIM8_BRK_TIM12_IRQn, PRIO_APPTIMER);
   NVIC_EnableIRQ(TIM8_BRK_TIM12_IRQn);
 
   TIM12->DIER = TIM_DIER_UIE;
@@ -565,35 +534,31 @@ static void User_BasicTim_Init(void)
 
 }
 
-void SYSTICK_IRQHandler(void)
-{
+void SYSTICK_IRQHandler(void) {
   g_MainSysTick++;
   /**** Old version needed this for serial debugging ****
-  if((g_MainSysTick % DEFAULT_SERIAL_DATA_RATE) == 0)
-  {
-    g_MainFlags |= MAINFLAG_SERIALDATAPRINT;
-  }
-  */
-  if((g_MainSysTick % SERIAL_DUMP_RATE) == 0)
-  {
+   if((g_MainSysTick % DEFAULT_SERIAL_DATA_RATE) == 0)
+   {
+   g_MainFlags |= MAINFLAG_SERIALDATAPRINT;
+   }
+   */
+  if ((g_MainSysTick % SERIAL_DUMP_RATE) == 0) {
     g_MainFlags |= MAINFLAG_DUMPDATAPRINT;
   }
-  if((g_MainSysTick % TEMP_CONVERSION_RATE) == 0)
-  {
+  if ((g_MainSysTick % TEMP_CONVERSION_RATE) == 0) {
     g_MainFlags |= MAINFLAG_CONVERTTEMPERATURE;
   }
 }
 
 /*
-void User_HallTIM_IRQ(void)
-{
-  HallSensor_UpdateCallback();
-}
+ void User_HallTIM_IRQ(void)
+ {
+ HallSensor_UpdateCallback();
+ }
  */
 
 // TIM1 overflow / update IRQ (20kHz)
-void User_PWMTIM_IRQ(void)
-{
+void User_PWMTIM_IRQ(void) {
   // Debug: Blink RLED to show how much processor time is used
   RLED_PORT->BSRR = (1 << RLED_PIN);
 #if 1
@@ -608,12 +573,9 @@ void User_PWMTIM_IRQ(void)
 #ifdef TESTING_2X
   HallSensor2_Inc_Angle();
 #endif
-  if(g_rampdir == 0)
-  {
+  if (g_rampdir == 0) {
     g_rampAngle += g_rampInc;
-  }
-  else
-  {
+  } else {
     g_rampAngle -= g_rampInc;
   }
 #ifdef TESTING_2X
@@ -622,43 +584,37 @@ void User_PWMTIM_IRQ(void)
   Mobv.RotorAngle = HallSensor_Get_Anglef();
 #endif
   Mobv.HallState = HallSensor_Get_State();
-  if(Mctrl.state == Motor_Startup)
-  {
-    if(HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC)
+  if (Mctrl.state == Motor_Startup) {
+    if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC)
       speed_cycle_integrator++;
-    else
-    {
-      if(speed_cycle_integrator > 0)
+    else {
+      if (speed_cycle_integrator > 0)
         speed_cycle_integrator--;
     }
-    if(speed_cycle_integrator > SPEED_COUNTS_TO_FOC)
-    {
+    if (speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
       Mctrl.state = Motor_AtSpeed;
     }
   }
 
-  if(Throttle_cmd <= 0.0f)
-  {
+  if (Throttle_cmd <= 0.0f) {
     PWM_MotorOFF();
     Throttle_cmd = 0.0f;
     speed_cycle_integrator = 0;
     Mctrl.state = Motor_Off;
-  }
-  else
-  {
+  } else {
     PWM_MotorON();
-    if(Mctrl.state == Motor_Off)
+    if (Mctrl.state == Motor_Off)
       Mctrl.state = Motor_Startup;
   }
 
   Mctrl.ThrottleCommand = Throttle_cmd;
   Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
-  tA = (uint16_t)(Mpwm.tA*65535.0f);
-  tB = (uint16_t)(Mpwm.tB*65535.0f);
-  tC = (uint16_t)(Mpwm.tC*65535.0f);
+  tA = (uint16_t) (Mpwm.tA * 65535.0f);
+  tB = (uint16_t) (Mpwm.tB * 65535.0f);
+  tC = (uint16_t) (Mpwm.tC * 65535.0f);
   // Is throttle at zero? Motor off
 
-  PWM_SetDuty(tA,tB,tC);
+  PWM_SetDuty(tA, tB, tC);
 #endif
   // USB Debugging outputs
   // Current is scaled from +- 20 amps to 0->65536 (0 = -20A, 65536 = +20A)
@@ -696,40 +652,42 @@ void User_PWMTIM_IRQ(void)
   usbdacvals[4] = Mpwm.tB;
   usbdacvals[5] = Mpwm.tC;
   usbdacvals[6] = Throttle_cmd;
-  usbdacvals[7] = ((float)g_rampAngle) / 65535.0f;
+  usbdacvals[7] = ((float) g_rampAngle) / 65535.0f;
   usbdacvals[8] = HallSensor_Get_Anglef();
   usbdacvals[9] = HallSensor_Get_Speedf();
   usbdacvals[10] = Mctrl.BusVoltage;
   usbdacvals[11] = Mfoc.Park_D;
   usbdacvals[12] = Mfoc.Park_Q;
+  Id_Filt.X = Mfoc.Park_D;
+  Iq_Filt.X = Mfoc.Park_Q;
+  dfsl_biquadf(&Id_Filt);
+  dfsl_biquadf(&Iq_Filt);
   usbdacvals[13] = Id_Filt.Y;
   usbdacvals[14] = Iq_Filt.Y;
   //usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
   //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
-  usbdacvals[15] = (float)(g_errorCode);
-  usbdacvals[16] = (float)(adcRaw(ADC_VREFINT));
-  usbdacvals[17] = (float)HallSensor_Get_State();
+  usbdacvals[15] = (float) (g_errorCode);
+  usbdacvals[16] = (float) (adcRaw(ADC_VREFINT));
+  usbdacvals[17] = (float) HallSensor_Get_State();
 #ifdef TESTING_2X
   usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif // TESTING_2X
 #endif // !USB_MONITOR_FIXED_POINT
 
   // Load up the output buffer
-  if(g_MainFlags & MAINFLAG_SERIALDATAON)
-  {
-    if((--usb_debug_countdown_timer) == 0)
-    {
+  if (g_MainFlags & MAINFLAG_SERIALDATAON) {
+    if ((--usb_debug_countdown_timer) == 0) {
       usb_debug_countdown_timer = usb_debug_countdown_reload;
-      if((usb_debug_buffer_pos + 4 + 4*MAX_USB_OUTPUTS) < (4*CDC_DATA_FS_MAX_PACKET_SIZE))
-      {
+      if ((usb_debug_buffer_pos + 4 + 4 * MAX_USB_OUTPUTS)
+          < (4 * CDC_DATA_FS_MAX_PACKET_SIZE)) {
         memcpy(&(usb_debug_buffer[usb_debug_buffer_pos]), usb_debug_prefix, 4);
-        usb_debug_buffer_pos+=4;
-        for(uint8_t i = 0; i < usb_num_output_vars; i++)
-        {
-          if(usbdacassignments[i] == 0)
-            memset(&(usb_debug_buffer[usb_debug_buffer_pos]),0,4);
+        usb_debug_buffer_pos += 4;
+        for (uint8_t i = 0; i < usb_num_output_vars; i++) {
+          if (usbdacassignments[i] == 0)
+            memset(&(usb_debug_buffer[usb_debug_buffer_pos]), 0, 4);
           else
-            memcpy(&(usb_debug_buffer[usb_debug_buffer_pos]), &(usbdacvals[usbdacassignments[i]-1]), 4);
+            memcpy(&(usb_debug_buffer[usb_debug_buffer_pos]),
+                &(usbdacvals[usbdacassignments[i] - 1]), 4);
           usb_debug_buffer_pos += 4;
         }
       }
@@ -742,66 +700,57 @@ void User_PWMTIM_IRQ(void)
     if(DumpGeneration(usbdacvals) == 1)
     {
       g_MainFlags &= ~(MAINFLAG_DUMPRECORD); // Stop recording
-      g_MainFlags |= MAINFLAG_DUMPDATAON; // Start pushing data via USB serial port
+      g_MainFlags |= MAINFLAG_DUMPDATAON;// Start pushing data via USB serial port
     }
   }
 #endif // DEBUG_DUMP_USED
 
-  RLED_PORT->BSRR = (1 << (RLED_PIN+16));
+  RLED_PORT->BSRR = (1 << (RLED_PIN + 16));
 
 }
 
 // Simple application timer (1kHz)
 // Does all the throttle processing
 // Calculates power usage
-void User_BasicTIM_IRQ(void)
-{
+void User_BasicTIM_IRQ(void) {
 
   raw_throttle = adcGetThrottle();
   Throttle_cmd = throttle_process(raw_throttle);
 
   // Trim to 99%
-  if(Throttle_cmd >= 1.0f)
+  if (Throttle_cmd >= 1.0f)
     Throttle_cmd = 0.99f;
 
   // Blink the LEDs
   g_ledcount++;
-  if(g_ledcount > MAXLEDCOUNT)
-  {
+  if (g_ledcount > MAXLEDCOUNT) {
     Toggle_Leds();
     g_ledcount = 0;
   }
   // Debounce the user pushbutton
 
   systick_debounce_counter++;
-  if(systick_debounce_counter >= DEBOUNCE_INTERVAL)
-  {
+  if (systick_debounce_counter >= DEBOUNCE_INTERVAL) {
     systick_debounce_counter = 0;
 
     // Part 1: Accumulated the debounce integrator
     //if(HAL_GPIO_ReadPin(PB_PORT, PB_PIN) == GPIO_PIN_SET)
-    if((PB_PORT->IDR & (1<<PB_PIN)) == (1<<PB_PIN))
-    {
-      if(debounce_integrator > 0)
+    if ((PB_PORT->IDR & (1 << PB_PIN)) == (1 << PB_PIN)) {
+      if (debounce_integrator > 0)
         debounce_integrator--;
-    }
-    else
-    {
-      if(debounce_integrator < DEBOUNCE_MAX)
+    } else {
+      if (debounce_integrator < DEBOUNCE_MAX)
         debounce_integrator++;
     }
     // Part 2: Change pushbutton state if integrator is at zero or its maximum
-    if(debounce_integrator > DEBOUNCE_MAX)
-    {
+    if (debounce_integrator > DEBOUNCE_MAX) {
       // Defensive programming!
       debounce_integrator = DEBOUNCE_MAX;
     }
-    if(debounce_integrator == DEBOUNCE_MAX)
-    {
+    if (debounce_integrator == DEBOUNCE_MAX) {
       pb_state = PB_PRESSED;
     }
-    if(debounce_integrator == 0)
-    {
+    if (debounce_integrator == 0) {
       pb_state = PB_RELEASED;
     }
   }
@@ -816,90 +765,82 @@ void User_BasicTIM_IRQ(void)
   power_calc(&Mpc);
 }
 
-void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum)
-{
+uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum) {
   // Set the new output
+  if((outputnum >= MAX_USB_OUTPUTS) || (valuenum > MAX_USB_VALS))
+      return UI_ERROR;
   usbdacassignments[outputnum] = valuenum;
+  return UI_OK;
 }
 
-uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum)
-{
+uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum) {
   return usbdacassignments[outputnum];
 }
 
-void MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs)
-{
-  if(numOutputs <= MAX_USB_OUTPUTS)
-  {
+uint8_t MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs) {
+  if (numOutputs <= MAX_USB_OUTPUTS) {
     usb_num_output_vars = numOutputs;
     usb_debug_prefix[0] = 'D';
     usb_debug_prefix[1] = 'B';
-    if(usb_num_output_vars >= 10)
-    {
+    if (usb_num_output_vars >= 10) {
       usb_debug_prefix[2] = (usb_num_output_vars / 10) + '0';
     }
-    usb_debug_prefix[3] = (usb_num_output_vars%10) + '0';
+    usb_debug_prefix[3] = (usb_num_output_vars % 10) + '0';
+    return UI_OK;
   }
+  return UI_ERROR;
 }
 
-uint8_t MAIN_GetNumUSBDebugOutputs(void)
-{
+uint8_t MAIN_GetNumUSBDebugOutputs(void) {
   return usb_num_output_vars;
 }
 
-void MAIN_SetUSBDebugSpeed(uint8_t speedChoice)
-{
-  if(speedChoice < MAX_USB_SPEED_CHOICES)
-  {
+uint8_t MAIN_SetUSBDebugSpeed(uint8_t speedChoice) {
+  if (speedChoice < MAX_USB_SPEED_CHOICES) {
     usb_speed_choice = speedChoice;
     usb_debug_countdown_reload = usb_speed_choices[usb_speed_choice];
     usb_debug_countdown_timer = usb_debug_countdown_reload;
+    return UI_OK;
   }
+  return UI_ERROR;
 }
 
-uint8_t MAIN_GetUSBDebugSpeed(void)
-{
+uint8_t MAIN_GetUSBDebugSpeed(void) {
   return usb_speed_choice;
 }
 
-void MAIN_SetUSBDebugging(uint8_t on_or_off)
-{
-  if(on_or_off == 0)
+uint8_t MAIN_SetUSBDebugging(uint8_t on_or_off) {
+  if (on_or_off == 0)
     g_MainFlags &= ~(MAINFLAG_SERIALDATAON);
   else
     g_MainFlags |= MAINFLAG_SERIALDATAON;
+  return UI_OK;
 }
 
-uint8_t MAIN_GetUSBDebugging(void)
-{
-  if(g_MainFlags & MAINFLAG_SERIALDATAON)
+uint8_t MAIN_GetUSBDebugging(void) {
+  if (g_MainFlags & MAINFLAG_SERIALDATAON)
     return 1;
   else
     return 0;
 }
 
-void MAIN_SetRampSpeed(uint32_t newspeed)
-{
+uint8_t MAIN_SetRampSpeed(uint32_t newspeed) {
   g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, newspeed);
+  return UI_OK;
 }
 
-void MAIN_SetRampDir(uint8_t forwardOrBackwards)
-{
-  if(forwardOrBackwards == 0)
-  {
+uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards) {
+  if (forwardOrBackwards == 0) {
     // Forwards!
     g_rampdir = 0;
-  }
-  else
-  {
+  } else {
     g_rampdir = 1;
   }
+  return UI_OK;
 }
 
-uint8_t MAIN_SetVar(uint8_t var, float newval)
-{
-  switch(var)
-  {
+uint8_t MAIN_SetVar(uint8_t var, float newval) {
+  switch (var) {
   case 0:
     // Kp
     Id_control.Kp = newval;
@@ -924,10 +865,8 @@ uint8_t MAIN_SetVar(uint8_t var, float newval)
   return UI_OK;
 }
 
-float MAIN_GetVar(uint8_t var)
-{
-  switch(var)
-  {
+float MAIN_GetVar(uint8_t var) {
+  switch (var) {
   case 0:
     // Kp
     return Id_control.Kp;
@@ -948,38 +887,79 @@ float MAIN_GetVar(uint8_t var)
   return 0.0f;
 }
 
-uint8_t MAIN_SetFreq(int32_t newfreq)
-{
+uint8_t MAIN_SetFreq(int32_t newfreq) {
   // Not yet implemented
   return UI_ERROR;
 }
 
-int32_t MAIN_GetFreq(void)
-{
+int32_t MAIN_GetFreq(void) {
   return 20000; // Hz
 }
 
-uint8_t MAIN_SetDeadTime(int32_t newDT)
-{
+uint8_t MAIN_SetDeadTime(int32_t newDT) {
   // Not yet implemented
   return UI_ERROR;
 }
-int32_t MAIN_GetDeadTime(void)
-{
+int32_t MAIN_GetDeadTime(void) {
   return 500; // nanosec
 }
 
-void MAIN_SetError(uint32_t errorCode)
-{
+uint8_t MAIN_SetThrType(uint8_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+uint8_t MAIN_GetThrType(uint8_t thrnum) {
+  return 0;
+}
+
+uint8_t MAIN_SetThrMin(int32_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetThrMin(uint8_t thrnum) {
+  return 0;
+}
+
+uint8_t MAIN_SetThrMax(int32_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetThrMax(uint8_t thrnum) {
+  return 0;
+}
+
+uint8_t MAIN_SetThrHyst(int32_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetThrHyst(uint8_t thrnum) {
+  return 0;
+}
+
+uint8_t MAIN_SetThrFilt(int32_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetThrFilt(uint8_t thrnum) {
+  return 0;
+}
+
+uint8_t MAIN_SetThrRise(int32_t thrtype, uint8_t thrnum) {
+  return UI_ERROR;
+}
+
+int32_t MAIN_GetThrRise(uint8_t thrnum) {
+  return 0;
+}
+
+void MAIN_SetError(uint32_t errorCode) {
   g_errorCode |= errorCode;
 }
 
-void MAIN_SoftReset(uint8_t restartInBootloader)
-{
+void MAIN_SoftReset(uint8_t restartInBootloader) {
   // Absolutely no PWM should be happening right now!
   PWM_MotorOFF();
-  if(restartInBootloader)
-  {
+  if (restartInBootloader) {
     // Enable access to backup registers
     BackupEnable();
     // Set the bootloader flag in backup register 0
@@ -990,9 +970,8 @@ void MAIN_SoftReset(uint8_t restartInBootloader)
   NVIC_SystemReset();
 }
 
-void MAIN_DumpRecord(void)
-{
-  if(!(g_MainFlags & MAINFLAG_DUMPDATAON))
+void MAIN_DumpRecord(void) {
+  if (!(g_MainFlags & MAINFLAG_DUMPDATAON))
     g_MainFlags |= MAINFLAG_DUMPRECORD;
 }
 
@@ -1009,12 +988,10 @@ uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum)
 }
 #endif // DEBUG_DUMP_USED
 
-void stringflip(char* buf, uint32_t len)
-{
+void stringflip(char* buf, uint32_t len) {
   uint32_t i = 0, j = len - 1;
   char temp;
-  while (i < j)
-  {
+  while (i < j) {
     temp = buf[i];
     buf[i] = buf[j];
     buf[j] = temp;
@@ -1023,49 +1000,43 @@ void stringflip(char* buf, uint32_t len)
   }
 }
 
-uint32_t _itoa(char* buf, int32_t num, uint32_t min_digits)
-{
+uint32_t _itoa(char* buf, int32_t num, uint32_t min_digits) {
   uint32_t i = 0;
   uint8_t is_neg = 0;
-  if(num < 0){
+  if (num < 0) {
     is_neg = 1;
     num = -num;
   }
 
-  do
-  {
+  do {
     buf[i++] = (num % 10) + '0';
     num = num / 10;
-  }while(num);
+  } while (num);
 
-  while( i < min_digits)
-  {
+  while (i < min_digits) {
     buf[i++] = '0';
   }
-  if(is_neg)
-  {
+  if (is_neg) {
     buf[i++] = '-';
   }
-  stringflip(buf,i);
+  stringflip(buf, i);
   buf[i] = '\0';
   return i;
 }
 
-uint32_t _ftoa(char* buf, float num, uint32_t precision)
-{
+uint32_t _ftoa(char* buf, float num, uint32_t precision) {
   int32_t ipart;
   float fpart;
   uint32_t pos = 0;
   // Grab the integer part
-  ipart = (int32_t)num;
+  ipart = (int32_t) num;
   pos = _itoa(buf, ipart, 0);
   // and the fraction part
-  if(precision > 0)
-  {
-    fpart = num - ((float)ipart);
-    fpart = fabsf( fpart * powf( 10.0f, ((float)(precision))));
+  if (precision > 0) {
+    fpart = num - ((float) ipart);
+    fpart = fabsf(fpart * powf(10.0f, ((float) (precision))));
     buf[pos++] = '.';
-    pos += _itoa(&(buf[pos]), ((int32_t)fpart), precision);
+    pos += _itoa(&(buf[pos]), ((int32_t) fpart), precision);
   }
   return pos;
 }
@@ -1076,55 +1047,52 @@ uint32_t _ftoa(char* buf, float num, uint32_t precision)
  * negative sign when present.
  */
 /*
-uint32_t itoa(char* buf, int32_t num)
-{
-  char* going_out = buf;
-  uint32_t retval = 0;
-  uint8_t is_neg = 0;
-  if(num < 0)
-  {
+ uint32_t itoa(char* buf, int32_t num)
+ {
+ char* going_out = buf;
+ uint32_t retval = 0;
+ uint8_t is_neg = 0;
+ if(num < 0)
+ {
  *going_out = '-';
-    going_out++;
-    is_neg = 1;
-    num = -num;
-  }
+ going_out++;
+ is_neg = 1;
+ num = -num;
+ }
 
-  // Start assembling the string, in backwards order
-  // do..while is required so that a zero value
-  // will print at least one character
-  do
-  {
+ // Start assembling the string, in backwards order
+ // do..while is required so that a zero value
+ // will print at least one character
+ do
+ {
  *going_out = (num % 10) + '0';
-    going_out++;
-    retval++;
-    num = num / 10;
-  }while(num != 0);
-  // Null terminate
+ going_out++;
+ retval++;
+ num = num / 10;
+ }while(num != 0);
+ // Null terminate
  *going_out = 0;
-  // Now, flip the string around
-  // Swapping characters using a dummy byte
-  char dummy;
-  for(uint8_t i = 0; i < retval / 2; i++)
-  {
-    dummy = buf[is_neg + i];
-    buf[is_neg + i] = buf[is_neg + retval - 1 - i];
-    buf[is_neg + retval - 1 - i] = dummy;
-  }
+ // Now, flip the string around
+ // Swapping characters using a dummy byte
+ char dummy;
+ for(uint8_t i = 0; i < retval / 2; i++)
+ {
+ dummy = buf[is_neg + i];
+ buf[is_neg + i] = buf[is_neg + retval - 1 - i];
+ buf[is_neg + retval - 1 - i] = dummy;
+ }
 
-  return retval + is_neg;
-}
+ return retval + is_neg;
+ }
  */
 
-void Delay(__IO uint32_t Delay)
-{
+void Delay(__IO uint32_t Delay) {
   uint32_t tickstart = 0;
   tickstart = g_MainSysTick;
-  while((g_MainSysTick - tickstart) < Delay)
-  {
+  while ((g_MainSysTick - tickstart) < Delay) {
   }
 }
 
-uint32_t GetTick(void)
-{
+uint32_t GetTick(void) {
   return g_MainSysTick;
 }
