@@ -19,13 +19,24 @@
 
 typedef struct
 {
-	uint8_t throttle_state;
-	uint32_t throttle_startup_count;
-	float throttle_min;
-	float throttle_max;
-	float throttle_scale_factor;
-}Throttle_Type;
-#define THROTTLE_DEFAULTS	{0, 0, 0.0f, 0.0f, 1.0f}
+	uint8_t state;
+	uint32_t startup_count;
+	float min;
+	float max;
+	float scale_factor;
+}Throttle_Analog_Type;
+
+typedef struct
+{
+  uint8_t last_reading;
+  uint32_t time_counter;
+  float filtered_speed;
+  float scale_factor;
+} Throttle_PAS_Type;
+
+#define THROTTLE_ANALOG_DEFAULTS	{0, 0, 0.0f, 0.0f, 1.0f}
+#define THROTTLE_PAS_DEFAULTS     {0, 0, 0.0f, 0.0f}
+#define PAS_FILTER                (0.125f) // LPF of 1/8
 
 // Biquad filter: Fs = 1kHz, f0 = 2Hz, Q = 0.45
 // Little bit sluggish response. Maybe feels safer?
