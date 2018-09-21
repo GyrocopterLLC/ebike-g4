@@ -82,8 +82,8 @@ float throttle_process(float raw_voltage)
 		// Regular throttle processing
 		temp_cmd = (Throttle_filt.Y - sThrottle.min) * (sThrottle.scale_factor);
 		// Clip at 0% and 100%
-		if(temp_cmd < 0.0f) temp_cmd = 0.0f;
-		if(temp_cmd > 1.0f) temp_cmd = 1.0f;
+		if(temp_cmd < THROTTLE_OUTPUT_MIN) temp_cmd = THROTTLE_OUTPUT_MIN;
+		if(temp_cmd > THROTTLE_OUTPUT_MAX) temp_cmd = THROTTLE_OUTPUT_MAX;
 		if(sThrottle.state)
 		{
 			// Hysteresis. If throttle was on but passes below hysteresis level, turn it off
@@ -119,25 +119,33 @@ float throttle_process(float raw_voltage)
 float throttle_pas_process(uint8_t thrnum)
 {
   uint8_t current_reading;
+  float thr_output;
+
   if(thrnum == 1)
   {
     current_reading = ADC_I_VBUS_THR1_PORT->IDR & (1<<ADC_THR1_PIN);
   }
-  if(thrnum == 2)
+  else if(thrnum == 2)
   {
     current_reading = ADC_THR2_AND_TEMP_PORT->IDR & (1<<ADC_THR2_PIN);
   }
+  else
+    return 0.0f;
 
-  if((current_reading != sPasThrottle.last_reading) && (current_reading == 1))
-  {
-    // Rising edge detected
-    sPasThrottle.filtered_speed = (sPasThrottle.time_counter / 1000.0f) * PAS_FILTER
-        + (sPasThrottle.filtered_speed * (1 - PAS_FILTER));
-    sPasThrottle.time_counter = 0;
+  if (current_reading != sPasThrottle.last_reading) {
+    sPasThrottle.last_reading = current_reading;
+    if (current_reading == 1) {
+      // Rising edge detected
+      sPasThrottle.filtered_speed = (sPasThrottle.time_counter / 1000.0f)
+          * PAS_FILTER + (sPasThrottle.filtered_speed * (1 - PAS_FILTER));
+      sPasThrottle.time_counter = 0;
+    }
   }
   else {
     sPasThrottle.time_counter++;
   }
-
-  return sPasThrottle.filtered_speed * sPasThrottle.scale_factor;
+  thr_output = sPasThrottle.filtered_speed * sPasThrottle.scale_factor;
+  if(thr_output < THROTTLE_OUTPUT_MIN) thr_output = THROTTLE_OUTPUT_MIN;
+  if(thr_output > THROTTLE_OUTPUT_MAX) thr_output = THROTTLE_OUTPUT_MAX;
+  return thr_output;
 }

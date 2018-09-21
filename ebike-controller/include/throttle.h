@@ -13,6 +13,9 @@
 #define THROTTLE_HYST_LOW			0.025f
 #define THROTTLE_HYST_HIGH			0.030f
 #define THROTTLE_DROPOUT			0.72f
+
+#define THROTTLE_OUTPUT_MIN   (0.00f)
+#define THROTTLE_OUTPUT_MAX   (0.99f)
 // Limit the throttle climb rate to 50% / second
 // The update rate is 1000Hz, so the rate limit is actually .125% per update
 #define THROTTLE_SLEW_RATE  (0.00125f)
