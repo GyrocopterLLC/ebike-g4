@@ -58,6 +58,7 @@
 #define PRIO_ADC		2
 #define PRIO_APPTIMER	3
 #define PRIO_HBD_UART	4
+#define PRIO_PAS    5
 #define PRIO_USB		6
 
 // Hall state change table

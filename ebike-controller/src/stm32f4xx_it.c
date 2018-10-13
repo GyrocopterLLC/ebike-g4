@@ -246,6 +246,22 @@ void USART3_IRQHandler(void)
 	HBD_IRQ();
 }
 
+void EXTI0_IRQHandler(void)
+{
+  // Reset the interrupt source
+  EXTI->PR |= EXTI_PR_PR0;
+  // Call the appropriate PAS process
+  throttle_pas_process(2);
+}
+
+void EXTI9_5_IRQHandler(void)
+{
+  // Reset the interrupt source
+  EXTI->PR |= EXTI_PR_PR5;
+  // Call the appropriate PAS process
+  throttle_pas_process(1);
+}
+
 #ifdef USE_UART
 
 /**

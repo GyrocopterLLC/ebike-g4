@@ -1,6 +1,30 @@
 #ifndef __PINCONFIG_H
 #define __PINCONFIG_H
 
+/* Peripheral usage:
+ * TIM1 - 3phase bridge PWM output
+ * TIM2 -
+ * TIM3 - Hall sensors
+ * TIM4 -
+ * TIM5 -
+ * TIM6 -
+ * TIM7 -
+ * TIM8 - Hall sampling timer
+ * TIM9 -
+ * TIM10 -
+ * TIM11 -
+ * TIM12 - Basic timer for application scheduling
+ * TIM13 - PAS timer for Thr1
+ * TIM14 - PAS timer for Thr2
+ * USART1 -
+ * USART2 - Battery management system (BMS)
+ * USART3 - Handle bar display (HBD)
+ * UART4 -
+ * UART5 -
+ * USART6 -
+ */
+
+
 // GPIOs
 #define PIN0		0x0001
 #define PIN1		0x0002

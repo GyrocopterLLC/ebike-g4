@@ -6,6 +6,7 @@
  */
 
 #include "throttle.h"
+#include "gpio.h"
 
 Biquad_Float_Type Throttle_filt=THROTTLE_LPF_DEFAULTS;
 volatile Throttle_Analog_Type sThrottle=THROTTLE_ANALOG_DEFAULTS;
@@ -14,6 +15,70 @@ Biquad_Float_Type sPasBiqLow=BIQ_LPF_DEFAULTS;
 Biquad_Float_Type sPasBiqHigh=BIQ_LPF_DEFAULTS;
 // Last output value, used for rate limiting
 float prev_output = 0.0f;
+
+void throttle_switch_type(uint8_t thrnum, uint8_t thrtype)
+{
+  if(thrnum == 1)
+  {
+    if(thrtype == THROTTLE_TYPE_ANALOG)
+    {
+      // Set throttle pin to analog input
+      GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+      // Disable pin change interrupt
+      EXTI->IMR &= ~(EXTI_IMR_MR5);
+    }
+    else if(thrtype == THROTTLE_TYPE_PAS)
+    {
+      // Set throttle pin to digital input
+      GPIO_Input(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+      // Enable pin change interrupt
+      EXTI->IMR |= EXTI_IMR_MR5; // Enabled for line 5 (Px5 pins)
+//      EXTI->FTSR |= EXTI_FTSR_TR5;
+      EXTI->RTSR |= EXTI_RTSR_TR5; // Rising edge enabled
+      SYSCFG->EXTICR[1] |= (0x03 << 4); // Set EXTI5 for Port C
+
+      // Enable this interrupt in the NVIC
+      NVIC_SetPriority(EXTI9_5_IRQn,PRIO_PAS);
+      NVIC_EnableIRQ(EXTI9_5_IRQn);
+
+      // Startup the PAS timer, 0.1ms precision
+      PAS1_TIMER_CLK_ENABLE();
+      PAS1_TIM->PSC = PAS_TIM_PSC;
+      PAS1_TIM->ARR = 0xFFFF;
+      PAS1_TIM->CR1 = TIM_CR1_CEN;
+    }
+  }
+  else if(thrnum == 2)
+  {
+    if(thrtype == THROTTLE_TYPE_ANALOG)
+    {
+      // Set throttle pin to analog input
+      GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+      // Disable pin change interrupt
+      EXTI->IMR &= ~(EXTI_IMR_MR0);
+    }
+    else if(thrtype == THROTTLE_TYPE_PAS)
+    {
+      // Set throttle pin to digital input
+      GPIO_Input(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+      // Enable pin change interrupt
+      EXTI->IMR |= EXTI_IMR_MR0; // Enabled for line 0 (Px0 pins)
+//      EXTI->FTSR |= EXTI_FTSR_TR0;
+      EXTI->RTSR |= EXTI_RTSR_TR0; // Rising edge enabled
+      SYSCFG->EXTICR[0] |= 0x02; // Set EXTI0 for Port B
+
+      // Enable this interrupt in the NVIC
+      NVIC_SetPriority(EXTI0_IRQn,PRIO_PAS);
+      NVIC_EnableIRQ(EXTI0_IRQn);
+
+      // Startup the PAS timer, 0.1ms precision
+      PAS2_TIMER_CLK_ENABLE();
+      PAS2_TIM->PSC = PAS_TIM_PSC;
+      PAS2_TIM->ARR = 0xFFFF;
+      PAS2_TIM->CR1 = TIM_CR1_CEN;
+    }
+  }
+}
 
 float throttle_process(float raw_voltage)
 {
@@ -116,7 +181,7 @@ float throttle_process(float raw_voltage)
 	}
 }
 
-float throttle_pas_process(uint8_t thrnum)
+void throttle_pas_process(uint8_t thrnum)
 {
   uint8_t current_reading;
   float thr_output;
@@ -130,7 +195,7 @@ float throttle_pas_process(uint8_t thrnum)
     current_reading = ADC_THR2_AND_TEMP_PORT->IDR & (1<<ADC_THR2_PIN);
   }
   else
-    return 0.0f;
+    return;
 
   if (current_reading != sPasThrottle.last_reading) {
     sPasThrottle.last_reading = current_reading;
@@ -147,5 +212,5 @@ float throttle_pas_process(uint8_t thrnum)
   thr_output = sPasThrottle.filtered_speed * sPasThrottle.scale_factor;
   if(thr_output < THROTTLE_OUTPUT_MIN) thr_output = THROTTLE_OUTPUT_MIN;
   if(thr_output > THROTTLE_OUTPUT_MAX) thr_output = THROTTLE_OUTPUT_MAX;
-  return thr_output;
+
 }

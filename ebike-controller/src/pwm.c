@@ -51,7 +51,7 @@ void PWM_Init(void)
 	NVIC_SetPriority(TIM1_UP_TIM10_IRQn, PRIO_PWM); // Highest priority
 	NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
 
-	TIM1->SR = ~(TIM_SR_UIF); // Clear update interrupt (if it was triggered)
+	PWM_TIMER->SR = ~(TIM_SR_UIF); // Clear update interrupt (if it was triggered)
 	PWM_TIMER->DIER = TIM_DIER_UIE; // Enable update interrupt
 
 	PWM_TIMER->CR1 |= TIM_CR1_CEN; // Start the timer
