@@ -7,7 +7,6 @@
 
 #include "pwm.h"
 #include "gpio.h"
-#include "pinconfig.h"
 #include "project_parameters.h"
 
 void PWM_Init(void)
@@ -48,8 +47,8 @@ void PWM_Init(void)
 	PWM_TIMER->CCR3 = PWM_PERIOD/2 + 1;
 	PWM_TIMER->CCR4 = PWM_PERIOD - 1; // Triggers during downcounting, just after reload
 
-	NVIC_SetPriority(TIM1_UP_TIM10_IRQn, PRIO_PWM); // Highest priority
-	NVIC_EnableIRQ(TIM1_UP_TIM10_IRQn);
+	NVIC_SetPriority(PWM_IRQn, PRIO_PWM); // Highest priority
+	NVIC_EnableIRQ(PWM_IRQn);
 
 	PWM_TIMER->SR = ~(TIM_SR_UIF); // Clear update interrupt (if it was triggered)
 	PWM_TIMER->DIER = TIM_DIER_UIE; // Enable update interrupt

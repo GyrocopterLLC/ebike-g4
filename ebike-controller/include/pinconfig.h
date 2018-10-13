@@ -1,30 +1,6 @@
 #ifndef __PINCONFIG_H
 #define __PINCONFIG_H
 
-/* Peripheral usage:
- * TIM1 - 3phase bridge PWM output
- * TIM2 -
- * TIM3 - Hall sensors
- * TIM4 -
- * TIM5 -
- * TIM6 -
- * TIM7 -
- * TIM8 - Hall sampling timer
- * TIM9 -
- * TIM10 -
- * TIM11 -
- * TIM12 - Basic timer for application scheduling
- * TIM13 - PAS timer for Thr1
- * TIM14 - PAS timer for Thr2
- * USART1 -
- * USART2 - Battery management system (BMS)
- * USART3 - Handle bar display (HBD)
- * UART4 -
- * UART5 -
- * USART6 -
- */
-
-
 // GPIOs
 #define PIN0		0x0001
 #define PIN1		0x0002
@@ -81,6 +57,26 @@
 #define BMS_UART_RX_PIN	3
 #define BMS_UART_PORT	GPIOA
 #define BMS_UART_AF		((uint8_t)7)
+
+// ADC
+#define ADC_IA_PIN    0
+#define ADC_IB_PIN    1
+#define ADC_IC_PIN    2
+#define ADC_VBUS_PIN  3
+#define ADC_THR1_PIN  5
+#define ADC_I_VBUS_THR1_PORT    GPIOC
+#define ADC_TEMP_PIN  1
+#define ADC_THR2_PIN  0
+#define ADC_THR2_AND_TEMP_PORT    GPIOB
+
+//#define ADC_I_VBUS_THR1_CLK_ENABLE()    __HAL_RCC_GPIOC_CLK_ENABLE()
+//#define ADC_THR2_AND_TEMP_CLK_ENABLE()    __HAL_RCC_GPIOB_CLK_ENABLE()
+
+// USB
+#define USB_PORT      GPIOA
+#define USB_DM_PIN      11
+#define USB_DP_PIN      12
+#define USB_AF        10
 
 // Unused Pins
 #define PORTA_UNUSED	(PIN0 | PIN1 | PIN6 | PIN7 | PIN15)

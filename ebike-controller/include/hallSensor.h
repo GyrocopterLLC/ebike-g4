@@ -13,28 +13,11 @@
 #define HALLSENSOR_H_
 
 #include "stm32f4xx.h"
+#include "pinconfig.h"
+#include "periphconfig.h"
 
 #define USE_FLOATING_POINT
 #define TESTING_2X
-
-/*
-#define HALL_PIN_A						GPIO_PIN_6
-#define HALL_PIN_A_POS					6	// Used for bit-shifting the Hall state
-#define HALL_PIN_B						GPIO_PIN_7
-#define HALL_PIN_C						GPIO_PIN_8
-
-#define HALL_PORT						GPIOC
-#define HALL_PORT_CLK_ENABLE()			__HAL_RCC_GPIOC_CLK_ENABLE()
-#define HALL_PINS_AF					GPIO_AF2_TIM3
-*/
-
-#define HALL_TIMER						TIM3
-#define HALL_TIM_CLK_ENABLE()			RCC->APB1ENR |= RCC_APB1ENR_TIM3EN
-#define HALL_IRQn						TIM3_IRQn
-#define HALL_SAMPLE_TIMER				TIM8
-#define HALL_SAMPLE_TIMER_CLK_ENABLE()	RCC->APB2ENR |= RCC_APB2ENR_TIM8EN
-#define HALL_DMA						DMA2_Stream1
-#define HALL_DMA_CLK_ENABLE()			RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN
 
 #define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock * 2
 #define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock * 2 / 1000000

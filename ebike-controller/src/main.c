@@ -521,16 +521,16 @@ static void User_DAC_Init(void) {
 }
 
 static void User_BasicTim_Init(void) {
-  RCC->APB1ENR |= RCC_APB1ENR_TIM12EN;
+  APP_TIMER_CLK_ENABLE();
 
-  TIM12->PSC = 9; // 84MHz clock, divided by 9+1 = 8.4MHz
-  TIM12->ARR = 8400; // 8.4MHz / 8400 = 1kHz clock
+  APP_TIM->PSC = 9; // 84MHz clock, divided by 9+1 = 8.4MHz
+  APP_TIM->ARR = 8400; // 8.4MHz / 8400 = 1kHz clock
 
-  NVIC_SetPriority(TIM8_BRK_TIM12_IRQn, PRIO_APPTIMER);
-  NVIC_EnableIRQ(TIM8_BRK_TIM12_IRQn);
+  NVIC_SetPriority(APP_IRQn, PRIO_APPTIMER);
+  NVIC_EnableIRQ(APP_IRQn);
 
-  TIM12->DIER = TIM_DIER_UIE;
-  TIM12->CR1 = TIM_CR1_CEN;
+  APP_TIM->DIER = TIM_DIER_UIE;
+  APP_TIM->CR1 = TIM_CR1_CEN;
 
 }
 

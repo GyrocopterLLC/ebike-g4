@@ -3,13 +3,9 @@
 
 #include "stm32f4xx.h"
 #include "DavidsFOCLib.h"
-#include "adc.h"
 #include "project_parameters.h"
+#include "pinconfig.h"
 
-#define PAS1_TIM                  TIM13
-#define PAS2_TIM                  TIM14
-#define PAS1_TIMER_CLK_ENABLE()   do{RCC->APB1ENR |= RCC_APB1ENR_TIM13EN;}while(0)
-#define PAS2_TIMER_CLK_ENABLE()   do{RCC->APB1ENR |= RCC_APB1ENR_TIM14EN;}while(0)
 #define PAS_TIMER_INPUT_CLOCK     84000000 // APB1 clock * 2
 #define PAS_TIM_PSC               (8399) // 0.1ms per tick - 10kHz clock
 

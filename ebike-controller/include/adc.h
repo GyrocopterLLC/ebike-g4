@@ -19,20 +19,6 @@
 #define NUM_ADC_CH		8
 #define NUM_CUR_CH		3
 
-#define ADC_IA_PIN		0
-#define ADC_IB_PIN		1
-#define ADC_IC_PIN		2
-#define ADC_VBUS_PIN	3
-#define ADC_TEMP_PIN	1
-#define ADC_THR1_PIN	5
-#define ADC_THR2_PIN	0
-
-#define ADC_I_VBUS_THR1_PORT		GPIOC
-#define ADC_THR2_AND_TEMP_PORT		GPIOB
-
-#define ADC_I_VBUS_THR1_CLK_ENABLE()		__HAL_RCC_GPIOC_CLK_ENABLE()
-#define ADC_THR2_AND_TEMP_CLK_ENABLE()		__HAL_RCC_GPIOB_CLK_ENABLE()
-
 #define ADC_IA_CH		10
 #define ADC_IB_CH		11
 #define ADC_IC_CH		12

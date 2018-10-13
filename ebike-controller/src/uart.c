@@ -38,8 +38,8 @@ void HBD_Init(void)
 	HBD_UART->CR1 |= USART_CR1_UE;
 
 	// Interrupt config
-	NVIC_SetPriority(USART3_IRQn, PRIO_HBD_UART);
-	NVIC_EnableIRQ(USART3_IRQn);
+	NVIC_SetPriority(HBD_IRQn, PRIO_HBD_UART);
+	NVIC_EnableIRQ(HBD_IRQn);
 }
 
 uint8_t HBD_Receive(uint8_t* buf, uint8_t count)

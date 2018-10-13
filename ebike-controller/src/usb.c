@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "usb.h"
 #include "usb_cdc.h"
+#include "pinconfig.h"
 
 #define USB_CORE		((USB_OTG_GlobalTypeDef *) USB_OTG_FS_PERIPH_BASE)
 #define USB_DEVICE		((USB_OTG_DeviceTypeDef *)((uint32_t )USB_CORE + USB_OTG_DEVICE_BASE))

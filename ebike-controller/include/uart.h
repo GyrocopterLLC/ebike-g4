@@ -5,12 +5,7 @@
 #define UART_H_
 
 #include "stm32f4xx.h"
-
-#define HBD_UART				USART3
-#define BMS_UART				USART2
-
-#define HBD_UART_CLK_ENABLE()	RCC->APB1ENR |= RCC_APB1ENR_USART3EN
-#define BMS_UART_CLK_ENABLE()	RCC->APB1ENR |= RCC_APB1ENR_USART2EN
+#include "periphconfig.h"
 
 #define USART_CLK				42000000
 #define HBD_BAUDRATE			115200

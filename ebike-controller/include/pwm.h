@@ -12,30 +12,13 @@
 #define PWM_H_
 
 #include "stm32f4xx.h"
+#include "pinconfig.h"
+#include "periphconfig.h"
 
-/*********** GPIO defines **********/
-
-/*
-#define PWM_AHI_PIN		GPIO_PIN_10
-#define PWM_BHI_PIN		GPIO_PIN_9
-#define PWM_CHI_PIN		GPIO_PIN_8
-#define PWM_ALO_PIN		GPIO_PIN_15
-#define PWM_BLO_PIN		GPIO_PIN_14
-#define PWM_CLO_PIN		GPIO_PIN_13
-
-#define PWM_HI_PORT		GPIOA
-#define PWM_LO_PORT		GPIOB
-
-#define PWM_AF			GPIO_AF1_TIM1
-
-#define PWM_HI_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOA_CLK_ENABLE()
-#define PWM_LO_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOB_CLK_ENABLE()
-*/
 
 /********** Timer defines ***********/
 
-#define PWM_TIMER					TIM1
-#define PWM_TIM_CLK_ENABLE()		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN
+
 #define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				4199.0f
 // Dead time calculation rules:

@@ -24,11 +24,6 @@
 #define STS_SETUP_COMP		4
 #define STS_SETUP_UPDT		6
 
-#define USB_PORT			GPIOA
-#define USB_DM_PIN			11
-#define USB_DP_PIN			12
-#define USB_AF				10
-
 #define PRIO_USB			6
 #define CMD_FIFO_BUF_SIZE	128
 #define RX_FIFO_BUF_SIZE	128
