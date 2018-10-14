@@ -5,10 +5,13 @@
 #include "DavidsFOCLib.h"
 #include "project_parameters.h"
 #include "pinconfig.h"
+#include "periphconfig.h"
 
 #define PAS_TIMER_INPUT_CLOCK     84000000 // APB1 clock * 2
-#define PAS_TIM_PSC               (8399) // 0.1ms per tick - 10kHz clock
-
+#define PAS_TIM_PSC               8399 // 0.1ms per tick - 10kHz clock
+#define PAS_TIM_ARR               9999 // Reset at 1 second (0->9999)
+#define PAS_CLK                   10000
+#define PAS_PPR                   12 // pulses per rotation (number of magnets)
 
 #define THROTTLE_START_TIME			1000
 #define THROTTLE_START_DEADTIME		500
@@ -30,7 +33,14 @@
 
 typedef struct
 {
-	uint8_t state;
+  uint8_t throttle_type;
+  uint8_t state;
+  float throttle_command;
+  float prev_output;
+}Throttle_Type;
+
+typedef struct
+{
 	uint32_t startup_count;
 	float min;
 	float max;
@@ -39,14 +49,14 @@ typedef struct
 
 typedef struct
 {
-  uint8_t last_reading;
-  uint32_t time_counter;
   float filtered_speed;
   float scale_factor;
+  float throttle_command;
 } Throttle_PAS_Type;
 
-#define THROTTLE_ANALOG_DEFAULTS	{0, 0, 0.0f, 0.0f, 1.0f}
-#define THROTTLE_PAS_DEFAULTS     {0, 0, 0.0f, 0.0f}
+#define THROTTLE_DEFAULTS         {THROTTLE_TYPE_ANALOG, 0, 0.0f, 0.0f}
+#define THROTTLE_ANALOG_DEFAULTS	{0, 0.0f, 0.0f, 1.0f}
+#define THROTTLE_PAS_DEFAULTS     {0.0f, 0.015f, 0.0f}
 #define PAS_FILTER                (0.125f) // LPF of 1/8
 
 // Biquad filter: Fs = 1kHz, f0 = 2Hz, Q = 0.45
