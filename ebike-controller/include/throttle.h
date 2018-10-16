@@ -51,12 +51,11 @@ typedef struct
 {
   float filtered_speed;
   float scale_factor;
-  float throttle_command;
 } Throttle_PAS_Type;
 
 #define THROTTLE_DEFAULTS         {THROTTLE_TYPE_ANALOG, 0, 0.0f, 0.0f}
 #define THROTTLE_ANALOG_DEFAULTS	{0, 0.0f, 0.0f, 1.0f}
-#define THROTTLE_PAS_DEFAULTS     {0.0f, 0.015f, 0.0f}
+#define THROTTLE_PAS_DEFAULTS     {0.0f, 0.015f}
 #define PAS_FILTER                (0.125f) // LPF of 1/8
 
 // Biquad filter: Fs = 1kHz, f0 = 2Hz, Q = 0.45

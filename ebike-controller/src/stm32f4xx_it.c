@@ -228,6 +228,28 @@ void TIM3_IRQHandler(void)
 	//deli_hall_capture_isr();
 }
 
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  // PAS1 timer overflow event
+  // Reset the timer source
+  if((TIM13->SR & TIM_SR_UIF) == TIM_SR_UIF)
+  {
+    TIM13->SR = ~(TIM_SR_UIF);
+    throttle_pas_timer_overflow(1);
+  }
+}
+
+void TIM8_TRG_COM_TIM14_IRQHandler(void)
+{
+  // PAS2 timer overflow event
+  // Reset the timer source
+  if((TIM14->SR & TIM_SR_UIF) == TIM_SR_UIF)
+  {
+    TIM14->SR = ~(TIM_SR_UIF);
+    throttle_pas_timer_overflow(2);
+  }
+}
+
 void ADC_IRQHandler(void)
 {
 	if(((ADC1->SR) & ADC_SR_JEOC) == ADC_SR_JEOC)

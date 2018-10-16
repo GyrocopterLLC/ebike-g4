@@ -7,14 +7,22 @@
 
 #include "throttle.h"
 #include "gpio.h"
+#include "adc.h"
 
-Biquad_Float_Type Throttle_filt = THROTTLE_LPF_DEFAULTS;
-Throttle_Type sThrottle  = THROTTLE_DEFAULTS;
-Throttle_Analog_Type sAnalogThrottle = THROTTLE_ANALOG_DEFAULTS;
-Throttle_PAS_Type sPasThrottle = THROTTLE_PAS_DEFAULTS;
-Biquad_Float_Type sPasBiqLow = BIQ_LPF_DEFAULTS;
-Biquad_Float_Type sPasBiqHigh = BIQ_LPF_DEFAULTS;
+Biquad_Float_Type Throttle_filt1 = THROTTLE_LPF_DEFAULTS;
+Biquad_Float_Type Throttle_filt2 = THROTTLE_LPF_DEFAULTS;
+Biquad_Float_Type *pThrottle_filts = {&Throttle_filt1, &Throttle_filt2};
+Throttle_Type sThrottle1  = THROTTLE_DEFAULTS;
+Throttle_Type sThrottle2 = THROTTLE_DEFAULTS;
+Throttle_Type *psThrottles[2] = {&sThrottle1, &sThrottle2};
+Throttle_Analog_Type sAnalogThrottle1 = THROTTLE_ANALOG_DEFAULTS;
+Throttle_Analog_Type sAnalogThrottle2 = THROTTLE_ANALOG_DEFAULTS;
+Throttle_Analog_Type *psAnalogThrottles[2] = {&sAnalogThrottle1, &sAnalogThrottle2};
+Throttle_PAS_Type sPasThrottle1 = THROTTLE_PAS_DEFAULTS;
+Throttle_PAS_Type sPasThrottle2 = THROTTLE_PAS_DEFAULTS;
+Throttle_PAS_Type *psPasThrottles[2] = {&sPasThrottle1, &sPasThrottle2};
 
+void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
   if (thrnum == 1) {
@@ -72,10 +80,21 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
   }
 }
 
-float throttle_process(float raw_voltage) {
+void throttle_process(uint8_t thrnum) {
+  if((thrnum != 1) && (thrnum != 2)) {
+    // Invalid throttle number
+    return;
+  }
+  if(psThrottles[thrnum-1]->throttle_type == THROTTLE_TYPE_ANALOG)
+  {
+    // Only need to process if analog throttle type
+    // The PAS throttle type is taken care of with interrupt / timer callbacks
+
+  }
+
   // Filter the raw throttle voltage
-  Throttle_filt.X = raw_voltage;
-  dfsl_biquadf(&Throttle_filt);
+  pThrottle_filts[thrnum-1]->X = adcGetThrottle(thrnum);
+  dfsl_biquadf(pThrottle_filts[thrnum-1]);
 
   // *****STARTUP SEQUENCE*****
   // For the first Throttle Startup period, input is ignored
@@ -84,85 +103,81 @@ float throttle_process(float raw_voltage) {
   // selected as the minimum throttle position.
 
   float temp_cmd;
-  if (sAnalogThrottle.startup_count < THROTTLE_START_TIME) {
+  if (psAnalogThrottles[thrnum-1]->startup_count < THROTTLE_START_TIME) {
     // Throttle startup routine.
     // No effect for about a short duration ("Deadtime")
     // Then, average the throttle position for the remainder of the startup
     // This averaged value becomes the throttle minimum position
-    sAnalogThrottle.startup_count++;
-    if (sAnalogThrottle.startup_count >= THROTTLE_START_DEADTIME) {
-      sAnalogThrottle.min = sAnalogThrottle.min + Throttle_filt.Y;
+    psAnalogThrottles[thrnum-1]->startup_count++;
+    if (psAnalogThrottles[thrnum-1]->startup_count >= THROTTLE_START_DEADTIME) {
+      psAnalogThrottles[thrnum-1]->min = psAnalogThrottles[thrnum-1]->min + pThrottle_filts[thrnum-1]->Y;
     }
-    return 0.0f;
+    psThrottles[thrnum-1]->throttle_command = 0.0f;
   } else {
     // If this is the first time, compute the average for the minimum position
     // End of startup routine
-    if (sAnalogThrottle.startup_count == THROTTLE_START_TIME) {
-      sAnalogThrottle.startup_count++;
+    if (psAnalogThrottles[thrnum-1]->startup_count == THROTTLE_START_TIME) {
+      psAnalogThrottles[thrnum-1]->startup_count++;
       // Calculate the minimum throttle position
-      sAnalogThrottle.min = sAnalogThrottle.min
+      psAnalogThrottles[thrnum-1]->min = psAnalogThrottles[thrnum-1]->min
           / (THROTTLE_START_TIME - THROTTLE_START_DEADTIME);
-      if ((sAnalogThrottle.min > 1.0f) || (sAnalogThrottle.min < 0.3f)) {
-        sAnalogThrottle.min = THROTTLE_MIN_DEFAULT;
+      if ((psAnalogThrottles[thrnum-1]->min > 1.0f) || (psAnalogThrottles[thrnum-1]->min < 0.3f)) {
+        psAnalogThrottles[thrnum-1]->min = THROTTLE_MIN_DEFAULT;
       }
       // Estimate the throttle maximum position
-      sAnalogThrottle.max = adcGetVref() - THROTTLE_DROPOUT;
-      if ((sAnalogThrottle.max > 3.0f) || (sAnalogThrottle.max < 1.5f)) {
-        sAnalogThrottle.max = THROTTLE_MAX_DEFAULT;
+      psAnalogThrottles[thrnum-1]->max = adcGetVref() - THROTTLE_DROPOUT;
+      if ((psAnalogThrottles[thrnum-1]->max > 3.0f) || (psAnalogThrottles[thrnum-1]->max < 1.5f)) {
+        psAnalogThrottles[thrnum-1]->max = THROTTLE_MAX_DEFAULT;
       }
       // Calculate a scale factor to apply to the raw voltage
-      sAnalogThrottle.scale_factor = (1.0f) / (sAnalogThrottle.max - sAnalogThrottle.min);
+      psAnalogThrottles[thrnum-1]->scale_factor = (1.0f) / (psAnalogThrottles[thrnum-1]->max - psAnalogThrottles[thrnum-1]->min);
 
     }
     // If incoming throttle position is less than the recorded minimum,
     // Redo the startup routine
-    if (Throttle_filt.Y < (sAnalogThrottle.min - THROTTLE_RANGE_LIMIT)) {
-      sAnalogThrottle.startup_count = 0;
-      sThrottle.throttle_command = 0.0f;
-      return 0.0f;
+    if (pThrottle_filts[thrnum-1]->Y < (psAnalogThrottles[thrnum-1]->min - THROTTLE_RANGE_LIMIT)) {
+      psAnalogThrottles[thrnum-1]->startup_count = 0;
+      psThrottles[thrnum-1]->throttle_command = 0.0f;
     }
     // If incoming throttle position is greater than recorded maximum,
     // take that value as maximum and recalculate scale factor
-    if (Throttle_filt.Y > (sAnalogThrottle.max + THROTTLE_RANGE_LIMIT)) {
-      sAnalogThrottle.max = Throttle_filt.Y;
-      sAnalogThrottle.scale_factor = (1.0f) / (sAnalogThrottle.max - sAnalogThrottle.min);
+    if (pThrottle_filts[thrnum-1]->Y > (psAnalogThrottles[thrnum-1]->max + THROTTLE_RANGE_LIMIT)) {
+      psAnalogThrottles[thrnum-1]->max = pThrottle_filts[thrnum-1]->Y;
+      psAnalogThrottles[thrnum-1]->scale_factor = (1.0f) / (psAnalogThrottles[thrnum-1]->max - psAnalogThrottles[thrnum-1]->min);
     }
     // Regular throttle processing
-    temp_cmd = (Throttle_filt.Y - sAnalogThrottle.min) * (sAnalogThrottle.scale_factor);
+    temp_cmd = (pThrottle_filts[thrnum-1]->Y - psAnalogThrottles[thrnum-1]->min) * (psAnalogThrottles[thrnum-1]->scale_factor);
     // Clip at 0% and 100%
     if (temp_cmd < THROTTLE_OUTPUT_MIN)
       temp_cmd = THROTTLE_OUTPUT_MIN;
     if (temp_cmd > THROTTLE_OUTPUT_MAX)
       temp_cmd = THROTTLE_OUTPUT_MAX;
   }
-  sThrottle.throttle_command = temp_cmd;
-  throttle_hyst_and_rate_limiting(&sThrottle);
-  return sThrottle.throttle_command;
+  psThrottles[thrnum-1]->throttle_command = temp_cmd;
+  throttle_hyst_and_rate_limiting(psThrottles[thrnum-1]);
 }
 
-void throttle_hyst_and_rate_limiting(Throttle_Type *thr)
-{
-    if (thr->state) {
-      // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
-      if (thr->throttle_command <= THROTTLE_HYST_LOW) {
-        thr->throttle_command = 0.0f;
-        thr->state = 0;
-      }
+void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
+  if (thr->state) {
+    // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
+    if (thr->throttle_command <= THROTTLE_HYST_LOW) {
+      thr->throttle_command = 0.0f;
+      thr->state = 0;
+    }
+  } else {
+    // If throttle was off but passes above hysteresis level, turn it on
+    if (thr->throttle_command >= THROTTLE_HYST_HIGH) {
+      thr->state = 1;
     } else {
-      // If throttle was off but passes above hysteresis level, turn it on
-      if (thr->throttle_command >= THROTTLE_HYST_HIGH) {
-        thr->state = 1;
-      } else {
-        thr->throttle_command = 0.0f;
-      }
+      thr->throttle_command = 0.0f;
     }
-    // Rate limit (upward only! no limit on how fast the throttle can fall)
-    float delta = thr->throttle_command - thr->prev_output;
-    if (delta > THROTTLE_SLEW_RATE) {
-      thr->throttle_command = thr->prev_output + THROTTLE_SLEW_RATE;
-    }
-    thr->prev_output = thr->throttle_command;
   }
+  // Rate limit (upward only! no limit on how fast the throttle can fall)
+  float delta = thr->throttle_command - thr->prev_output;
+  if (delta > THROTTLE_SLEW_RATE) {
+    thr->throttle_command = thr->prev_output + THROTTLE_SLEW_RATE;
+  }
+  thr->prev_output = thr->throttle_command;
 }
 
 void throttle_pas_process(uint8_t thrnum) {
@@ -181,13 +196,27 @@ void throttle_pas_process(uint8_t thrnum) {
   float howfastwego = ((float)newcount) / ((float)PAS_CLK) / ((float)PAS_PPR);
 
   // Filter the speed with a rolling low-pass filter
-  sPasThrottle.filtered_speed = howfastwego * PAS_FILTER +
-      (sPasThrottle.filtered_speed * (1 - PAS_FILTER));
+  psPasThrottles[thrnum-1]->filtered_speed = howfastwego * PAS_FILTER +
+      (psPasThrottles[thrnum-1]->filtered_speed * (1 - PAS_FILTER));
 
+  float temp_cmd;
   // Scale and limit the output
-  sPasThrottle.throttle_command = sPasThrottle.filtered_speed * sPasThrottle.scale_factor;
-  if (sPasThrottle.throttle_command < THROTTLE_OUTPUT_MIN)
-    sPasThrottle.throttle_command = THROTTLE_OUTPUT_MIN;
-  if (sPasThrottle.throttle_command > THROTTLE_OUTPUT_MAX)
-    sPasThrottle.throttle_command = THROTTLE_OUTPUT_MAX;
+  temp_cmd = psPasThrottles[thrnum-1]->filtered_speed * psPasThrottles[thrnum-1]->scale_factor;
+  if (temp_cmd < THROTTLE_OUTPUT_MIN)
+    temp_cmd = THROTTLE_OUTPUT_MIN;
+  if (temp_cmd > THROTTLE_OUTPUT_MAX)
+    temp_cmd = THROTTLE_OUTPUT_MAX;
+
+  psThrottles[thrnum-1]->throttle_command = temp_cmd;
+  throttle_hyst_and_rate_limiting(psThrottles[thrnum-1]);
+}
+
+void throttle_pas_timer_overflow(uint8_t thrnum)
+{
+  // This function is entered when the PAS timer wraps around
+  // Should be occurring at a relativly short (1-2 sec) interval
+  // so the motor cuts out very soon after pedaling stops
+
+  psPasThrottles[thrnum-1]->filtered_speed = 0; // Reset the filtered speed
+  psThrottles[thrnum-1]->throttle_command = 0.0f; // And reset the scaled throttle command
 }

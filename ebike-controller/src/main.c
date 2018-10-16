@@ -714,7 +714,7 @@ void User_PWMTIM_IRQ(void) {
 // Calculates power usage
 void User_BasicTIM_IRQ(void) {
 
-  raw_throttle = adcGetThrottle();
+  raw_throttle = adcGetThrottle(1);
   Throttle_cmd = throttle_process(raw_throttle);
 
   // Trim to 99%

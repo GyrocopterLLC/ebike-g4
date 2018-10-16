@@ -191,10 +191,16 @@ uint16_t adcRaw(uint8_t which_cur)
 	return adc_conv[which_cur];
 }
 
-float adcGetThrottle(void)
+float adcGetThrottle(uint8_t thrnum)
 {
-	// Convert 12-bit adc result to floating point
-	float temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;
+  float temp_throttle;
+  if(thrnum == 1) {
+    // Convert 12-bit adc result to floating point
+    temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;
+  }
+  else if(thrnum == 2) {
+    temp_throttle = ((float)adc_conv[ADC_THR2])/MAXCOUNTF;
+  }
 	// Convert to volts using reference measurement
 	temp_throttle *= adc_vref;
 	return temp_throttle;
@@ -230,7 +236,7 @@ float adcGetTempDegC(void)
 	// Convert to Kelvins using thermistor equation
 	temp = (1.0f/298.15f) + log(temp / THERM_R25) / THERM_B_VALUE;
 	temp = 1.0f / temp;
-	temp -= 273.15f; // Convert from K to °C
+	temp -= 273.15f; // Convert from K to ï¿½C
 
 	return temp;
 }
