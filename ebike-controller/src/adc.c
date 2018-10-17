@@ -193,7 +193,7 @@ uint16_t adcRaw(uint8_t which_cur)
 
 float adcGetThrottle(uint8_t thrnum)
 {
-  float temp_throttle;
+  float temp_throttle = 0.0f;
   if(thrnum == 1) {
     // Convert 12-bit adc result to floating point
     temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;

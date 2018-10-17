@@ -257,3 +257,14 @@ float throttle_get_command(uint8_t thrnum)
 {
   return psThrottles[thrnum-1]->throttle_command;
 }
+
+/**** Interfacing with UI ****/
+uint8_t throttle_get_type(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psThrottles[thrnum-1]->throttle_type;
+  }
+  else {
+    return THROTTLE_TYPE_NONE;
+  }
+}

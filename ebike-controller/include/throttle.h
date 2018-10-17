@@ -30,6 +30,7 @@
 
 #define THROTTLE_TYPE_ANALOG        0
 #define THROTTLE_TYPE_PAS           1
+#define THROTTLE_TYPE_NONE          2
 
 typedef struct
 {
@@ -45,6 +46,9 @@ typedef struct
 	float min;
 	float max;
 	float scale_factor;
+	float hyst;
+	float filt;
+	float rise;
 }Throttle_Analog_Type;
 
 typedef struct
@@ -71,10 +75,23 @@ typedef struct
                 0.0f, \
                 0.0f }
 
-void throttle_switch_type(uint8_t thrnum, uint8_t thrtype);
+
 void throttle_process(uint8_t thrnum);
 void throttle_pas_process(uint8_t thrnum);
 void throttle_pas_timer_overflow(uint8_t thrnum);
 float throttle_get_command(uint8_t thrnum);
+
+uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype);
+uint8_t throttle_get_type(uint8_t thrnum);
+uint8_t throttle_set_min(uint8_t thrnum, int32_t thrmin);
+int32_t throttle_get_min(uint8_t thrnum);
+uint8_t throttle_set_max(uint8_t thrnum, int32_t thrmax);
+int32_t throttle_get_max(uint8_t thrnum);
+uint8_t throttle_set_hyst(uint8_t thrnum, int32_t thrhyst);
+int32_t throttle_get_hyst(uint8_t thrnum);
+uint8_t throttle_set_filt(uint8_t thrnum, int32_t thrfilt);
+int32_t throttle_get_filt(uint8_t thrnum);
+uint8_t throttle_set_rise(uint8_t thrnum, int32_t thrrise);
+int32_t throttle_get_rise(uint8_t thrnum);
 
 #endif /* _THROTTLE_H_ */

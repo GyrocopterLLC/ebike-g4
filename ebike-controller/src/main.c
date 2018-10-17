@@ -904,54 +904,6 @@ int32_t MAIN_GetDeadTime(void) {
   return 500; // nanosec
 }
 
-uint8_t MAIN_SetThrType(uint8_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-uint8_t MAIN_GetThrType(uint8_t thrnum) {
-  return 0;
-}
-
-uint8_t MAIN_SetThrMin(int32_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-int32_t MAIN_GetThrMin(uint8_t thrnum) {
-  return 0;
-}
-
-uint8_t MAIN_SetThrMax(int32_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-int32_t MAIN_GetThrMax(uint8_t thrnum) {
-  return 0;
-}
-
-uint8_t MAIN_SetThrHyst(int32_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-int32_t MAIN_GetThrHyst(uint8_t thrnum) {
-  return 0;
-}
-
-uint8_t MAIN_SetThrFilt(int32_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-int32_t MAIN_GetThrFilt(uint8_t thrnum) {
-  return 0;
-}
-
-uint8_t MAIN_SetThrRise(int32_t thrtype, uint8_t thrnum) {
-  return UI_ERROR;
-}
-
-int32_t MAIN_GetThrRise(uint8_t thrnum) {
-  return 0;
-}
-
 void MAIN_SetError(uint32_t errorCode) {
   g_errorCode |= errorCode;
 }

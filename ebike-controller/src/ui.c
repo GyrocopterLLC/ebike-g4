@@ -9,8 +9,8 @@
  */
 
 #include "stm32f4xx.h"
-#include "ui.h"
 #include "main.h"
+#include "ui_commands.h"
 
 /* Function Definitions */
 uint8_t UI_USB_Speed_Command_Req(char cmdtype, char* options);
@@ -1235,7 +1235,17 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
         return UI_ERROR;
       }
       else {
-        MAIN_SetThrType(thr_type, command_num+1);
+        switch (thr_type) {
+        case 0:
+          throttle_switch_type(command_num+1, THROTTLE_TYPE_NONE);
+          break;
+        case 1:
+          throttle_switch_type(command_num+1, THROTTLE_TYPE_ANALOG);
+          break;
+        case 2:
+          throttle_switch_type(command_num+1, THROTTLE_TYPE_PAS);
+          break;
+        }
       }
       break;
     case 2: // MIN1
