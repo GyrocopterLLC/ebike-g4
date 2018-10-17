@@ -43,6 +43,10 @@
 #define PAS2_TIM                  TIM14
 #define PAS1_TIMER_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_TIM13EN
 #define PAS2_TIMER_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_TIM14EN
+#define PAS1_PINCHANGE_IRQn       EXTI9_5_IRQn
+#define PAS2_PINCHANGE_IRQn       EXTI0_IRQn
+#define PAS1_TIMER_IRQn           TIM8_UP_TIM13_IRQn
+#define PAS2_TIMER_IRQn           TIM8_TRG_COM_TIM14_IRQn
 
 // Application timer
 #define APP_TIM                   TIM12

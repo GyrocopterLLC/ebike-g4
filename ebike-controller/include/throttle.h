@@ -71,7 +71,10 @@ typedef struct
                 0.0f, \
                 0.0f }
 
-
-float throttle_process(float raw_voltage);
+void throttle_switch_type(uint8_t thrnum, uint8_t thrtype);
+void throttle_process(uint8_t thrnum);
+void throttle_pas_process(uint8_t thrnum);
+void throttle_pas_timer_overflow(uint8_t thrnum);
+float throttle_get_command(uint8_t thrnum);
 
 #endif /* _THROTTLE_H_ */
