@@ -1212,7 +1212,7 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   int16_t command_num;
   char command_type;
   int16_t thr_type;
-  int32_t newval_i32;
+  float newval_f;
   char tempbuf[8];
   uint8_t templen;
 
@@ -1237,41 +1237,41 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       else {
         switch (thr_type) {
         case 0:
-          throttle_switch_type(command_num+1, THROTTLE_TYPE_NONE);
+          throttle_set_type(command_num+1, THROTTLE_TYPE_NONE);
           break;
         case 1:
-          throttle_switch_type(command_num+1, THROTTLE_TYPE_ANALOG);
+          throttle_set_type(command_num+1, THROTTLE_TYPE_ANALOG);
           break;
         case 2:
-          throttle_switch_type(command_num+1, THROTTLE_TYPE_PAS);
+          throttle_set_type(command_num+1, THROTTLE_TYPE_PAS);
           break;
         }
       }
       break;
     case 2: // MIN1
     case 3: // MIN2
-      newval_i32 = UI_atoi(inputstring);
-      MAIN_SetThrMin(newval_i32, command_num-1);
+      newval_f = UI_atof(inputstring);
+      throttle_set_min(command_num-1, newval_f);
       break;
     case 4: // MAX1
     case 5: // MAX2
-      newval_i32 = UI_atoi(inputstring);
-      MAIN_SetThrMax(newval_i32, command_num-3);
+      newval_f = UI_atof(inputstring);
+      throttle_set_max(command_num-3, newval_f);
       break;
     case 6: // HYST1
     case 7: // HYST2
-      newval_i32 = UI_atoi(inputstring);
-      MAIN_SetThrHyst(newval_i32, command_num-5);
+      newval_f = UI_atof(inputstring);
+      throttle_set_hyst(command_num-5, newval_f);
       break;
     case 8: // FILT1
     case 9: // FILT2
-      newval_i32 = UI_atoi(inputstring);
-      MAIN_SetThrFilt(newval_i32, command_num-7);
+      newval_f = UI_atof(inputstring);
+      throttle_set_filt(command_num-7, newval_f);
       break;
     case 10: // RISE1
     case 11: // RISE2
-      newval_i32 = UI_atoi(inputstring);
-      MAIN_SetThrRise(newval_i32, command_num-9);
+      newval_f = UI_atof(inputstring);
+      throttle_set_rise(command_num-9, newval_f);
       break;
     }
   } else if (command_type == UI_MENU_QUERY) {
@@ -1279,14 +1279,14 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
     switch (command_num) {
     case 0: // TYPE1
     case 1: // TYPE2
-      switch (MAIN_GetThrType(command_num + 1)) {
-      case 0:
+      switch (throttle_get_type(command_num + 1)) {
+      case THROTTLE_TYPE_NONE:
         UI_SerialOut("NONE\r\n", 6);
         break;
-      case 1:
+      case THROTTLE_TYPE_ANALOG:
         UI_SerialOut("HALL\r\n", 6);
         break;
-      case 2:
+      case THROTTLE_TYPE_PAS:
         UI_SerialOut("PAS\r\n", 5);
         break;
       default:
@@ -1296,36 +1296,36 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       break;
     case 2: // MIN1
     case 3: // MIN2
-      newval_i32 = MAIN_GetThrMin(command_num - 1);
-      templen = _itoa(tempbuf, newval_i32, 0);
+      newval_f = throttle_get_min(command_num - 1);
+      templen = _ftoa(tempbuf, newval_f, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 4: // MAX1
     case 5: // MAX2
-      newval_i32 = MAIN_GetThrMax(command_num - 3);
-      templen = _itoa(tempbuf, newval_i32, 0);
+      newval_f = throttle_get_max(command_num - 3);
+      templen = _ftoa(tempbuf, newval_f, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 6: // HYST1
     case 7: // HYST22
-      newval_i32 = MAIN_GetThrHyst(command_num - 5);
-      templen = _itoa(tempbuf, newval_i32, 0);
+      newval_f = throttle_get_hyst(command_num - 5);
+      templen = _ftoa(tempbuf, newval_f, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 8: // FILT1
     case 9: // FILT2
-      newval_i32 = MAIN_GetThrFilt(command_num - 7);
-      templen = _itoa(tempbuf, newval_i32, 0);
+      newval_f = throttle_get_filt(command_num - 7);
+      templen = _ftoa(tempbuf, newval_f, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 10: // RISE1
     case 11: // RISE2
-      newval_i32 = MAIN_GetThrRise(command_num - 9);
-      templen = _itoa(tempbuf, newval_i32, 0);
+      newval_f = throttle_get_rise(command_num - 9);
+      templen = _ftoa(tempbuf, newval_f, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;

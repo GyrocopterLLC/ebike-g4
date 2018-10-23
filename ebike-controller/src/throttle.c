@@ -8,6 +8,7 @@
 #include "throttle.h"
 #include "gpio.h"
 #include "adc.h"
+#include "ui.h"
 
 Biquad_Float_Type Throttle_filt1 = THROTTLE_LPF_DEFAULTS;
 Biquad_Float_Type Throttle_filt2 = THROTTLE_LPF_DEFAULTS;
@@ -192,13 +193,13 @@ void throttle_process(uint8_t thrnum) {
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
   if (thr->state) {
     // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
-    if (thr->throttle_command <= THROTTLE_HYST_LOW) {
+    if (thr->throttle_command <= (thr->hyst)) {
       thr->throttle_command = 0.0f;
       thr->state = 0;
     }
   } else {
     // If throttle was off but passes above hysteresis level, turn it on
-    if (thr->throttle_command >= THROTTLE_HYST_HIGH) {
+    if (thr->throttle_command >= (2.0f*(thr->hyst))) {
       thr->state = 1;
     } else {
       thr->throttle_command = 0.0f;
@@ -206,8 +207,8 @@ static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
   }
   // Rate limit (upward only! no limit on how fast the throttle can fall)
   float delta = thr->throttle_command - thr->prev_output;
-  if (delta > THROTTLE_SLEW_RATE) {
-    thr->throttle_command = thr->prev_output + THROTTLE_SLEW_RATE;
+  if (delta > thr->rise) {
+    thr->throttle_command = thr->prev_output + thr->rise;
   }
   thr->prev_output = thr->throttle_command;
 }
@@ -259,6 +260,18 @@ float throttle_get_command(uint8_t thrnum)
 }
 
 /**** Interfacing with UI ****/
+uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    if((thrtype == THROTTLE_TYPE_NONE) || (thrtype == THROTTLE_TYPE_PAS) ||
+        (thrtype == THROTTLE_TYPE_PAS))
+    {
+      psThrottles[thrnum-1]->throttle_type = thrtype;
+      return UI_OK;
+    }
+  }
+  return UI_ERROR;
+}
 uint8_t throttle_get_type(uint8_t thrnum)
 {
   if((thrnum == 1) || (thrnum == 2)) {
@@ -267,4 +280,91 @@ uint8_t throttle_get_type(uint8_t thrnum)
   else {
     return THROTTLE_TYPE_NONE;
   }
+}
+
+uint8_t throttle_set_min(uint8_t thrnum, float thrmin)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    psAnalogThrottles[thrnum-1]->min = thrmin;
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+float throttle_get_min(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psAnalogThrottles[thrnum-1]->min;
+  }
+  return 0.0f;
+}
+
+uint8_t throttle_set_max(uint8_t thrnum, float thrmax) {
+  if ((thrnum == 1) || (thrnum == 2)) {
+    psAnalogThrottles[thrnum - 1]->max = thrmax;
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+float throttle_get_max(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psAnalogThrottles[thrnum-1]->max;
+  }
+  return 0.0f;
+}
+
+uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    psThrottles[thrnum-1]->hyst = thrhyst;
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+float throttle_get_hyst(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psThrottles[thrnum-1]->hyst;
+  }
+  return 0.0f;
+}
+
+uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    psThrottles[thrnum-1]->filt = thrfilt;
+    // And do the filter calculation
+    biquad_lpf_calc(pThrottle_filts[thrnum-1], THROTTLE_SAMPLING_RATE, thrfilt,
+        THROTTLE_FILT_Q_DEFAULT);
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+float throttle_get_filt(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psThrottles[thrnum-1]->filt;
+  }
+  return 0.0f;
+}
+
+uint8_t throttle_set_rise(uint8_t thrnum, float thrrise)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    psThrottles[thrnum-1]->rise = thrrise;
+    return UI_OK;
+  }
+  return UI_ERROR;
+}
+
+float throttle_get_rise(uint8_t thrnum)
+{
+  if((thrnum == 1) || (thrnum == 2)) {
+    return psThrottles[thrnum-1]->rise;
+  }
+  return 0.0f;
 }

@@ -22,6 +22,12 @@
 #define THROTTLE_HYST_HIGH			0.030f
 #define THROTTLE_DROPOUT			0.72f
 
+#define THROTTLE_HYST_DEFAULT   0.025f
+#define THROTTLE_FILT_DEFAULT   2.0f
+#define THROTTLE_FILT_Q_DEFAULT 0.707f
+#define THROTTLE_SAMPLING_RATE  1000.0f
+#define THROTTLE_RISE_DEFAULT   0.00125f
+
 #define THROTTLE_OUTPUT_MIN   (0.00f)
 #define THROTTLE_OUTPUT_MAX   (0.99f)
 // Limit the throttle climb rate to 50% / second
@@ -38,6 +44,9 @@ typedef struct
   uint8_t state;
   float throttle_command;
   float prev_output;
+  float hyst;
+  float filt;
+  float rise;
 }Throttle_Type;
 
 typedef struct
@@ -46,9 +55,6 @@ typedef struct
 	float min;
 	float max;
 	float scale_factor;
-	float hyst;
-	float filt;
-	float rise;
 }Throttle_Analog_Type;
 
 typedef struct
@@ -57,7 +63,9 @@ typedef struct
   float scale_factor;
 } Throttle_PAS_Type;
 
-#define THROTTLE_DEFAULTS         {THROTTLE_TYPE_ANALOG, 0, 0.0f, 0.0f}
+#define THROTTLE_DEFAULTS         {THROTTLE_TYPE_ANALOG, 0, 0.0f, 0.0f, \
+                                    THROTTLE_HYST_DEFAULT, THROTTLE_FILT_DEFAULT, \
+                                      THROTTLE_RISE_DEFAULT}
 #define THROTTLE_ANALOG_DEFAULTS	{0, 0.0f, 0.0f, 1.0f}
 #define THROTTLE_PAS_DEFAULTS     {0.0f, 0.015f}
 #define PAS_FILTER                (0.125f) // LPF of 1/8
@@ -83,15 +91,15 @@ float throttle_get_command(uint8_t thrnum);
 
 uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype);
 uint8_t throttle_get_type(uint8_t thrnum);
-uint8_t throttle_set_min(uint8_t thrnum, int32_t thrmin);
-int32_t throttle_get_min(uint8_t thrnum);
-uint8_t throttle_set_max(uint8_t thrnum, int32_t thrmax);
-int32_t throttle_get_max(uint8_t thrnum);
-uint8_t throttle_set_hyst(uint8_t thrnum, int32_t thrhyst);
-int32_t throttle_get_hyst(uint8_t thrnum);
-uint8_t throttle_set_filt(uint8_t thrnum, int32_t thrfilt);
-int32_t throttle_get_filt(uint8_t thrnum);
-uint8_t throttle_set_rise(uint8_t thrnum, int32_t thrrise);
-int32_t throttle_get_rise(uint8_t thrnum);
+uint8_t throttle_set_min(uint8_t thrnum, float thrmin);
+float throttle_get_min(uint8_t thrnum);
+uint8_t throttle_set_max(uint8_t thrnum, float thrmax);
+float throttle_get_max(uint8_t thrnum);
+uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst);
+float throttle_get_hyst(uint8_t thrnum);
+uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt);
+float throttle_get_filt(uint8_t thrnum);
+uint8_t throttle_set_rise(uint8_t thrnum, float thrrise);
+float throttle_get_rise(uint8_t thrnum);
 
 #endif /* _THROTTLE_H_ */

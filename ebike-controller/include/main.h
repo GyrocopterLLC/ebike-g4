@@ -7,10 +7,12 @@
 #define __MAIN_H
 
 /* Constants */
+/*
 #define THROTTLE_MIN  (0.7f) // Less than 0.7V is zero throttle
 #define THROTTLE_MAX  (2.8f) // Above 2.8V is 100% throttle
 #define THROTTLE_SCALE  (0.47619f)
 #define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
+*/
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
