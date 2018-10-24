@@ -285,8 +285,10 @@ uint8_t throttle_get_type(uint8_t thrnum)
 uint8_t throttle_set_min(uint8_t thrnum, float thrmin)
 {
   if((thrnum == 1) || (thrnum == 2)) {
-    psAnalogThrottles[thrnum-1]->min = thrmin;
-    return UI_OK;
+    if(thrmin >= 0.0f) {
+      psAnalogThrottles[thrnum-1]->min = thrmin;
+      return UI_OK;
+    }
   }
   return UI_ERROR;
 }
@@ -301,8 +303,10 @@ float throttle_get_min(uint8_t thrnum)
 
 uint8_t throttle_set_max(uint8_t thrnum, float thrmax) {
   if ((thrnum == 1) || (thrnum == 2)) {
-    psAnalogThrottles[thrnum - 1]->max = thrmax;
-    return UI_OK;
+    if(thrmax >= 0.0f) {
+      psAnalogThrottles[thrnum - 1]->max = thrmax;
+      return UI_OK;
+    }
   }
   return UI_ERROR;
 }
@@ -318,8 +322,10 @@ float throttle_get_max(uint8_t thrnum)
 uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst)
 {
   if((thrnum == 1) || (thrnum == 2)) {
-    psThrottles[thrnum-1]->hyst = thrhyst;
-    return UI_OK;
+    if((thrhyst >= THROTTLE_HYST_MIN) && (thrhyst < THROTTLE_HYST_MAX)) {
+      psThrottles[thrnum-1]->hyst = thrhyst;
+      return UI_OK;
+    }
   }
   return UI_ERROR;
 }
@@ -335,11 +341,13 @@ float throttle_get_hyst(uint8_t thrnum)
 uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt)
 {
   if((thrnum == 1) || (thrnum == 2)) {
-    psThrottles[thrnum-1]->filt = thrfilt;
-    // And do the filter calculation
-    biquad_lpf_calc(pThrottle_filts[thrnum-1], THROTTLE_SAMPLING_RATE, thrfilt,
-        THROTTLE_FILT_Q_DEFAULT);
-    return UI_OK;
+    if((thrfilt >= THROTTLE_FILT_MIN) && (thrfilt < THROTTLE_FILT_MAX)) {
+      psThrottles[thrnum-1]->filt = thrfilt;
+      // And do the filter calculation
+      dfsl_biquadcalc_lpf(pThrottle_filts[thrnum-1], THROTTLE_SAMPLING_RATE, thrfilt,
+          THROTTLE_FILT_Q_DEFAULT);
+      return UI_OK;
+    }
   }
   return UI_ERROR;
 }
@@ -355,8 +363,10 @@ float throttle_get_filt(uint8_t thrnum)
 uint8_t throttle_set_rise(uint8_t thrnum, float thrrise)
 {
   if((thrnum == 1) || (thrnum == 2)) {
-    psThrottles[thrnum-1]->rise = thrrise;
-    return UI_OK;
+    if((thrrise < THROTTLE_RISE_MAX) && (thrrise >= THROTTLE_RISE_MIN)) {
+      psThrottles[thrnum-1]->rise = thrrise;
+      return UI_OK;
+    }
   }
   return UI_ERROR;
 }
