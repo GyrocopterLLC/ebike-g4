@@ -8,6 +8,9 @@
 #include "pwm.h"
 #include "gpio.h"
 #include "project_parameters.h"
+#include "ui.h"
+
+float pwm_timer_arr_f = PWM_PERIOD_F;
 
 void PWM_Init(void)
 {
@@ -60,6 +63,15 @@ void PWM_Init(void)
 	/* NOTE: MOE bit is still zero, so outputs are at their inactive level. */
 }
 
+uint8_t PWM_SetDeadTime(int32_t newDT)
+{
+  return UI_OK;
+}
+int32_t PWM_GetDeadTime(void)
+{
+  return PWM_DT_NS;
+}
+
 /*
 inline void PWM_MotorOFF(void)
 {
@@ -86,19 +98,19 @@ void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC)
 {
 	// scale from 65536 to the maximum counter value, PWM_PERIOD
 	uint32_t temp;
-	temp = tA * PWM_PERIOD / 65536;
+	temp = tA * PWM_TIMER->ARR / 65536;
 	//PWM_TIMER->CCR1 = temp;
 	PWM_TIMER->CCR3 = temp;
-	temp = tB * PWM_PERIOD / 65536;
+	temp = tB * PWM_TIMER->ARR / 65536;
 	PWM_TIMER->CCR2 = temp;
-	temp = tC * PWM_PERIOD / 65536;
+	temp = tC * PWM_TIMER->ARR / 65536;
 	//PWM_TIMER->CCR3 = temp;
 	PWM_TIMER->CCR1 = temp;
 }
 
 void PWM_SetDutyF(float tA, float tB, float tC)
 {
-	PWM_TIMER->CCR1 = (uint16_t)(tA * PWM_PERIOD_F);
-	PWM_TIMER->CCR2 = (uint16_t)(tB * PWM_PERIOD_F);
-	PWM_TIMER->CCR3 = (uint16_t)(tC * PWM_PERIOD_F);
+	PWM_TIMER->CCR1 = (uint16_t)(tA * pwm_timer_arr_f);
+	PWM_TIMER->CCR2 = (uint16_t)(tB * pwm_timer_arr_f);
+	PWM_TIMER->CCR3 = (uint16_t)(tC * pwm_timer_arr_f);
 }

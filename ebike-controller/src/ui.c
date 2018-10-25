@@ -1088,14 +1088,10 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
       }
       ui_error = UI_OK;
       break;
-    case 4: // FREQ
-    case 5: // DT
+    case 4: // DT
       newval_i32 = UI_atoi(inputstring);
-      if (command_num == 4) {
-        ui_error = MAIN_SetFreq(newval_i32);
-      } else {
-        ui_error = MAIN_SetDeadTime(newval_i32);
-      }
+      ui_error = PWM_SetDeadTime(newval_i32);
+
       if (ui_error == UI_OK) {
         UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
       } else {
@@ -1122,14 +1118,8 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
-    case 4: // FREQ
-      newval_i32 = MAIN_GetFreq();
-      templen = _itoa(tempbuf, newval_i32, 0);
-      UI_SerialOut(tempbuf, templen);
-      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
-      break;
-    case 5: // DT
-      newval_i32 = MAIN_GetDeadTime();
+    case 4: // DT
+      newval_i32 = PWM_GetDeadTime();
       templen = _itoa(tempbuf, newval_i32, 0);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);

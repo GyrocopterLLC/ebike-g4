@@ -38,11 +38,10 @@
                                       "KI",\
                                       "KD",\
                                       "KC",\
-                                      "FREQ",\
                                       "DT"\
                                 }
-#define UI_FOC_NUMCMD           6
-#define UI_FOC_CMDLEN           {2,2,2,2,4,2}
+#define UI_FOC_NUMCMD           5
+#define UI_FOC_CMDLEN           {2,2,2,2,2}
 
 #define UI_MOTOR_COMMANDS       {     "PP",\
                                       "RS",\

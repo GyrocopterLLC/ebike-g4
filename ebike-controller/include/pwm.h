@@ -18,7 +18,6 @@
 
 /********** Timer defines ***********/
 
-
 #define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				4199.0f
 // Dead time calculation rules:
@@ -33,6 +32,7 @@
 
 // Since f_DTS is 168MHz (same as clock input), setting DTG = 01010100 gives us
 // Dead time = t_DTS * DTG[6:0] = (1/168MHz) * 84 = 5.95ns * 84 = 500ns
+#define PWM_DT_NS           500
 #define PWM_DEAD_TIME				(TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/
@@ -50,6 +50,8 @@ inline void PWM_MotorON(void)
 */
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
+uint8_t PWM_SetDeadTime(int32_t newDT);
+int32_t PWM_GetDeadTime(void);
 
 /* Defines for directly changing PWM outputs */
 

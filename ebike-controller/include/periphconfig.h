@@ -24,13 +24,32 @@
  * USART6 -
  */
 
+#define APB1_CLK      84000000
+#define APB2_CLK      168000000
+#define TIM1_CLK      APB2_CLK
+#define TIM2_CLK      APB1_CLK
+#define TIM3_CLK      APB1_CLK
+#define TIM4_CLK      APB1_CLK
+#define TIM5_CLK      APB1_CLK
+#define TIM6_CLK      APB1_CLK
+#define TIM7_CLK      APB1_CLK
+#define TIM8_CLK      APB1_CLK
+#define TIM9_CLK      APB2_CLK
+#define TIM10_CLK     APB2_CLK
+#define TIM11_CLK     APB2_CLK
+#define TIM12_CLK     APB1_CLK
+#define TIM13_CLK     APB1_CLK
+#define TIM14_CLK     APB1_CLK
+
 // PWM
 #define PWM_TIMER             TIM1
+#define PWM_CLK               TIM1_CLK
 #define PWM_TIM_CLK_ENABLE()  RCC->APB2ENR |= RCC_APB2ENR_TIM1EN
 #define PWM_IRQn              TIM1_UP_TIM10_IRQn
 
 // Hall Effect Sensor
 #define HALL_TIMER                      TIM3
+#define HALL_CLK                        TIM3_CLK
 #define HALL_TIM_CLK_ENABLE()           RCC->APB1ENR |= RCC_APB1ENR_TIM3EN
 #define HALL_IRQn                       TIM3_IRQn
 #define HALL_SAMPLE_TIMER               TIM8
@@ -40,7 +59,9 @@
 
 // Throttle (PAS timers)
 #define PAS1_TIM                  TIM13
+#define PAS1_CLK                  TIM13_CLK
 #define PAS2_TIM                  TIM14
+#define PAS2_CLK                  TIM14_CLK
 #define PAS1_TIMER_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_TIM13EN
 #define PAS2_TIMER_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_TIM14EN
 #define PAS1_PINCHANGE_IRQn       EXTI9_5_IRQn
@@ -50,6 +71,7 @@
 
 // Application timer
 #define APP_TIM                   TIM12
+#define APP_CLK                   TIM12_CLK
 #define APP_TIMER_CLK_ENABLE()    RCC->APB1ENR |= RCC_APB1ENR_TIM12EN
 #define APP_IRQn                  TIM8_BRK_TIM12_IRQn
 
