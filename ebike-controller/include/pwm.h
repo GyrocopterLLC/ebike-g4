@@ -20,20 +20,28 @@
 
 #define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				4199.0f
-// Dead time calculation rules:
-// If DTG[7] = 0:
-// --- Dead time is DTG[6:0]*(t_DTS)
-// If DTG[7:6] = 10
-// --- Dead time is (DTG[5:0]+64)*(2*t_DTS)
-// If DTG[7:5] = 110
-// --- Dead time is (DTG[4:0]+32)*(8*t_DTS)
-// If DTG[7:5] = 111
-// --- Dead time is (DTG[4:0]+32)*(16*t_DTS)
 
-// Since f_DTS is 168MHz (same as clock input), setting DTG = 01010100 gives us
-// Dead time = t_DTS * DTG[6:0] = (1/168MHz) * 84 = 5.95ns * 84 = 500ns
-#define PWM_DT_NS           500
-#define PWM_DEAD_TIME				(TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
+
+/** Deadtime register settings **
+ * DTG[7:5]=0xx => DT=DTG[7:0]x tdtg with tdtg=tDTS.
+ * DTG[7:5]=10x => DT=(64+DTG[5:0])xtdtg with Tdtg=2xtDTS.
+ * DTG[7:5]=110 => DT=(32+DTG[4:0])xtdtg with Tdtg=8xtDTS.
+ * DTG[7:5]=111 => DT=(32+DTG[4:0])xtdtg with Tdtg=16xtDTS.
+ *
+ * If tDTS = 1/168MHz, then:
+ * DTG[7:5]=0xx => DT=DTG[7:0]x 5.952ns       (range: 0 -> 755.952ns)
+ * DTG[7:5]=10x => DT=(64+DTG[5:0])x 11.905ns (range: 761.905 -> 1511.905ns)
+ * DTG[7:5]=110 => DT=(32+DTG[4:0])x 47.619ns (range: 1523.809 -> 3000ns)
+ * DTG[7:5]=111 => DT=(32+DTG[4:0])x 95.238ns (range: 3047.619 -> 6000ns)
+ */
+
+#define DT_RANGE1_MAX     756
+#define DT_RANGE2_MAX     1511
+#define DT_RANGE3_MAX     3000
+#define DT_RANGE4_MAX     6000
+
+#define PWM_DEFAULT_DT_NS   500
+#define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/
 
