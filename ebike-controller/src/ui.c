@@ -1146,8 +1146,66 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
   inputstring += ui_2nd_level_motor_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
+    switch(command_num){
+    case 0: // PP
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 1: // RS
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 2: // LS
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 3: // FLUX
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9: // HALLANG 1 through 6
+      break;
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
+    switch(command_num){
+    case 0: // PP
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 1: // RS
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 2: // LS
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 3: // FLUX
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
+      break;
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9: // HALLANG 1 through 6
+      break;
+    default:
+      UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+      return UI_ERROR;
+      break;
+    }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1165,8 +1223,52 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
   inputstring += ui_2nd_level_util_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
+    switch(command_num){
+      case 0: // SAVE
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 1: // LOAD
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 2: // RESET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 3: // BOOTRESET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      default:
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+        break;
+      }
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
+    switch(command_num){
+      case 0: // SAVE
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 1: // LOAD
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 2: // RESET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 3: // BOOTRESET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      default:
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+        break;
+      }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1184,8 +1286,52 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
   inputstring += ui_2nd_level_ctrl_cmdlen[command_num];
   if (inputstring[0] == UI_MENU_SET) {
     // Perform setting variable
+    switch(command_num){
+      case 0: // IAGAIN
+      case 1: // IBGAIN
+      case 3: // ICGAIN
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 4: // IAOFFSET
+      case 5: // IBOFFSET
+      case 6: // ICOFFSET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 7: // VBUSSCALE
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      default:
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+        break;
+      }
   } else if (inputstring[0] == UI_MENU_QUERY) {
     // Return the current value of the variable
+    switch(command_num){
+      case 0: // IAGAIN
+      case 1: // IBGAIN
+      case 3: // ICGAIN
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 4: // IAOFFSET
+      case 5: // IBOFFSET
+      case 6: // ICOFFSET
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      case 7: // VBUSSCALE
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+        break;
+      default:
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+        break;
+      }
   } else {
     // Ok, definitely invalid
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
