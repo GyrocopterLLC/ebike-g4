@@ -213,7 +213,7 @@ SECTIONS
         *(.glue_7)
         *(.glue_7t)
 
-    } >FLASH
+    } >FLASH2
 
 	/* ARM magic sections */
 	.ARM.extab : ALIGN(4)
