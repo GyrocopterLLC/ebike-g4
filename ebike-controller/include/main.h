@@ -25,6 +25,7 @@
 #include "adc.h"
 #include "pwm.h"
 #include "motor_loop.h"
+#include "eeprom_emulation.h"
 #include "throttle.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
@@ -75,6 +76,7 @@ typedef enum
 #define DEFAULT_SERIAL_DATA_RATE  (400) // (20kHz/400 = 50Hz)
 
 #define MAIN_ERR_HALL_STATE   (0x00000800)
+
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 //uint32_t itoa(char* buf, int32_t num);
@@ -99,6 +101,8 @@ float MAIN_GetVar(uint8_t var);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 void MAIN_DumpRecord(void);
+void MAIN_SaveVariables(void);
+void MAIN_LoadVariables(void);
 #ifdef DEBUG_DUMP_USED
 void MAIN_SetDumpDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum);

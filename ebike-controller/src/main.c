@@ -42,6 +42,8 @@ float g_FetTemp;
 
 PowerCalcs Mpc;
 
+uint16_t VirtAddVarTab[NB_OF_VAR] = DEFAULT_ADDR_LIST;
+
 /** Debugging outputs **
  *
  * 0 - None (outputs zero)
@@ -210,8 +212,11 @@ int main(void) {
   // Disable (turn on gpio pulldown resistor) unused pins
   GPIO_Pulldown_Unused();
 
-  /* Configure the system clock to 168 MHz */
+  // Configure the system clock to 168 MHz
   SystemClock_Config();
+
+  // Start up the EEPROM emulation, and (TODO) fetch stored values from it
+  EE_Init();
 
   /* Default initialization:
    ** Configure the Flash prefetch, instruction and Data caches
@@ -222,9 +227,9 @@ int main(void) {
   FLASH->ACR |= FLASH_ACR_ICEN;
   FLASH->ACR |= FLASH_ACR_DCEN;
 
-  /* STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported  */
+  // STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported
   if (((DBGMCU->IDCODE) >> 16) == 0x1001) {
-    /* Enable the Flash prefetch */
+    // Enable the Flash prefetch
     FLASH->ACR |= FLASH_ACR_PRFTEN;
   }
 
@@ -235,10 +240,9 @@ int main(void) {
 
   g_errorCode = 0;
 
-  /* Configure LED1, LED2, LED3 and LED4 */
-  /* David's version */
+  // Configure green and red leds
   User_LED_Init();
-  //GPIOD->ODR |= GPIO_PIN_12|GPIO_PIN_15;
+  // Turn on the green led
   GLED_PORT->ODR |= (1 << GLED_PIN);
   adcInit();
   User_DAC_Init();
@@ -268,13 +272,13 @@ int main(void) {
   dfsl_biquadcalc_lpf(&Id_Filt, 20000.0f, 2000.0f, 0.707f);
   dfsl_biquadcalc_lpf(&Iq_Filt, 20000.0f, 2000.0f, 0.707f);
 
-  /* Initialize watchdog timer */
-  WDT_init();
-
   // Init the motor controller
   Mctrl.state = Motor_Off;
   Mfoc.Id_PID = &Id_control;
   Mfoc.Iq_PID = &Iq_control;
+
+  /* Initialize watchdog timer */
+  WDT_init();
 
   /* Run Application (Interrupt mode) */
   while (1) {
@@ -300,7 +304,9 @@ int main(void) {
 
       if (byte == '\n') {
         // Send it to the UI processor!
-        UI_Process(vcp_buffer);
+        // Older version
+        //UI_Process(vcp_buffer);
+        UI_TopLevelProcess(vcp_buffer);
 
         // and flush
         vcp_buffer[0] = 0;
@@ -1047,4 +1053,16 @@ void Delay(__IO uint32_t Delay) {
 
 uint32_t GetTick(void) {
   return g_MainSysTick;
+}
+
+void MAIN_SaveVariables(void)
+{
+/* TODO: First add variables in RAM instead of hard-coded.
+ * Then enable writing to EEPROM.
+ */
+}
+
+void MAIN_LoadVariables(void)
+{
+
 }

@@ -116,7 +116,54 @@ typedef enum
 #define PAGE_FULL             ((uint8_t)0x80)
 
 /* Variables' number */
-#define NB_OF_VAR             ((uint8_t)0x03)
+#define NB_OF_VAR                 34
+// FOC constants
+#define EE_ADR_KP                 0x3001
+#define EE_ADR_KI                 0x3002
+#define EE_ADR_KD                 0x3002
+#define EE_ADR_KC                 0x3003
+#define EE_ADR_DT                 0x3004
+// Motor constants
+#define EE_ADR_PP                 0x4001
+#define EE_ADR_RS                 0x4002
+#define EE_ADR_LS                 0x4003
+#define EE_ADR_FLUX               0x4004
+#define EE_ADR_HALL1              0x4011
+#define EE_ADR_HALL2              0x4012
+#define EE_ADR_HALL3              0x4013
+#define EE_ADR_HALL4              0x4014
+#define EE_ADR_HALL5              0x4015
+#define EE_ADR_HALL6              0x4016
+// Controller constants
+#define EE_ADR_IAGAIN             0x5001
+#define EE_ADR_IBGAIN             0x5002
+#define EE_ADR_ICGAIN             0x5003
+#define EE_ADR_IAOFFSET           0x5004
+#define EE_ADR_IBOFFSET           0x5005
+#define EE_ADR_ICOFFSET           0x5006
+#define EE_ADR_VBUSSCALE          0x5007
+// Throttle constants
+#define EE_ADR_TYPE1              0x6011
+#define EE_ADR_MIN1               0x6012
+#define EE_ADR_MAX1               0x6013
+#define EE_ADR_HYST1              0x6014
+#define EE_ADR_FILT1              0x6015
+#define EE_ADR_RISE1              0x6016
+#define EE_ADR_TYPE2              0x6021
+#define EE_ADR_MIN2               0x6022
+#define EE_ADR_MAX2               0x6023
+#define EE_ADR_HYST2              0x6024
+#define EE_ADR_FILT2              0x6025
+#define EE_ADR_RISE2              0x6026
+
+#define DEFAULT_ADDR_LIST {EE_ADR_KP, EE_ADR_KI, EE_ADR_KD, EE_ADR_KC, \
+    EE_ADR_DT, EE_ADR_PP, EE_ADR_RS, EE_ADR_LS, EE_ADR_FLUX, EE_ADR_HALL1, \
+    EE_ADR_HALL2, EE_ADR_HALL3, EE_ADR_HALL4, EE_ADR_HALL5, EE_ADR_HALL6, \
+    EE_ADR_IAGAIN, EE_ADR_IBGAIN, EE_ADR_ICGAIN, EE_ADR_IAOFFSET, \
+    EE_ADR_IBOFFSET, EE_ADR_ICOFFSET, EE_ADR_VBUSSCALE, EE_ADR_TYPE1, \
+    EE_ADR_MIN1, EE_ADR_MAX1, EE_ADR_HYST1, EE_ADR_FILT1, EE_ADR_RISE1, \
+    EE_ADR_TYPE2, EE_ADR_MIN2, EE_ADR_MAX2, EE_ADR_HYST2, EE_ADR_FILT2, \
+    EE_ADR_RISE2 }
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

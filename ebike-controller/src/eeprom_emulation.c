@@ -41,6 +41,10 @@ extern uint16_t VirtAddVarTab[NB_OF_VAR];
 /* Private functions ---------------------------------------------------------*/
 
 /* From ST StdPeriph Flash ---------------------------------------------------*/
+#define FLASH_KEY1               ((uint32_t)0x45670123)
+#define FLASH_KEY2               ((uint32_t)0xCDEF89AB)
+static void FLASH_Unlock(void);
+static void FLASH_Lock(void);
 static FLASH_Status FLASH_GetStatus(void);
 static FLASH_Status FLASH_WaitForLastOperation(void);
 static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector, uint8_t VoltageRange);
@@ -79,7 +83,10 @@ uint16_t EE_Init(void)
       if (PageStatus1 == VALID_PAGE) /* Page0 erased, Page1 valid */
       {
         /* Erase Page0 */
-        FlashStatus = FLASH_EraseSector(PAGE0_ID,VOLTAGE_RANGE);
+          // But why??? Page0 is already erased! Why waste precious
+          // flash cycles on this?
+          // FlashStatus = FLASH_EraseSector(PAGE0_ID,VOLTAGE_RANGE);
+          FlashStatus = FLASH_COMPLETE;
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -89,7 +96,10 @@ uint16_t EE_Init(void)
       else if (PageStatus1 == RECEIVE_DATA) /* Page0 erased, Page1 receive */
       {
         /* Erase Page0 */
-        FlashStatus = FLASH_EraseSector(PAGE0_ID, VOLTAGE_RANGE);
+          // But why??? Page0 is already erased! Why waste precious
+          // flash cycles on this?
+          // FlashStatus = FLASH_EraseSector(PAGE0_ID,VOLTAGE_RANGE);
+          FlashStatus = FLASH_COMPLETE;
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -160,7 +170,10 @@ uint16_t EE_Init(void)
       else if (PageStatus1 == ERASED) /* Page0 receive, Page1 erased */
       {
         /* Erase Page1 */
-        FlashStatus = FLASH_EraseSector(PAGE1_ID, VOLTAGE_RANGE);
+          // But why??? Page1 is already erased! Why waste precious
+          // flash cycles on this?
+          // FlashStatus = FLASH_EraseSector(PAGE1_ID,VOLTAGE_RANGE);
+          FlashStatus = FLASH_COMPLETE;
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -200,7 +213,10 @@ uint16_t EE_Init(void)
       else if (PageStatus1 == ERASED) /* Page0 valid, Page1 erased */
       {
         /* Erase Page1 */
-        FlashStatus = FLASH_EraseSector(PAGE1_ID, VOLTAGE_RANGE);
+          // But why??? Page1 is already erased! Why waste precious
+          // flash cycles on this?
+          // FlashStatus = FLASH_EraseSector(PAGE1_ID,VOLTAGE_RANGE);
+          FlashStatus = FLASH_COMPLETE;
         /* If erase operation was failed, a Flash error code is returned */
         if (FlashStatus != FLASH_COMPLETE)
         {
@@ -351,6 +367,31 @@ uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data)
   return Status;
 }
 
+/**
+  * @brief  Unlocks the FLASH control register (FLASH->CR).
+  * @param  None
+  * @retval None
+  */
+static void FLASH_Unlock(void)
+{
+  if((FLASH->CR & FLASH_CR_LOCK) != RESET)
+  {
+    /* Authorize the FLASH Registers access */
+    FLASH->KEYR = FLASH_KEY1;
+    FLASH->KEYR = FLASH_KEY2;
+  }
+}
+
+/**
+  * @brief  Locks the FLASH control register (FLASH->CR).
+  * @param  None
+  * @retval None
+  */
+static void FLASH_Lock(void)
+{
+  /* Set the LOCK Bit to lock the FLASH Registers access */
+  FLASH->CR |= FLASH_CR_LOCK;
+}
 
 /**
   * @brief  Returns the FLASH Status.
@@ -466,6 +507,7 @@ static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector, uint8_t VoltageRang
 
   if(status == FLASH_COMPLETE)
   {
+    FLASH_Unlock();
     /* if the previous operation is completed, proceed to erase the sector */
     FLASH->CR &= CR_PSIZE_MASK;
     FLASH->CR |= tmp_psize;
@@ -479,6 +521,7 @@ static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector, uint8_t VoltageRang
     /* if the erase operation is completed, disable the SER Bit */
     FLASH->CR &= (~FLASH_CR_SER);
     FLASH->CR &= SECTOR_MASK;
+    FLASH_Lock();
   }
   /* Return the Erase Status */
   return status;
@@ -503,6 +546,7 @@ FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data)
 
   if(status == FLASH_COMPLETE)
   {
+    FLASH_Unlock();
     /* if the previous operation is completed, proceed to program the new data */
     FLASH->CR &= CR_PSIZE_MASK;
     FLASH->CR |= FLASH_PSIZE_HALF_WORD;
@@ -515,6 +559,7 @@ FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data)
 
     /* if the program operation is completed, disable the PG Bit */
     FLASH->CR &= (~FLASH_CR_PG);
+    FLASH_Lock();
   }
   /* Return the Program Status */
   return status;

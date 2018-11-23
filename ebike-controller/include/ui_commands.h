@@ -14,7 +14,7 @@
                                       "THR"\
                                 }
 #define UI_TOP_LEVEL_NUMCMD     6
-#define UI_TOP_LEVEL_CMDLEN     {4,3,5,4,4}
+#define UI_TOP_LEVEL_CMDLEN     {4,3,5,4,4,3}
 
 #define UI_DATA_COMMANDS        {     "SPEED",\
                                       "NUMVARS",\
@@ -28,11 +28,11 @@
                                       "VAR7",\
                                       "VAR8",\
                                       "VAR9",\
-                                      "VAR10",\
+                                      "VARA",\
                                       "SEND"\
                                 }
 #define UI_DATA_NUMCMD          14
-#define UI_DATA_CMDLEN          {5,7,8,4,4,4,4,4,4,4,4,4,5,4}
+#define UI_DATA_CMDLEN          {5,7,8,4,4,4,4,4,4,4,4,4,4,4}
 
 #define UI_FOC_COMMANDS         {     "KP",\
                                       "KI",\
@@ -63,7 +63,7 @@
                                       "BOOTRESET"\
                                 }
 #define UI_UTIL_NUMCMD          4
-#define UI_UTIL_CMDLEN          {4.4,5,9}
+#define UI_UTIL_CMDLEN          {4,4,5,9}
 
 #define UI_CTRL_COMMANDS        {     "IAGAIN",\
                                       "IBGAIN",\

@@ -953,7 +953,7 @@ uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
     case 9: // VAR7
     case 10: // VAR8
     case 11: // VAR9
-    case 12: // VAR10
+    case 12: // VARA
       newval = -1;
       for (uint8_t i = 0; i < UI_USB_NUMOPTIONS; i++) {
         ui_error = strcmp_s(inputstring, ui_usb_options[i], UI_USB_LENGTH);
@@ -968,6 +968,7 @@ uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
         return UI_ERROR;
       }
       MAIN_SetUSBDebugOutput(command_num-3, newval+1);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
       ui_error = UI_OK;
       break;
 
@@ -1034,7 +1035,7 @@ uint8_t UI_2nd_Level_Process_Data(char* inputstring) {
     case 9: // VAR7
     case 10: // VAR8
     case 11: // VAR9
-    case 12: // VAR10
+    case 12: // VARA
       newval = MAIN_GetUSBDebugOutput(command_num-3);
       UI_SerialOut(ui_usb_options[newval-1], UI_USB_LENGTH);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
@@ -1120,7 +1121,7 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
       break;
     case 4: // DT
       newval_i32 = PWM_GetDeadTime();
-      templen = _itoa(tempbuf, newval_i32, 0);
+      templen = _itoa(tempbuf, newval_i32, 1);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
@@ -1169,6 +1170,8 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
     case 7:
     case 8:
     case 9: // HALLANG 1 through 6
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     default:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1200,6 +1203,8 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
     case 7:
     case 8:
     case 9: // HALLANG 1 through 6
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     default:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1225,19 +1230,23 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
     // Perform setting variable
     switch(command_num){
       case 0: // SAVE
+        MAIN_SaveVariables();
         UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
         ui_error = UI_OK;
         break;
       case 1: // LOAD
+        MAIN_LoadVariables();
         UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
         ui_error = UI_OK;
         break;
       case 2: // RESET
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        MAIN_SoftReset(0);
+        //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
         ui_error = UI_OK;
         break;
       case 3: // BOOTRESET
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        MAIN_SoftReset(1);
+        //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
         ui_error = UI_OK;
         break;
       default:
@@ -1249,19 +1258,19 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
     // Return the current value of the variable
     switch(command_num){
       case 0: // SAVE
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        UI_SerialOut("Saves current values in ram to eeprom\r\n", 39);
         ui_error = UI_OK;
         break;
       case 1: // LOAD
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        UI_SerialOut("Loads eeprom values to ram\r\n", 28);
         ui_error = UI_OK;
         break;
       case 2: // RESET
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        UI_SerialOut("Performs a soft reset\r\n", 23);
         ui_error = UI_OK;
         break;
       case 3: // BOOTRESET
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        UI_SerialOut("Soft resets into bootloader\r\n", 29);
         ui_error = UI_OK;
         break;
       default:
@@ -1383,31 +1392,43 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
           break;
         }
       }
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     case 2: // MIN1
     case 3: // MIN2
       newval_f = UI_atof(inputstring);
       throttle_set_min(command_num-1, newval_f);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     case 4: // MAX1
     case 5: // MAX2
       newval_f = UI_atof(inputstring);
       throttle_set_max(command_num-3, newval_f);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     case 6: // HYST1
     case 7: // HYST2
       newval_f = UI_atof(inputstring);
       throttle_set_hyst(command_num-5, newval_f);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     case 8: // FILT1
     case 9: // FILT2
       newval_f = UI_atof(inputstring);
       throttle_set_filt(command_num-7, newval_f);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     case 10: // RISE1
     case 11: // RISE2
       newval_f = UI_atof(inputstring);
       throttle_set_rise(command_num-9, newval_f);
+      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      ui_error = UI_OK;
       break;
     }
   } else if (command_type == UI_MENU_QUERY) {
@@ -1429,41 +1450,47 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
         UI_SerialOut("Invalid type\r\n", 14);
         break;
       }
+      ui_error = UI_OK;
       break;
     case 2: // MIN1
     case 3: // MIN2
       newval_f = throttle_get_min(command_num - 1);
-      templen = _ftoa(tempbuf, newval_f, 0);
+      templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
       break;
     case 4: // MAX1
     case 5: // MAX2
       newval_f = throttle_get_max(command_num - 3);
-      templen = _ftoa(tempbuf, newval_f, 0);
+      templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
       break;
     case 6: // HYST1
     case 7: // HYST22
       newval_f = throttle_get_hyst(command_num - 5);
-      templen = _ftoa(tempbuf, newval_f, 0);
+      templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
       break;
     case 8: // FILT1
     case 9: // FILT2
       newval_f = throttle_get_filt(command_num - 7);
-      templen = _ftoa(tempbuf, newval_f, 0);
+      templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
       break;
     case 10: // RISE1
     case 11: // RISE2
       newval_f = throttle_get_rise(command_num - 9);
-      templen = _ftoa(tempbuf, newval_f, 0);
+      templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      ui_error = UI_OK;
       break;
     }
   } else {

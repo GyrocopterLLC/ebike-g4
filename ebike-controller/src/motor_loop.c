@@ -45,7 +45,6 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
             // sent as power demand (in form of PWM duty cycle)
             // Enable the "participating" phases. One phase pwm, one phase low-side on,
             // and the third phase completely turned off
-            // TODO: These should only change when Hall change happens
             case 6:
               PHASE_A_OFF();
               PHASE_C_LOW();

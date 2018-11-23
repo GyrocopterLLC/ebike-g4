@@ -517,35 +517,7 @@ int32_t VCP_Read(void* data, int32_t len)
 
 int32_t VCP_Write(const void* data, int32_t len)
 {
-  /* Fuck recursion
-	if(USB_GetDevState() != USB_STATE_CONFIGURED)
-		return 0;
-    if (len > CDC_DATA_FS_MAX_PACKET_SIZE)
-    {
-        int offset;
-        for (offset = 0; offset < len; offset++)
-        {
-            int todo = MIN(CDC_DATA_FS_MAX_PACKET_SIZE,
-            		len - offset);
-            int done = VCP_Write(((char *)data) + offset, todo);
-            if (done != todo)
-                return offset + done;
-        }
 
-        return len;
-    }
-
-    while(USB_CDC_ClassData.TxState) { } //Wait for previous transfer
-
-    memcpy(USB_CDC_TxBuffer, data, len);
-    USB_CDC_ClassData.TxBuffer = USB_CDC_TxBuffer;
-    USB_CDC_ClassData.TxLength = len;
-    USB_CDC_ClassData.TxState = 1;
-    USB_SendData(USB_CDC_ClassData.TxBuffer,DATA_IN_EP,USB_CDC_ClassData.TxLength);
-
-    //while(USB_CDC_ClassData.TxState) { } //Wait until transfer is done
-    return len;
-    */
   if(USB_CDC_ClassData.TxState)
   {
     // Fail if still sending last data
