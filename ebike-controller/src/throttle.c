@@ -27,13 +27,30 @@ static void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
   if (thrnum == 1) {
-    if (thrtype == THROTTLE_TYPE_ANALOG) {
-      // Set throttle pin to analog input
+    if (thrtype == THROTTLE_TYPE_NONE) {
+      // Disable pin by setting input with pull-down
+      GPIO_InputPD(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+      // Disable pin change interrupt
+      EXTI->IMR &= ~(EXTI_IMR_MR5);
+      // Disable timer overflow interrupt
+      PAS1_TIM->DIER &= ~(TIM_DIER_UIE);
+      // Disable IRQ
+      NVIC_DisableIRQ(PAS1_PINCHANGE_IRQn);
+      // Disable timer
+      PAS1_TIM->CR1 &= ~TIM_CR1_CEN;
+
+    } else if (thrtype == THROTTLE_TYPE_ANALOG) {
+      // Set throttle pin to analog
       GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
       // Disable pin change interrupt
       EXTI->IMR &= ~(EXTI_IMR_MR5);
       // Disable timer overflow interrupt
       PAS1_TIM->DIER &= ~(TIM_DIER_UIE);
+      // Disable IRQ
+      NVIC_DisableIRQ(PAS1_PINCHANGE_IRQn);
+      // Disable timer
+      PAS1_TIM->CR1 &= ~TIM_CR1_CEN;
+
     } else if (thrtype == THROTTLE_TYPE_PAS) {
       // Set throttle pin to digital input
       GPIO_Input(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
@@ -63,11 +80,30 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
 
     }
   } else if (thrnum == 2) {
-    if (thrtype == THROTTLE_TYPE_ANALOG) {
+    if (thrtype == THROTTLE_TYPE_NONE) {
+      // Disable pin by setting input with pull-down
+      GPIO_InputPD(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+      // Disable pin change interrupt
+      EXTI->IMR &= ~(EXTI_IMR_MR0);
+      // Disable timer overflow interrupt
+      PAS2_TIM->DIER &= ~(TIM_DIER_UIE);
+      // Disable IRQ
+      NVIC_DisableIRQ(PAS2_PINCHANGE_IRQn);
+      // Disable timer
+      PAS2_TIM->CR1 &= ~TIM_CR1_CEN;
+
+    } else if (thrtype == THROTTLE_TYPE_ANALOG) {
       // Set throttle pin to analog input
       GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
       // Disable pin change interrupt
       EXTI->IMR &= ~(EXTI_IMR_MR0);
+      // Disable timer overflow interrupt
+      PAS2_TIM->DIER &= ~(TIM_DIER_UIE);
+      // Disable IRQ
+      NVIC_DisableIRQ(PAS2_PINCHANGE_IRQn);
+      // Disable timer
+      PAS2_TIM->CR1 &= ~TIM_CR1_CEN;
+
     } else if (thrtype == THROTTLE_TYPE_PAS) {
       // Set throttle pin to digital input
       GPIO_Input(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);

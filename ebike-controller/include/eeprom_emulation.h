@@ -115,46 +115,66 @@ typedef enum
 /* Page full define */
 #define PAGE_FULL             ((uint8_t)0x80)
 
-/* Variables' number */
-#define NB_OF_VAR                 34
+/* Hi / Lo half-words definitions
+ * The "EEPROM" saves 16-bit half-words, so each
+ * floating point number needs two variables. */
+#define EE_LOBYTE_FLAG            0x0000
+#define EE_HIBYTE_FLAG            0x8000
 // FOC constants
-#define EE_ADR_KP                 0x3001
-#define EE_ADR_KI                 0x3002
-#define EE_ADR_KD                 0x3002
-#define EE_ADR_KC                 0x3003
-#define EE_ADR_DT                 0x3004
+#define EE_ADR_KP                 0x1001
+#define EE_ADR_KI                 0x1002
+#define EE_ADR_KD                 0x1002
+#define EE_ADR_KC                 0x1003
+#define EE_ADR_DT                 0x1004
+#define EE_NUM_FOC_VARS           5
+#define EE_ADD_LIST_FOC           {EE_ADR_KP, EE_ADR_KI, EE_ADR_KD, EE_ADR_KC,\
+                                   EE_ADR_DT }
 // Motor constants
-#define EE_ADR_PP                 0x4001
-#define EE_ADR_RS                 0x4002
-#define EE_ADR_LS                 0x4003
-#define EE_ADR_FLUX               0x4004
-#define EE_ADR_HALL1              0x4011
-#define EE_ADR_HALL2              0x4012
-#define EE_ADR_HALL3              0x4013
-#define EE_ADR_HALL4              0x4014
-#define EE_ADR_HALL5              0x4015
-#define EE_ADR_HALL6              0x4016
+#define EE_ADR_PP                 0x1201
+#define EE_ADR_RS                 0x1202
+#define EE_ADR_LS                 0x1203
+#define EE_ADR_FLUX               0x1204
+#define EE_ADR_HALL1              0x1211
+#define EE_ADR_HALL2              0x1212
+#define EE_ADR_HALL3              0x1213
+#define EE_ADR_HALL4              0x1214
+#define EE_ADR_HALL5              0x1215
+#define EE_ADR_HALL6              0x1216
+#define EE_NUM_MOTOR_VARS         10
+#define EE_ADD_LIST_MOTOR         {EE_ADR_PP, EE_ADR_RS, EE_ADR_LS,\
+                                   EE_ADR_FLUX, EE_ADR_HALL1, EE_ADR_HALL2,\
+                                   EE_ADR_HALL3, EE_ADR_HALL4, EE_ADR_HALL5,\
+                                   EE_ADR_HALL6}
 // Controller constants
-#define EE_ADR_IAGAIN             0x5001
-#define EE_ADR_IBGAIN             0x5002
-#define EE_ADR_ICGAIN             0x5003
-#define EE_ADR_IAOFFSET           0x5004
-#define EE_ADR_IBOFFSET           0x5005
-#define EE_ADR_ICOFFSET           0x5006
-#define EE_ADR_VBUSSCALE          0x5007
+#define EE_ADR_IAGAIN             0x1301
+#define EE_ADR_IBGAIN             0x1302
+#define EE_ADR_ICGAIN             0x1303
+#define EE_ADR_IAOFFSET           0x1304
+#define EE_ADR_IBOFFSET           0x1305
+#define EE_ADR_ICOFFSET           0x1306
+#define EE_ADR_VBUSSCALE          0x1307
+#define EE_NUM_CONTROL_VARS       7
+#define EE_ADD_LIST_CONTROL       {EE_ADR_IAGAIN, EE_ADR_IBGAIN, EE_ADR_ICGAIN,\
+                                   EE_ADR_IAOFFSET, EE_ADR_IBOFFSET,\
+                                   EE_ADR_ICOFFSET, EE_ADR_VBUSSCALE}
 // Throttle constants
-#define EE_ADR_TYPE1              0x6011
-#define EE_ADR_MIN1               0x6012
-#define EE_ADR_MAX1               0x6013
-#define EE_ADR_HYST1              0x6014
-#define EE_ADR_FILT1              0x6015
-#define EE_ADR_RISE1              0x6016
-#define EE_ADR_TYPE2              0x6021
-#define EE_ADR_MIN2               0x6022
-#define EE_ADR_MAX2               0x6023
-#define EE_ADR_HYST2              0x6024
-#define EE_ADR_FILT2              0x6025
-#define EE_ADR_RISE2              0x6026
+#define EE_ADR_TYPE1              0x1411
+#define EE_ADR_MIN1               0x1412
+#define EE_ADR_MAX1               0x1413
+#define EE_ADR_HYST1              0x1414
+#define EE_ADR_FILT1              0x1415
+#define EE_ADR_RISE1              0x1416
+#define EE_ADR_TYPE2              0x1421
+#define EE_ADR_MIN2               0x1422
+#define EE_ADR_MAX2               0x1423
+#define EE_ADR_HYST2              0x1424
+#define EE_ADR_FILT2              0x1425
+#define EE_ADR_RISE2              0x1426
+#define EE_NUM_THROTTLE_VARS      12
+#define EE_ADD_LIST_THROTTLE      {EE_ADR_TYPE1, EE_ADR_MIN1, EE_ADR_MAX1,\
+                                   EE_ADR_HYST1, EE_ADR_FILT1, EE_ADR_RISE1,\
+                                   EE_ADR_TYPE2, EE_ADR_MIN2, EE_ADR_MAX2,\
+                                   EE_ADR_HYST2, EE_ADR_FILT2, EE_ADR_RISE2}
 
 #define DEFAULT_ADDR_LIST {EE_ADR_KP, EE_ADR_KI, EE_ADR_KD, EE_ADR_KC, \
     EE_ADR_DT, EE_ADR_PP, EE_ADR_RS, EE_ADR_LS, EE_ADR_FLUX, EE_ADR_HALL1, \
@@ -165,12 +185,22 @@ typedef enum
     EE_ADR_TYPE2, EE_ADR_MIN2, EE_ADR_MAX2, EE_ADR_HYST2, EE_ADR_FILT2, \
     EE_ADR_RISE2 }
 
+
+/* Variables' number */
+#define NB_OF_VAR                 ((EE_NUM_FOC_VARS+EE_NUM_MOTOR_VARS+\
+                                  EE_NUM_CONTROL_VARS+EE_NUM_THROTTLE_VARS)*2)
+
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 uint16_t EE_Init(void);
 uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data);
 uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data);
+uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data);
+uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data);
+float EE_ReadFloatWithDefault(uint16_t VirtAddress, float defalt);
+int32_t EE_ReadInt32WithDefault(uint16_t VirtAddress, int32_t defalt);
 
 #endif /* EEPROM_EMULATION_H_ */
 

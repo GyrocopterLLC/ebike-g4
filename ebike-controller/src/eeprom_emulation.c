@@ -56,6 +56,20 @@ static uint16_t EE_FindValidPage(uint8_t Operation);
 static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Data);
 static uint16_t EE_PageTransfer(uint16_t VirtAddress, uint16_t Data);
 
+void EE_Config_Addr_Table(uint16_t* addrTab)
+{
+  uint32_t tabptr = 0;
+
+  // Stack 'em and count 'em
+  uint16_t tempNames[] = DEFAULT_ADDR_LIST;
+  // Add FOC variables
+  for(uint32_t i = 0; i < (NB_OF_VAR/2); i++)
+  {
+    addrTab[tabptr++] = tempNames[i] | EE_LOBYTE_FLAG;
+    addrTab[tabptr++] = tempNames[i] | EE_HIBYTE_FLAG;
+  }
+}
+
 /**
   * @brief  Restore the pages to a known good state in case of page's status
   *   corruption after a power loss.
@@ -365,6 +379,82 @@ uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data)
 
   /* Return last operation status */
   return Status;
+}
+
+uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data)
+{
+  uint16_t Status = 0;
+  uint16_t* DataPtr = (uint16_t*)Data;
+  /* Write the first two bytes in EEPROM */
+  Status = EE_WriteVariable(VirtAddress | EE_LOBYTE_FLAG, DataPtr[0]);
+  if(Status == FLASH_COMPLETE)
+  {
+    /* And then the second two bytes */
+    Status = EE_WriteVariable(VirtAddress | EE_HIBYTE_FLAG, DataPtr[1]);
+  }
+  return Status;
+}
+
+uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data)
+{
+  uint16_t Status = 0;
+  uint16_t* DataPtr = (uint16_t*)Data;
+  Status = EE_WriteVariable(VirtAddress | EE_LOBYTE_FLAG, DataPtr[0]);
+  if(Status == FLASH_COMPLETE)
+  {
+    Status = EE_WriteVariable(VirtAddress | EE_HIBYTE_FLAG, DataPtr[1]);
+  }
+  return Status;
+}
+
+float EE_ReadFloatWithDefault(uint16_t VirtAddress, float defalt)
+{
+  uint16_t Status = 0;
+  uint16_t Data;
+  float retval;
+  uint16_t* retvalptr = (uint16_t*)(&retval);
+  Status = EE_ReadVariable((VirtAddress | EE_LOBYTE_FLAG), &Data);
+  if(Status == 0)
+  {
+    retvalptr[0] = Data;
+    Status = EE_ReadVariable((VirtAddress | EE_HIBYTE_FLAG), &Data);
+    if(Status == 0)
+    {
+      retvalptr[1] = Data;
+    }
+    else {
+      retval = defalt;
+    }
+  }
+  else {
+    retval = defalt;
+  }
+  return retval;
+}
+
+int32_t EE_ReadInt32WithDefault(uint16_t VirtAddress, int32_t defalt)
+{
+  uint16_t Status = 0;
+  uint16_t Data;
+  int32_t retval;
+  uint16_t* retvalptr = (uint16_t*)(&retval);
+  Status = EE_ReadVariable((VirtAddress | EE_LOBYTE_FLAG), &Data);
+  if(Status == 0)
+  {
+    retvalptr[0] = Data;
+    Status = EE_ReadVariable((VirtAddress | EE_HIBYTE_FLAG), &Data);
+    if(Status == 0)
+    {
+      retvalptr[1] = Data;
+    }
+    else {
+      retval = defalt;
+    }
+  }
+  else {
+    retval = defalt;
+  }
+  return retval;
 }
 
 /**

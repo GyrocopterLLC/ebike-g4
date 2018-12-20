@@ -42,7 +42,7 @@ float g_FetTemp;
 
 PowerCalcs Mpc;
 
-uint16_t VirtAddVarTab[NB_OF_VAR] = DEFAULT_ADDR_LIST;
+uint16_t VirtAddVarTab[NB_OF_VAR];
 
 /** Debugging outputs **
  *
@@ -216,6 +216,7 @@ int main(void) {
   SystemClock_Config();
 
   // Start up the EEPROM emulation, and (TODO) fetch stored values from it
+  EE_Config_Addr_Table(VirtAddVarTab);
   EE_Init();
 
   /* Default initialization:

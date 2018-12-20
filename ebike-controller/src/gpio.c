@@ -44,13 +44,30 @@ void GPIO_Output(GPIO_TypeDef* gpio, uint8_t pin)
 /**
  * @brief  Configures a GPIO pin for input.
  * @param  gpio: The GPIO Port to be modified
- *         pin: The pin to be set as an output
+ *         pin: The pin to be set as an input
  * @retval None
  */
 void GPIO_Input(GPIO_TypeDef* gpio, uint8_t pin)
 {
 	// Clear MODER for this pin (input mode)
 	gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+}
+
+/**
+ * @brief  Configures a GPIO pin for input with pulldown.
+ * @param  gpio: The GPIO Port to be modified
+ *         pin: The pin to be set as an input
+ * @retval None
+ */
+void GPIO_InputPD(GPIO_TypeDef* gpio, uint8_t pin)
+{
+  // Clear MODER for this pin (input mode)
+  gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+  // Clear pullup/down register
+  gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+  // Apply pull down
+  gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
+
 }
 
 void GPIO_Analog(GPIO_TypeDef* gpio, uint8_t pin)
