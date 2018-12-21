@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "adc.h"
 #include "ui.h"
+#include "eeprom_emulation.h"
 
 Biquad_Float_Type Throttle_filt1 = THROTTLE_LPF_DEFAULTS;
 Biquad_Float_Type Throttle_filt2 = THROTTLE_LPF_DEFAULTS;
@@ -24,6 +25,36 @@ Throttle_PAS_Type sPasThrottle2 = THROTTLE_PAS_DEFAULTS;
 Throttle_PAS_Type *psPasThrottles[2] = {&sPasThrottle1, &sPasThrottle2};
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
+
+void throttle_init(void) {
+  // Reads from EEPROM and initializes throttle settings
+  psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE1, THROTTLE_TYPE_ANALOG);
+  throttle_switch_type(1, psThrottles[0]->throttle_type);
+  psThrottles[0]->hyst = EE_ReadFloatWithDefault(EE_ADR_HYST1, THROTTLE_HYST_DEFAULT);
+  psThrottles[0]->filt = EE_ReadFloatWithDefault(EE_ADR_FILT1, THROTTLE_FILT_DEFAULT);
+  dfsl_biquadcalc_lpf(pThrottle_filts[0], THROTTLE_SAMPLING_RATE, psThrottles[0]->filt,
+            THROTTLE_FILT_Q_DEFAULT);
+  psThrottles[0]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE1, THROTTLE_RISE_DEFAULT);
+
+  psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2, THROTTLE_TYPE_ANALOG);
+  throttle_switch_type(2, psThrottles[1]->throttle_type);
+  psThrottles[1]->hyst = EE_ReadFloatWithDefault(EE_ADR_HYST2, THROTTLE_HYST_DEFAULT);
+  psThrottles[1]->filt = EE_ReadFloatWithDefault(EE_ADR_FILT2, THROTTLE_FILT_DEFAULT);
+  dfsl_biquadcalc_lpf(pThrottle_filts[1], THROTTLE_SAMPLING_RATE, psThrottles[1]->filt,
+              THROTTLE_FILT_Q_DEFAULT);
+  psThrottles[1]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE2, THROTTLE_RISE_DEFAULT);
+}
+
+void throttle_save_to_eeprom(void) {
+  EE_SaveInt16(EE_ADR_TYPE1, &(psThrottles[0]->throttle_type));
+  EE_SaveInt16(EE_ADR_TYPE2, &(psThrottles[1]->throttle_type));
+  EE_SaveFloat(EE_ADR_HYST1, &(psThrottles[0]->hyst));
+  EE_SaveFloat(EE_ADR_HYST2, &(psThrottles[1]->hyst));
+  EE_SaveFloat(EE_ADR_RISE1, &(psThrottles[0]->rise));
+  EE_SaveFloat(EE_ADR_RISE2, &(psThrottles[1]->rise));
+  EE_SaveFloat(EE_ADR_FILT1, &(psThrottles[0]->filt));
+  EE_SaveFloat(EE_ADR_FILT2, &(psThrottles[1]->filt));
+}
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
   if (thrnum == 1) {
@@ -139,7 +170,14 @@ void throttle_process(uint8_t thrnum) {
     // Invalid throttle number
     return;
   }
-  if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_ANALOG) {
+  /** No Throttle type **/
+  if(psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_NONE) {
+    // Set throttle to zero.
+    psThrottles[thrnum - 1]->throttle_command = 0.0f;
+  }
+
+  /** Analog Throttle type **/
+  else if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_ANALOG) {
     // Only need to process if analog throttle type
     // The PAS throttle type is taken care of with interrupt / timer callbacks
 
@@ -218,7 +256,11 @@ void throttle_process(uint8_t thrnum) {
     }
     psThrottles[thrnum - 1]->throttle_command = temp_cmd;
     throttle_hyst_and_rate_limiting(psThrottles[thrnum - 1]);
-  } else if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_PAS) {
+
+  }
+
+  /** PAS Throttle type **/
+  else if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_PAS) {
     // Just do the hysterisis and rate limiting at this known update rate
     // Pedaling speed calculation is done separately, triggered whenever the
     // PAS sensor switches

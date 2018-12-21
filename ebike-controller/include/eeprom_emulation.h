@@ -115,6 +115,10 @@ typedef enum
 /* Page full define */
 #define PAGE_FULL             ((uint8_t)0x80)
 
+/* Read results */
+#define READ_SUCCESS          ((uint16_t)0x0000)
+#define READ_NOT_FOUND        ((uint16_t)0x0001)
+
 /* Hi / Lo half-words definitions
  * The "EEPROM" saves 16-bit half-words, so each
  * floating point number needs two variables. */
@@ -197,10 +201,12 @@ typedef enum
 uint16_t EE_Init(void);
 uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data);
 uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data);
-uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data);
+uint16_t EE_SaveInt16(uint16_t VirtAddress, int16_t* Data);
 uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data);
-float EE_ReadFloatWithDefault(uint16_t VirtAddress, float defalt);
+uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data);
+int32_t EE_ReadInt16WithDefault(uint16_t VirtAddress, int16_t defalt);
 int32_t EE_ReadInt32WithDefault(uint16_t VirtAddress, int32_t defalt);
+float EE_ReadFloatWithDefault(uint16_t VirtAddress, float defalt);
 
 #endif /* EEPROM_EMULATION_H_ */
 

@@ -101,8 +101,7 @@ uint8_t usb_debug_prefix[USB_PREFIX_LENGTH] = DEFAULT_USB_PREFIX;
 
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
-    PID_Float_Type Id_control,
-Iq_control;
+PID_Float_Type Id_control, Iq_control;
 //Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
 Biquad_Float_Type Id_Filt, Iq_Filt;
 float Throttle_cmd;
@@ -246,6 +245,7 @@ int main(void) {
   // Turn on the green led
   GLED_PORT->ODR |= (1 << GLED_PIN);
   adcInit();
+  throttle_init();
   User_DAC_Init();
   User_BasicTim_Init();
   PWM_Init();
@@ -264,6 +264,15 @@ int main(void) {
   /* Initialize PID controllers */
   dfsl_pid_defaultsf(&Id_control);
   dfsl_pid_defaultsf(&Iq_control);
+  /* Load saved EEPROM variables */
+  Id_control.Kp = EE_ReadFloatWithDefault(EE_ADR_KP, Id_control.Kp);
+  Id_control.Ki = EE_ReadFloatWithDefault(EE_ADR_KI, Id_control.Ki);
+  Id_control.Kd = EE_ReadFloatWithDefault(EE_ADR_KD, Id_control.Kd);
+  Id_control.Kc = EE_ReadFloatWithDefault(EE_ADR_KC, Id_control.Kc);
+  Iq_control.Kp = EE_ReadFloatWithDefault(EE_ADR_KP, Iq_control.Kp);
+  Iq_control.Ki = EE_ReadFloatWithDefault(EE_ADR_KI, Iq_control.Ki);
+  Iq_control.Kd = EE_ReadFloatWithDefault(EE_ADR_KD, Iq_control.Kd);
+  Iq_control.Kc = EE_ReadFloatWithDefault(EE_ADR_KC, Iq_control.Kc);
 
 #ifdef DEBUG_DUMP_USED
   DumpReset();

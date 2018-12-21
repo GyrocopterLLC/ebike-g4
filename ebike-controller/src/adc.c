@@ -38,9 +38,9 @@ void adcInit(void)
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IB_PIN);
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IC_PIN);
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_VBUS_PIN);
-	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+	// GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN); // Done in throttle.c
 	GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_TEMP_PIN);
-	GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+	// GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN); // Done in throttle.c
 
 	ADC1->CR1 = ADC_CR1_SCAN; // Convert all channels each time a trigger occurs
 	ADC2->CR1 = ADC_CR1_SCAN;
