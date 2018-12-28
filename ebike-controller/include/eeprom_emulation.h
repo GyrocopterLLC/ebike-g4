@@ -199,12 +199,13 @@ typedef enum
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 uint16_t EE_Init(void);
+void EE_Config_Addr_Table(uint16_t* addrTab);
 uint16_t EE_ReadVariable(uint16_t VirtAddress, uint16_t* Data);
 uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data);
-uint16_t EE_SaveInt16(uint16_t VirtAddress, int16_t* Data);
-uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data);
-uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data);
-int32_t EE_ReadInt16WithDefault(uint16_t VirtAddress, int16_t defalt);
+uint16_t EE_SaveInt16(uint16_t VirtAddress, int16_t Data);
+uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t Data);
+uint16_t EE_SaveFloat(uint16_t VirtAddress, float Data);
+int16_t EE_ReadInt16WithDefault(uint16_t VirtAddress, int16_t defalt);
 int32_t EE_ReadInt32WithDefault(uint16_t VirtAddress, int32_t defalt);
 float EE_ReadFloatWithDefault(uint16_t VirtAddress, float defalt);
 

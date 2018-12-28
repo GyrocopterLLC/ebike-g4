@@ -25,9 +25,11 @@ Throttle_PAS_Type sPasThrottle2 = THROTTLE_PAS_DEFAULTS;
 Throttle_PAS_Type *psPasThrottles[2] = {&sPasThrottle1, &sPasThrottle2};
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
+static void throttle_detect_min_max(uint8_t thrnum); // Currently unused
 
 void throttle_init(void) {
   // Reads from EEPROM and initializes throttle settings
+  // This function can also be used to refresh the RAM settings from the EEPROM
   psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE1, THROTTLE_TYPE_ANALOG);
   throttle_switch_type(1, psThrottles[0]->throttle_type);
   psThrottles[0]->hyst = EE_ReadFloatWithDefault(EE_ADR_HYST1, THROTTLE_HYST_DEFAULT);
@@ -35,6 +37,9 @@ void throttle_init(void) {
   dfsl_biquadcalc_lpf(pThrottle_filts[0], THROTTLE_SAMPLING_RATE, psThrottles[0]->filt,
             THROTTLE_FILT_Q_DEFAULT);
   psThrottles[0]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE1, THROTTLE_RISE_DEFAULT);
+  psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(EE_ADR_MIN1, THROTTLE_MIN_DEFAULT);
+  psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(EE_ADR_MAX1, THROTTLE_MAX_DEFAULT);
+  psAnalogThrottles[0]->scale_factor = (1.0f)/((psAnalogThrottles[0]->max) - (psAnalogThrottles[0]->min));
 
   psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2, THROTTLE_TYPE_ANALOG);
   throttle_switch_type(2, psThrottles[1]->throttle_type);
@@ -43,17 +48,24 @@ void throttle_init(void) {
   dfsl_biquadcalc_lpf(pThrottle_filts[1], THROTTLE_SAMPLING_RATE, psThrottles[1]->filt,
               THROTTLE_FILT_Q_DEFAULT);
   psThrottles[1]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE2, THROTTLE_RISE_DEFAULT);
+  psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(EE_ADR_MIN2, THROTTLE_MIN_DEFAULT);
+  psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(EE_ADR_MAX2, THROTTLE_MAX_DEFAULT);
+  psAnalogThrottles[1]->scale_factor = (1.0f)/((psAnalogThrottles[1]->max) - (psAnalogThrottles[1]->min));
 }
 
 void throttle_save_to_eeprom(void) {
-  EE_SaveInt16(EE_ADR_TYPE1, &(psThrottles[0]->throttle_type));
-  EE_SaveInt16(EE_ADR_TYPE2, &(psThrottles[1]->throttle_type));
-  EE_SaveFloat(EE_ADR_HYST1, &(psThrottles[0]->hyst));
-  EE_SaveFloat(EE_ADR_HYST2, &(psThrottles[1]->hyst));
-  EE_SaveFloat(EE_ADR_RISE1, &(psThrottles[0]->rise));
-  EE_SaveFloat(EE_ADR_RISE2, &(psThrottles[1]->rise));
-  EE_SaveFloat(EE_ADR_FILT1, &(psThrottles[0]->filt));
-  EE_SaveFloat(EE_ADR_FILT2, &(psThrottles[1]->filt));
+  EE_SaveInt16(EE_ADR_TYPE1, psThrottles[0]->throttle_type);
+  EE_SaveInt16(EE_ADR_TYPE2, psThrottles[1]->throttle_type);
+  EE_SaveFloat(EE_ADR_MIN1, psAnalogThrottles[0]->min);
+  EE_SaveFloat(EE_ADR_MIN2, psAnalogThrottles[1]->min);
+  EE_SaveFloat(EE_ADR_MAX1, psAnalogThrottles[0]->max);
+  EE_SaveFloat(EE_ADR_MAX2, psAnalogThrottles[1]->max);
+  EE_SaveFloat(EE_ADR_HYST1, psThrottles[0]->hyst);
+  EE_SaveFloat(EE_ADR_HYST2, psThrottles[1]->hyst);
+  EE_SaveFloat(EE_ADR_RISE1, psThrottles[0]->rise);
+  EE_SaveFloat(EE_ADR_RISE2, psThrottles[1]->rise);
+  EE_SaveFloat(EE_ADR_FILT1, psThrottles[0]->filt);
+  EE_SaveFloat(EE_ADR_FILT2, psThrottles[1]->filt);
 }
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
@@ -171,7 +183,7 @@ void throttle_process(uint8_t thrnum) {
     return;
   }
   /** No Throttle type **/
-  if(psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_NONE) {
+  if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_NONE) {
     // Set throttle to zero.
     psThrottles[thrnum - 1]->throttle_command = 0.0f;
   }
@@ -180,83 +192,22 @@ void throttle_process(uint8_t thrnum) {
   else if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_ANALOG) {
     // Only need to process if analog throttle type
     // The PAS throttle type is taken care of with interrupt / timer callbacks
-
+    float temp_cmd = 0.0f;
     // Filter the raw throttle voltage
     pThrottle_filts[thrnum - 1]->X = adcGetThrottle(thrnum);
     dfsl_biquadf(pThrottle_filts[thrnum - 1]);
 
-    // *****STARTUP SEQUENCE*****
-    // For the first Throttle Startup period, input is ignored
-    // This allows the Biquad filter to stabilize
-    // After this period, the value of the biquad filter output is
-    // selected as the minimum throttle position.
-
-    float temp_cmd = 0.0f;
-    if (psAnalogThrottles[thrnum - 1]->startup_count < THROTTLE_START_TIME) {
-      // Throttle startup routine.
-      // No effect for about a short duration ("Deadtime")
-      // Then, average the throttle position for the remainder of the startup
-      // This averaged value becomes the throttle minimum position
-      psAnalogThrottles[thrnum - 1]->startup_count++;
-      if (psAnalogThrottles[thrnum - 1]->startup_count
-          >= THROTTLE_START_DEADTIME) {
-        psAnalogThrottles[thrnum - 1]->min = psAnalogThrottles[thrnum - 1]->min
-            + pThrottle_filts[thrnum - 1]->Y;
-      }
-      psThrottles[thrnum - 1]->throttle_command = 0.0f;
-    } else {
-      // If this is the first time, compute the average for the minimum position
-      // End of startup routine
-      if (psAnalogThrottles[thrnum - 1]->startup_count == THROTTLE_START_TIME) {
-        psAnalogThrottles[thrnum - 1]->startup_count++;
-        // Calculate the minimum throttle position
-        psAnalogThrottles[thrnum - 1]->min = psAnalogThrottles[thrnum - 1]->min
-            / (THROTTLE_START_TIME - THROTTLE_START_DEADTIME);
-        if ((psAnalogThrottles[thrnum - 1]->min > 1.0f)
-            || (psAnalogThrottles[thrnum - 1]->min < 0.3f)) {
-          psAnalogThrottles[thrnum - 1]->min = THROTTLE_MIN_DEFAULT;
-        }
-        // Estimate the throttle maximum position
-        psAnalogThrottles[thrnum - 1]->max = adcGetVref() - THROTTLE_DROPOUT;
-        if ((psAnalogThrottles[thrnum - 1]->max > 3.0f)
-            || (psAnalogThrottles[thrnum - 1]->max < 1.5f)) {
-          psAnalogThrottles[thrnum - 1]->max = THROTTLE_MAX_DEFAULT;
-        }
-        // Calculate a scale factor to apply to the raw voltage
-        psAnalogThrottles[thrnum - 1]->scale_factor = (1.0f)
-            / (psAnalogThrottles[thrnum - 1]->max
-                - psAnalogThrottles[thrnum - 1]->min);
-
-      }
-      // If incoming throttle position is less than the recorded minimum,
-      // Redo the startup routine
-      if (pThrottle_filts[thrnum - 1]->Y
-          < (psAnalogThrottles[thrnum - 1]->min - THROTTLE_RANGE_LIMIT)) {
-        psAnalogThrottles[thrnum - 1]->startup_count = 0;
-        psThrottles[thrnum - 1]->throttle_command = 0.0f;
-      }
-      // If incoming throttle position is greater than recorded maximum,
-      // take that value as maximum and recalculate scale factor
-      if (pThrottle_filts[thrnum - 1]->Y
-          > (psAnalogThrottles[thrnum - 1]->max + THROTTLE_RANGE_LIMIT)) {
-        psAnalogThrottles[thrnum - 1]->max = pThrottle_filts[thrnum - 1]->Y;
-        psAnalogThrottles[thrnum - 1]->scale_factor = (1.0f)
-            / (psAnalogThrottles[thrnum - 1]->max
-                - psAnalogThrottles[thrnum - 1]->min);
-      }
-      // Regular throttle processing
-      temp_cmd = (pThrottle_filts[thrnum - 1]->Y
-          - psAnalogThrottles[thrnum - 1]->min)
-          * (psAnalogThrottles[thrnum - 1]->scale_factor);
-      // Clip at 0% and 100%
-      if (temp_cmd < THROTTLE_OUTPUT_MIN)
-        temp_cmd = THROTTLE_OUTPUT_MIN;
-      if (temp_cmd > THROTTLE_OUTPUT_MAX)
-        temp_cmd = THROTTLE_OUTPUT_MAX;
-    }
+    // Regular throttle processing
+    temp_cmd = (pThrottle_filts[thrnum - 1]->Y
+        - psAnalogThrottles[thrnum - 1]->min)
+        * (psAnalogThrottles[thrnum - 1]->scale_factor);
+    // Clip at 0% and 100%
+    if (temp_cmd < THROTTLE_OUTPUT_MIN)
+      temp_cmd = THROTTLE_OUTPUT_MIN;
+    if (temp_cmd > THROTTLE_OUTPUT_MAX)
+      temp_cmd = THROTTLE_OUTPUT_MAX;
     psThrottles[thrnum - 1]->throttle_command = temp_cmd;
     throttle_hyst_and_rate_limiting(psThrottles[thrnum - 1]);
-
   }
 
   /** PAS Throttle type **/
@@ -289,6 +240,68 @@ static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
     thr->throttle_command = thr->prev_output + thr->rise;
   }
   thr->prev_output = thr->throttle_command;
+}
+
+static void throttle_detect_min_max(uint8_t thrnum) {
+/** Old code. Figure out what to keep in here. **/
+
+  // *****STARTUP SEQUENCE*****
+  // For the first Throttle Startup period, input is ignored
+  // This allows the Biquad filter to stabilize
+  // After this period, the value of the biquad filter output is
+  // selected as the minimum throttle position.
+
+  if (psAnalogThrottles[thrnum - 1]->startup_count < THROTTLE_START_TIME) {
+    // Throttle startup routine.
+    // No effect for about a short duration ("Deadtime")
+    // Then, average the throttle position for the remainder of the startup
+    // This averaged value becomes the throttle minimum position
+    psAnalogThrottles[thrnum - 1]->startup_count++;
+    if (psAnalogThrottles[thrnum - 1]->startup_count >= THROTTLE_START_DEADTIME) {
+      psAnalogThrottles[thrnum - 1]->min = psAnalogThrottles[thrnum - 1]->min
+          + pThrottle_filts[thrnum - 1]->Y;
+    }
+    psThrottles[thrnum - 1]->throttle_command = 0.0f;
+  } else {
+    // If this is the first time, compute the average for the minimum position
+    // End of startup routine
+    if (psAnalogThrottles[thrnum - 1]->startup_count == THROTTLE_START_TIME) {
+      psAnalogThrottles[thrnum - 1]->startup_count++;
+      // Calculate the minimum throttle position
+      psAnalogThrottles[thrnum - 1]->min = psAnalogThrottles[thrnum - 1]->min
+          / (THROTTLE_START_TIME - THROTTLE_START_DEADTIME);
+      if ((psAnalogThrottles[thrnum - 1]->min > 1.0f)
+          || (psAnalogThrottles[thrnum - 1]->min < 0.3f)) {
+        psAnalogThrottles[thrnum - 1]->min = THROTTLE_MIN_DEFAULT;
+      }
+      // Estimate the throttle maximum position
+      psAnalogThrottles[thrnum - 1]->max = adcGetVref() - THROTTLE_DROPOUT;
+      if ((psAnalogThrottles[thrnum - 1]->max > 3.0f)
+          || (psAnalogThrottles[thrnum - 1]->max < 1.5f)) {
+        psAnalogThrottles[thrnum - 1]->max = THROTTLE_MAX_DEFAULT;
+      }
+      // Calculate a scale factor to apply to the raw voltage
+      psAnalogThrottles[thrnum - 1]->scale_factor = (1.0f)
+            / (psAnalogThrottles[thrnum - 1]->max
+                - psAnalogThrottles[thrnum - 1]->min);
+    }
+    // If incoming throttle position is less than the recorded minimum,
+    // Redo the startup routine
+    if (pThrottle_filts[thrnum - 1]->Y
+        < (psAnalogThrottles[thrnum - 1]->min - THROTTLE_RANGE_LIMIT)) {
+      psAnalogThrottles[thrnum - 1]->startup_count = 0;
+      psThrottles[thrnum - 1]->throttle_command = 0.0f;
+    }
+    // If incoming throttle position is greater than recorded maximum,
+    // take that value as maximum and recalculate scale factor
+    if (pThrottle_filts[thrnum - 1]->Y
+        > (psAnalogThrottles[thrnum - 1]->max + THROTTLE_RANGE_LIMIT)) {
+      psAnalogThrottles[thrnum - 1]->max = pThrottle_filts[thrnum - 1]->Y;
+      psAnalogThrottles[thrnum - 1]->scale_factor = (1.0f)
+            / (psAnalogThrottles[thrnum - 1]->max
+                - psAnalogThrottles[thrnum - 1]->min);
+    }
+  }
 }
 
 void throttle_pas_process(uint8_t thrnum) {

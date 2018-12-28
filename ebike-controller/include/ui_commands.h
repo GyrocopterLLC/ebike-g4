@@ -11,10 +11,14 @@
                                       "MOTOR",\
                                       "UTIL",\
                                       "CTRL",\
-                                      "THR"\
-                                }
+                                      "THR" }
 #define UI_TOP_LEVEL_NUMCMD     6
 #define UI_TOP_LEVEL_CMDLEN     {4,3,5,4,4,3}
+
+#define UI_SAVE_OR_LOAD_COMMANDS  {   "SAVE",\
+                                      "LOAD" }
+#define UI_SAVE_OR_LOAD_CMDLEN    {4, 4}
+#define UI_SAVE_OR_LOAD_NUMCMD   2
 
 #define UI_DATA_COMMANDS        {     "SPEED",\
                                       "NUMVARS",\
@@ -29,8 +33,7 @@
                                       "VAR8",\
                                       "VAR9",\
                                       "VARA",\
-                                      "SEND"\
-                                }
+                                      "SEND" }
 #define UI_DATA_NUMCMD          14
 #define UI_DATA_CMDLEN          {5,7,8,4,4,4,4,4,4,4,4,4,4,4}
 
@@ -38,8 +41,7 @@
                                       "KI",\
                                       "KD",\
                                       "KC",\
-                                      "DT"\
-                                }
+                                      "DT" }
 #define UI_FOC_NUMCMD           5
 #define UI_FOC_CMDLEN           {2,2,2,2,2}
 
@@ -52,16 +54,14 @@
                                       "HALLANG3",\
                                       "HALLANG4",\
                                       "HALLANG5",\
-                                      "HALLANG6",\
-                                }
+                                      "HALLANG6" }
 #define UI_MOTOR_NUMCMD         10
 #define UI_MOTOR_CMDLEN         {2,2,2,4,8,8,8,8,8,8}
 
 #define UI_UTIL_COMMANDS        {     "SAVE",\
                                       "LOAD",\
                                       "RESET",\
-                                      "BOOTRESET"\
-                                }
+                                      "BOOTRESET" }
 #define UI_UTIL_NUMCMD          4
 #define UI_UTIL_CMDLEN          {4,4,5,9}
 
@@ -71,8 +71,7 @@
                                       "IAOFFSET",\
                                       "IBOFFSET",\
                                       "ICOFFSET",\
-                                      "VBUSSCALE"\
-                                }
+                                      "VBUSSCALE" }
 #define UI_CTRL_NUMCMD          7
 #define UI_CTRL_CMDLEN          {6,6,6,8,8,8,9}
 
@@ -87,8 +86,7 @@
                                       "FILT1",\
                                       "FILT2",\
                                       "RISE1",\
-                                      "RISE2"\
-                                }
+                                      "RISE2" }
 #define UI_THR_NUMCMD           12
 #define UI_THR_CMDLEN           {5,5,4,4,4,4,5,5,5,5,5,5}
 

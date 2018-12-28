@@ -796,6 +796,10 @@ const uint16_t ui_2nd_level_ctrl_cmdlen[UI_CTRL_NUMCMD] = UI_CTRL_CMDLEN;
 const char* ui_2nd_level_thr_commands[UI_THR_NUMCMD] = UI_THR_COMMANDS;
 const uint16_t ui_2nd_level_thr_cmdlen[UI_THR_NUMCMD] = UI_THR_CMDLEN;
 
+// Save/load commands
+const char* ui_save_or_load_commands[UI_SAVE_OR_LOAD_NUMCMD] = UI_SAVE_OR_LOAD_COMMANDS;
+const uint16_t ui_save_or_load_cmdlen[UI_SAVE_OR_LOAD_NUMCMD] = UI_SAVE_OR_LOAD_CMDLEN;
+
 
 uint8_t UI_2nd_Level_Process_Data(char* inputstring);
 uint8_t UI_2nd_Level_Process_FOC(char* inputstring);
@@ -1361,6 +1365,23 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   char tempbuf[8];
   uint8_t templen;
 
+  // First check for the save or load command
+  command_num = UI_FindInOptionList(inputstring, ui_save_or_load_commands,
+      ui_save_or_load_cmdlen, UI_SAVE_OR_LOAD_NUMCMD);
+  if(command_num == 0)
+  {
+    // Command SAVE - store all throttle variables to eeprom
+    throttle_save_to_eeprom();
+    return UI_OK;
+  }
+  if(command_num == 1)
+  {
+    // Command LOAD - retrieve throttle variables from eeprom, replace RAM values
+    throttle_init();
+    return UI_OK;
+  }
+
+  // If control gets here, it wasn't SAVE or LOAD.
   // Which command?
   command_num = UI_FindInOptionList(inputstring, ui_2nd_level_thr_commands,
       ui_2nd_level_thr_cmdlen, UI_THR_NUMCMD);

@@ -87,12 +87,15 @@ typedef struct
                 0.0f, \
                 0.0f }
 
-
+void throttle_init(void);
+void throttle_save_to_eeprom(void);
+void throttle_switch_type(uint8_t thrnum, uint8_t thrtype);
 void throttle_process(uint8_t thrnum);
 void throttle_pas_process(uint8_t thrnum);
 void throttle_pas_timer_overflow(uint8_t thrnum);
 float throttle_get_command(uint8_t thrnum);
 
+void throttle_init(void);
 uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype);
 uint8_t throttle_get_type(uint8_t thrnum);
 uint8_t throttle_set_min(uint8_t thrnum, float thrmin);

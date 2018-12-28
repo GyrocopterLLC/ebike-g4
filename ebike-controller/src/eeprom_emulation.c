@@ -50,7 +50,6 @@ static FLASH_Status FLASH_WaitForLastOperation(void);
 static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector, uint8_t VoltageRange);
 static FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);
 
-
 static FLASH_Status EE_Format(void);
 static uint16_t EE_FindValidPage(uint8_t Operation);
 static uint16_t EE_VerifyPageFullWriteVariable(uint16_t VirtAddress, uint16_t Data);
@@ -381,16 +380,16 @@ uint16_t EE_WriteVariable(uint16_t VirtAddress, uint16_t Data)
   return Status;
 }
 
-uint16_t EE_SaveInt16(uint16_t VirtAddress, int16_t* Data)
+uint16_t EE_SaveInt16(uint16_t VirtAddress, int16_t Data)
 {
-  uint16_t* DataPtr = (uint16_t*)Data;
-  return EE_WriteVariable(VirtAddress, DataPtr);
+  uint16_t* DataPtr = (uint16_t*)(&Data);
+  return EE_WriteVariable(VirtAddress, *DataPtr);
 }
 
-uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data)
+uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t Data)
 {
   uint16_t Status = 0;
-  uint16_t* DataPtr = (uint16_t*)Data;
+  uint16_t* DataPtr = (uint16_t*)(&Data);
   Status = EE_WriteVariable(VirtAddress | EE_LOBYTE_FLAG, DataPtr[0]);
   if(Status == FLASH_COMPLETE)
   {
@@ -399,10 +398,10 @@ uint16_t EE_SaveInt32(uint16_t VirtAddress, int32_t* Data)
   return Status;
 }
 
-uint16_t EE_SaveFloat(uint16_t VirtAddress, float* Data)
+uint16_t EE_SaveFloat(uint16_t VirtAddress, float Data)
 {
   uint16_t Status = 0;
-  uint16_t* DataPtr = (uint16_t*)Data;
+  uint16_t* DataPtr = (uint16_t*)(&Data);
   /* Write the first two bytes in EEPROM */
   Status = EE_WriteVariable(VirtAddress | EE_LOBYTE_FLAG, DataPtr[0]);
   if(Status == FLASH_COMPLETE)
@@ -417,8 +416,7 @@ int16_t EE_ReadInt16WithDefault(uint16_t VirtAddress, int16_t defalt)
 {
   uint16_t Status = 0;
   uint16_t Data;
-  int32_t retval;
-  uint16_t* retvalptr = (uint16_t*)(&retval);
+  int16_t retval;
   Status = EE_ReadVariable(VirtAddress, &Data);
   if(Status == READ_SUCCESS) {
     retval = Data;

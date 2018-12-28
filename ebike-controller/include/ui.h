@@ -129,10 +129,6 @@ typedef enum
 uint8_t UI_Process(char* inputstring);
 uint32_t UI_RespLen(void);
 char* UI_SendBuf(void);
-
-
-
-
-
+uint8_t UI_TopLevelProcess(char* inputstring);
 
 #endif // UI_H_
