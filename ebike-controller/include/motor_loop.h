@@ -20,6 +20,8 @@ typedef struct _Motor_Controls
 	Motor_RunState state;
 	float ThrottleCommand;
 	float BusVoltage;
+	float RampAngle;
+	uint32_t speed_cycle_integrator;
 } Motor_Controls;
 
 typedef struct _Motor_Observations

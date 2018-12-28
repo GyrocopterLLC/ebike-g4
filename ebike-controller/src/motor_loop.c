@@ -1,3 +1,4 @@
+#include "main.h"
 #include "motor_loop.h"
 #include "project_parameters.h"
 
@@ -5,6 +6,15 @@ uint8_t lastHallState = 0;
 Motor_RunState lastRunState = Motor_Off;
 
 float HallStateToDriveFloat[8] = HALL_ANGLES_FLOAT;
+
+static void MLoop_Turn_Off_Check(Motor_Controls* cntl) {
+  if(cntl->ThrottleCommand <= 0.0f) {
+    cntl->state = Motor_Off;
+    cntl->speed_cycle_integrator = 0;
+    cntl->ThrottleCommand = 0.0f;
+    PWM_MotorOFF();
+  }
+}
 
 void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
             FOC_StateVariables* foc, Motor_PWMDuties* duty)
@@ -20,8 +30,18 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
       duty->tC = 0.0f;
       dfsl_pid_resetf(foc->Id_PID);
       dfsl_pid_resetf(foc->Iq_PID);
+      PWM_MotorOFF();
+
+      // Check if we should change out of standby
+      if(cntl->ThrottleCommand > 0.0f) {
+        cntl->state = Motor_Startup;
+      }
       break;
     case Motor_SixStep:
+      if(lastRunState != Motor_SixStep) {
+        PWM_MotorON();
+      }
+      MLoop_Turn_Off_Check(cntl);
       // Running the motor in six-step mode.
       // Current monitoring is not used in determining duty cycle, unless
       // a fault condition is met (over-current)
@@ -87,12 +107,16 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
         }
       break;
     case Motor_Startup:
+      // During this startup routine, the FOC is active but the angle of the motor
+      // is discontinuous (similar to 6-step)
       if (lastRunState != Motor_Startup)
         {
           PHASE_A_PWM();
           PHASE_B_PWM();
           PHASE_C_PWM();
+          PWM_MotorON();
         }
+      MLoop_Turn_Off_Check(cntl);
       if((obv->HallState > 6) || (obv->HallState < 1))
         {
           cntl->state = Motor_Fault;
@@ -101,6 +125,7 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
           duty->tC = 0.0f;
           PWM_MotorOFF();
         }
+
       // Clarke transform to 2-phase stationary system
       dfsl_clarkef (obv->iA, obv->iB, &(foc->Clarke_Alpha),
                     &(foc->Clarke_Beta));
@@ -127,16 +152,31 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
                    &ipark_a, &ipark_b);
       // Inverse Park outputs to space vector modulation, output three-phase waveforms
       dfsl_svmf (ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
+
+      // Check if we're ready for regular run mode
+      if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC) {
+        cntl->speed_cycle_integrator = cntl->speed_cycle_integrator+1;
+      } else {
+        if (cntl->speed_cycle_integrator > 0) {
+          cntl->speed_cycle_integrator = cntl->speed_cycle_integrator-1;
+        }
+      }
+      if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
+        cntl->state = Motor_AtSpeed;
+      }
       break;
+
     case Motor_AtSpeed:
       if (lastRunState != Motor_AtSpeed)
         {
           PHASE_A_PWM();
           PHASE_B_PWM();
           PHASE_C_PWM();
+          PWM_MotorON();
 //	    dfsl_pid_resetf(foc->Id_PID);
 //	    dfsl_pid_resetf(foc->Iq_PID);
         }
+      MLoop_Turn_Off_Check(cntl);
       // Running full-fledged FOC algorithm now!
 
       // **************** FEEDBACK PATH *****************

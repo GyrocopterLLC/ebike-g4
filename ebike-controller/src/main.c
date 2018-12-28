@@ -31,8 +31,6 @@ uint32_t cur_b_sum;
 uint32_t cur_c_sum;
 uint32_t cur_sum_count;
 
-uint32_t speed_cycle_integrator;
-
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
@@ -577,8 +575,8 @@ void SYSTICK_IRQHandler(void) {
 void User_PWMTIM_IRQ(void) {
   // Debug: Blink RLED to show how much processor time is used
   RLED_PORT->BSRR = (1 << RLED_PIN);
-#if 1
-  // Testing mode starts here
+
+  // Get observations and current states
   uint16_t tA, tB, tC;
   Mobv.iA = adcGetCurrent(ADC_IA);
   Mobv.iB = adcGetCurrent(ADC_IB);
@@ -594,35 +592,13 @@ void User_PWMTIM_IRQ(void) {
   } else {
     g_rampAngle -= g_rampInc;
   }
+  Mctrl.RampAngle = g_rampAngle;
 #ifdef TESTING_2X
   Mobv.RotorAngle = HallSensor2_Get_Anglef();
 #else
   Mobv.RotorAngle = HallSensor_Get_Anglef();
 #endif
   Mobv.HallState = HallSensor_Get_State();
-  if (Mctrl.state == Motor_Startup) {
-    if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC)
-      speed_cycle_integrator++;
-    else {
-      if (speed_cycle_integrator > 0)
-        speed_cycle_integrator--;
-    }
-    if (speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
-      Mctrl.state = Motor_AtSpeed;
-    }
-  }
-
-  if (Throttle_cmd <= 0.0f) {
-    PWM_MotorOFF();
-    Throttle_cmd = 0.0f;
-    speed_cycle_integrator = 0;
-    Mctrl.state = Motor_Off;
-  } else {
-    PWM_MotorON();
-    if (Mctrl.state == Motor_Off)
-      Mctrl.state = Motor_Startup;
-  }
-
   Mctrl.ThrottleCommand = Throttle_cmd;
   Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
   tA = (uint16_t) (Mpwm.tA * 65535.0f);
@@ -631,7 +607,7 @@ void User_PWMTIM_IRQ(void) {
   // Is throttle at zero? Motor off
 
   PWM_SetDuty(tA, tB, tC);
-#endif
+
   // USB Debugging outputs
   // Current is scaled from +- 20 amps to 0->65536 (0 = -20A, 65536 = +20A)
 #if USB_MONITOR_FIXED_POINT
@@ -779,6 +755,25 @@ void User_BasicTIM_IRQ(void) {
   Mpc.Ialpha = Mfoc.Clarke_Alpha;
   Mpc.Ibeta = Mfoc.Clarke_Beta;
   power_calc(&Mpc);
+}
+
+uint8_t MAIN_DetectHallPositions(float curlimit)
+{
+  /* Run this method to determine the Hall sensor position angles
+   * around the motor. This function will slowly rotate the motor with
+   * a fixed current. Make sure the motor is free to move!
+   */
+
+  // Step 1: Disable just about everything.
+
+
+  // Step 2: Set the current limit as D-phase current. Q can be zero. This
+  // will lock the rotor to the driven angle.
+
+  // Step 3: Lock the rotor and wait for Hall sensor edges.
+
+  // Step 4: Re-enable the same just about everything we disabled at the start.
+  return 0;
 }
 
 uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum) {
