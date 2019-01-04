@@ -98,15 +98,22 @@ float throttle_get_command(uint8_t thrnum);
 void throttle_init(void);
 uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype);
 uint8_t throttle_get_type(uint8_t thrnum);
+uint8_t throttle_get_type_eeprom(uint8_t thrnum);
 uint8_t throttle_set_min(uint8_t thrnum, float thrmin);
 float throttle_get_min(uint8_t thrnum);
+float throttle_get_min_eeprom(uint8_t thrnum);
 uint8_t throttle_set_max(uint8_t thrnum, float thrmax);
 float throttle_get_max(uint8_t thrnum);
+float throttle_get_max_eeprom(uint8_t thrnum);
 uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst);
 float throttle_get_hyst(uint8_t thrnum);
+float throttle_get_hyst_eeprom(uint8_t thrnum);
 uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt);
 float throttle_get_filt(uint8_t thrnum);
+float throttle_get_filt_eeprom(uint8_t thrnum);
 uint8_t throttle_set_rise(uint8_t thrnum, float thrrise);
 float throttle_get_rise(uint8_t thrnum);
+float throttle_get_rise_eeprom(uint8_t thrnum);
 
 #endif /* _THROTTLE_H_ */
+

@@ -894,8 +894,36 @@ float MAIN_GetVar(uint8_t var) {
     // Kc
     return Id_control.Kc;
     break;
+  default:
+    break;
   }
   return 0.0f;
+}
+
+float MAIN_GetVar_EEPROM(uint8_t var) {
+  float temp;
+  switch(var) {
+  case 0:
+    // Kp
+    temp = EE_ReadFloatWithDefault(EE_ADR_KP, 0.0f);
+    break;
+  case 1:
+    // Ki
+    temp = EE_ReadFloatWithDefault(EE_ADR_KI, 0.0f);
+    break;
+  case 2:
+    // Kd
+    temp = EE_ReadFloatWithDefault(EE_ADR_KD, 0.0f);
+    break;
+  case 3:
+    // Kc
+    temp = EE_ReadFloatWithDefault(EE_ADR_KC, 0.0f);
+    break;
+  default:
+    temp = 0.0f;
+    break;
+  }
+  return temp;
 }
 
 uint8_t MAIN_SetFreq(int32_t newfreq) {

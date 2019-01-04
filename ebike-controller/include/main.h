@@ -101,6 +101,7 @@ uint8_t MAIN_SetRampSpeed(uint32_t newspeed);
 uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards);
 uint8_t MAIN_SetVar(uint8_t var, float newval);
 float MAIN_GetVar(uint8_t var);
+float MAIN_GetVar_EEPROM(uint8_t var);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 void MAIN_DumpRecord(void);

@@ -844,6 +844,9 @@ const uint16_t ui_2nd_level_numcmd[UI_TOP_LEVEL_NUMCMD] = {
     UI_THR_NUMCMD
 };
 
+const char* ui_2nd_level_thr_types[UI_THR_NUMTYPES] = UI_THR_TYPES;
+const uint16_t ui_2nd_level_thr_typelen[UI_THR_NUMTYPES] = UI_THR_TYPESLEN;
+
 /***
  * UI_FindInOptionList
  * Compares the input string to a list of possible options for this UI level.
@@ -1104,13 +1107,25 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
         return UI_ERROR;
       }
       break;
+    case 5: // Freq
+      newval_i32 = UI_atoi(inputstring);
+      ui_error = PWM_SetFreq(newval_i32);
+
+      if(ui_error == UI_OK) {
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      } else {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      break;
     default:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
       return UI_ERROR;
       break;
     }
 
-  } else if (command_type == UI_MENU_QUERY) {
+  } else if ((command_type == UI_MENU_QUERY) ||
+      (command_type == UI_MENU_QUERY_EEPROM)) {
     // Return the current value of the variable
     switch(command_num)
     {
@@ -1118,13 +1133,31 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
     case 1: // KI
     case 2: // KD
     case 3: // KC
-      newval_f = MAIN_GetVar(command_num);
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = MAIN_GetVar(command_num);
+      } else {
+        newval_f = MAIN_GetVar_EEPROM(command_num);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       break;
     case 4: // DT
-      newval_i32 = PWM_GetDeadTime();
+      if(command_type == UI_MENU_QUERY) {
+        newval_i32 = PWM_GetDeadTime();
+      } else {
+        newval_i32 = PWM_GetDeadTime_EEPROM();
+      }
+      templen = _itoa(tempbuf, newval_i32, 1);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      break;
+    case 5: // Freq
+      if(command_type == UI_MENU_QUERY) {
+        newval_i32 = PWM_GetFreq();
+      } else {
+        newval_i32 = PWM_GetFreq_EEPROM();
+      }
       templen = _itoa(tempbuf, newval_i32, 1);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
@@ -1353,9 +1386,6 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
   return ui_error;
 }
 
-const char* ui_2nd_level_thr_types[UI_THR_NUMTYPES] = UI_THR_TYPES;
-const uint16_t ui_2nd_level_thr_typelen[UI_THR_NUMTYPES] = UI_THR_TYPESLEN;
-
 uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   uint8_t ui_error = UI_ERROR;
   int16_t command_num;
@@ -1364,6 +1394,7 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   float newval_f;
   char tempbuf[8];
   uint8_t templen;
+  uint8_t thrtype;
 
   // First check for the save or load command
   command_num = UI_FindInOptionList(inputstring, ui_save_or_load_commands,
@@ -1372,12 +1403,14 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
   {
     // Command SAVE - store all throttle variables to eeprom
     throttle_save_to_eeprom();
+    UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
     return UI_OK;
   }
   if(command_num == 1)
   {
     // Command LOAD - retrieve throttle variables from eeprom, replace RAM values
     throttle_init();
+    UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
     return UI_OK;
   }
 
@@ -1452,12 +1485,19 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       ui_error = UI_OK;
       break;
     }
-  } else if (command_type == UI_MENU_QUERY) {
+  } else if ((command_type == UI_MENU_QUERY) ||
+            (command_type == UI_MENU_QUERY_EEPROM)){
     // Return the current value of the variable
     switch (command_num) {
     case 0: // TYPE1
     case 1: // TYPE2
-      switch (throttle_get_type(command_num + 1)) {
+
+      if(command_type == UI_MENU_QUERY) {
+        thrtype = throttle_get_type(command_num + 1);
+      } else {
+        thrtype = throttle_get_type_eeprom(command_num + 1);
+      }
+      switch (thrtype) {
       case THROTTLE_TYPE_NONE:
         UI_SerialOut("NONE\r\n", 6);
         break;
@@ -1475,7 +1515,11 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       break;
     case 2: // MIN1
     case 3: // MIN2
-      newval_f = throttle_get_min(command_num - 1);
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = throttle_get_min(command_num - 1);
+      } else {
+        newval_f = throttle_get_min_eeprom(command_num - 1);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
@@ -1483,15 +1527,23 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       break;
     case 4: // MAX1
     case 5: // MAX2
-      newval_f = throttle_get_max(command_num - 3);
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = throttle_get_max(command_num - 3);
+      } else {
+        newval_f = throttle_get_max_eeprom(command_num - 3);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
       ui_error = UI_OK;
       break;
     case 6: // HYST1
-    case 7: // HYST22
-      newval_f = throttle_get_hyst(command_num - 5);
+    case 7: // HYST2
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = throttle_get_hyst(command_num - 5);
+      } else {
+        newval_f = throttle_get_hyst_eeprom(command_num - 5);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
@@ -1499,7 +1551,11 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       break;
     case 8: // FILT1
     case 9: // FILT2
-      newval_f = throttle_get_filt(command_num - 7);
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = throttle_get_filt(command_num - 7);
+      } else {
+        newval_f = throttle_get_filt_eeprom(command_num - 7);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
@@ -1507,7 +1563,11 @@ uint8_t UI_2nd_Level_Process_Thr(char* inputstring) {
       break;
     case 10: // RISE1
     case 11: // RISE2
-      newval_f = throttle_get_rise(command_num - 9);
+      if(command_type == UI_MENU_QUERY) {
+        newval_f = throttle_get_rise(command_num - 9);
+      } else {
+        newval_f = throttle_get_rise_eeprom(command_num - 9);
+      }
       templen = _ftoa(tempbuf, newval_f, 6);
       UI_SerialOut(tempbuf, templen);
       UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);

@@ -373,6 +373,20 @@ uint8_t throttle_get_type(uint8_t thrnum)
   }
 }
 
+uint8_t throttle_get_type_eeprom(uint8_t thrnum)
+{
+  uint8_t temp_type;
+  if(thrnum == 1){
+    temp_type = EE_ReadInt16WithDefault(EE_ADR_TYPE1, THROTTLE_TYPE_NONE);
+  } else if(thrnum == 2) {
+    temp_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2, THROTTLE_TYPE_NONE);
+  } else {
+    temp_type = THROTTLE_TYPE_NONE;
+  }
+  return temp_type;
+
+}
+
 uint8_t throttle_set_min(uint8_t thrnum, float thrmin)
 {
   if((thrnum == 1) || (thrnum == 2)) {
@@ -390,6 +404,17 @@ float throttle_get_min(uint8_t thrnum)
     return psAnalogThrottles[thrnum-1]->min;
   }
   return 0.0f;
+}
+
+float throttle_get_min_eeprom(uint8_t thrnum)
+{
+  float temp = 0.0f;
+  if(thrnum == 1) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_MIN1, 0.0f);
+  } else if(thrnum == 2) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_MIN2, 0.0f);
+  }
+  return temp;
 }
 
 uint8_t throttle_set_max(uint8_t thrnum, float thrmax) {
@@ -410,6 +435,17 @@ float throttle_get_max(uint8_t thrnum)
   return 0.0f;
 }
 
+float throttle_get_max_eeprom(uint8_t thrnum)
+{
+  float temp = 0.0f;
+  if(thrnum == 1) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_MAX1, 0.0f);
+  } else if(thrnum == 2) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_MAX2, 0.0f);
+  }
+  return temp;
+}
+
 uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst)
 {
   if((thrnum == 1) || (thrnum == 2)) {
@@ -427,6 +463,17 @@ float throttle_get_hyst(uint8_t thrnum)
     return psThrottles[thrnum-1]->hyst;
   }
   return 0.0f;
+}
+
+float throttle_get_hyst_eeprom(uint8_t thrnum)
+{
+  float temp = 0.0f;
+  if(thrnum == 1) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_HYST1, 0.0f);
+  } else if(thrnum == 2) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_HYST2, 0.0f);
+  }
+  return temp;
 }
 
 uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt)
@@ -451,6 +498,17 @@ float throttle_get_filt(uint8_t thrnum)
   return 0.0f;
 }
 
+float throttle_get_filt_eeprom(uint8_t thrnum)
+{
+  float temp = 0.0f;
+  if(thrnum == 1) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_FILT1, 0.0f);
+  } else if(thrnum == 2) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_FILT2, 0.0f);
+  }
+  return temp;
+}
+
 uint8_t throttle_set_rise(uint8_t thrnum, float thrrise)
 {
   if((thrnum == 1) || (thrnum == 2)) {
@@ -468,4 +526,15 @@ float throttle_get_rise(uint8_t thrnum)
     return psThrottles[thrnum-1]->rise;
   }
   return 0.0f;
+}
+
+float throttle_get_rise_eeprom(uint8_t thrnum)
+{
+  float temp = 0.0f;
+  if(thrnum == 1) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_RISE1, 0.0f);
+  } else if(thrnum == 2) {
+    temp = EE_ReadFloatWithDefault(EE_ADR_RISE2, 0.0f);
+  }
+  return temp;
 }

@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "project_parameters.h"
 #include "ui.h"
+#include "eeprom_emulation.h"
 
 float pwm_timer_arr_f = PWM_PERIOD_F;
 
@@ -128,6 +129,27 @@ int32_t PWM_GetDeadTime(void)
 {
   uint32_t temp_bdtr = PWM_TIMER->BDTR & (0x00FF);
   return PWM_DT_reg_to_ns(temp_bdtr);
+}
+
+int32_t PWM_GetDeadTime_EEPROM(void) {
+  uint32_t temp_ns = EE_ReadInt32WithDefault(EE_ADR_DT, 0);
+  return temp_ns;
+}
+
+uint8_t PWM_SetFreq(int32_t newFreq) {
+  return UI_OK;
+}
+
+int32_t PWM_GetFreq(void) {
+  int32_t temp = PWM_TIMER_FREQ;
+  temp = temp / (PWM_PERIOD + 1);
+  return temp;
+}
+
+int32_t PWM_GetFreq_EEPROM(void) {
+  int32_t temp = PWM_TIMER_FREQ;
+  temp = temp / (PWM_PERIOD + 1);
+  return temp;
 }
 
 /*

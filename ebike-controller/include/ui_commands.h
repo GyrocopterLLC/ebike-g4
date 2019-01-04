@@ -5,6 +5,7 @@
 
 #define UI_MENU_SET           '='
 #define UI_MENU_QUERY         '?'
+#define UI_MENU_QUERY_EEPROM  '$'
 
 #define UI_TOP_LEVEL_COMMANDS   {     "DATA",\
                                       "FOC",\
@@ -41,9 +42,10 @@
                                       "KI",\
                                       "KD",\
                                       "KC",\
-                                      "DT" }
-#define UI_FOC_NUMCMD           5
-#define UI_FOC_CMDLEN           {2,2,2,2,2}
+                                      "DT",\
+                                      "FREQ"}
+#define UI_FOC_NUMCMD           6
+#define UI_FOC_CMDLEN           {2,2,2,2,2,4}
 
 #define UI_MOTOR_COMMANDS       {     "PP",\
                                       "RS",\

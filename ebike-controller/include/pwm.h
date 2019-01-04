@@ -18,8 +18,9 @@
 
 /********** Timer defines ***********/
 
-#define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
-#define PWM_PERIOD_F				4199.0f
+#define PWM_TIMER_FREQ      (168000000L)
+#define PWM_PERIOD					(4199) // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
+#define PWM_PERIOD_F				(4199.0f)
 
 
 /** Deadtime register settings **
@@ -60,6 +61,10 @@ void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
 uint8_t PWM_SetDeadTime(int32_t newDT);
 int32_t PWM_GetDeadTime(void);
+int32_t PWM_GetDeadTime_EEPROM(void);
+uint8_t PWM_SetFreq(int32_t freq);
+int32_t PWM_GetFreq(void);
+int32_t PWM_GetFreq_EEPROM(void);
 
 /* Defines for directly changing PWM outputs */
 
