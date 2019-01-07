@@ -653,6 +653,19 @@ FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data)
   /* Wait for last operation to be completed */
   status = FLASH_WaitForLastOperation();
 
+  if(status == FLASH_ERROR_PROGRAM)
+  {
+    /* try to clear the flags */
+   if((FLASH->SR & FLASH_FLAG_PGSERR) != 0x00)
+   {
+     FLASH->SR |= FLASH_FLAG_PGSERR;
+   }
+   if((FLASH->SR & FLASH_FLAG_PGPERR) != 0x00) {
+     FLASH->SR |= FLASH_FLAG_PGPERR;
+   }
+   status = FLASH_WaitForLastOperation();
+  }
+
   if(status == FLASH_COMPLETE)
   {
     FLASH_Unlock();
