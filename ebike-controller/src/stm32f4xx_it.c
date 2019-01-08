@@ -164,33 +164,6 @@ void SysTick_Handler(void)
 /*  file (startup_stm32f4xx.s).                                               */
 /******************************************************************************/
 
-void FLASH_IRQHandler(void)
-{
-  // Only here if an error occurred.
-  // Check the flash status register to find out which one.
-  if((FLASH->SR & FLASH_SR_WRPERR) != 0x00) {
-    // Write protection error.
-    FLASH->SR |= FLASH_SR_WRPERR;
-  }
-  if((FLASH->SR & FLASH_SR_PGAERR) != 0x00) {
-    // Programming alignment error.
-    FLASH->SR |= FLASH_SR_PGAERR;
-  }
-  if((FLASH->SR & FLASH_SR_PGPERR) != 0x00) {
-    // Programming parallelism error.
-    FLASH->SR |= FLASH_SR_PGPERR;
-  }
-  if((FLASH->SR & FLASH_SR_PGSERR) != 0x00) {
-    // Programming sequence error.
-    FLASH->SR |= FLASH_SR_PGSERR;
-  }
-  if((FLASH->SR & FLASH_SR_SOP) != 0x00) {
-    // Operation error. Set when one of above is set and interrupts enabled.
-    FLASH->SR |= FLASH_SR_SOP;
-  }
-
-}
-
 /**
  * Interrupt priorities (lower number = higher priority)
  *

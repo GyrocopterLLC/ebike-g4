@@ -84,17 +84,6 @@ uint16_t EE_Init(void)
   int16_t x = -1;
   uint16_t  FlashStatus;
 
-  /* Initialize the Flash interrupt. This is for debugging where spurious
-   * writes are coming from that set the programming error flags! */
-
-  FLASH_Unlock();
-  FLASH->CR |= ((uint32_t)0x02000000);
-  // For some reason FLASH_CR_ERRIE isn't defined. Using its numerical value.
-  FLASH_Lock();
-  NVIC_SetPriority(FLASH_IRQn, 0); // Top priority, equal to the motor control
-  NVIC_EnableIRQ(FLASH_IRQn);
-
-
   /* Get Page0 status */
   PageStatus0 = (*(__IO uint16_t*)PAGE0_BASE_ADDRESS);
   /* Get Page1 status */
