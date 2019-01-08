@@ -1263,62 +1263,31 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
   int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_util_commands,
       ui_2nd_level_util_cmdlen, UI_UTIL_NUMCMD);
   inputstring += ui_2nd_level_util_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
-    // Perform setting variable
-    switch(command_num){
-      case 0: // SAVE
-        MAIN_SaveVariables();
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-        ui_error = UI_OK;
-        break;
-      case 1: // LOAD
-        MAIN_LoadVariables();
-        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-        ui_error = UI_OK;
-        break;
-      case 2: // RESET
-        MAIN_SoftReset(0);
-        //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-        ui_error = UI_OK;
-        break;
-      case 3: // BOOTRESET
-        MAIN_SoftReset(1);
-        //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-        ui_error = UI_OK;
-        break;
-      default:
-        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-        return UI_ERROR;
-        break;
-      }
-  } else if (inputstring[0] == UI_MENU_QUERY) {
-    // Return the current value of the variable
-    switch(command_num){
-      case 0: // SAVE
-        UI_SerialOut("Saves current values in ram to eeprom\r\n", 39);
-        ui_error = UI_OK;
-        break;
-      case 1: // LOAD
-        UI_SerialOut("Loads eeprom values to ram\r\n", 28);
-        ui_error = UI_OK;
-        break;
-      case 2: // RESET
-        UI_SerialOut("Performs a soft reset\r\n", 23);
-        ui_error = UI_OK;
-        break;
-      case 3: // BOOTRESET
-        UI_SerialOut("Soft resets into bootloader\r\n", 29);
-        ui_error = UI_OK;
-        break;
-      default:
-        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
-        return UI_ERROR;
-        break;
-      }
-  } else {
-    // Ok, definitely invalid
+  switch(command_num) {
+  case 0: // SAVE
+    MAIN_SaveVariables();
+    UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+    ui_error = UI_OK;
+    break;
+  case 1: // LOAD
+    MAIN_LoadVariables();
+    UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+    ui_error = UI_OK;
+    break;
+  case 2: // RESET
+    MAIN_SoftReset(0);
+    //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+    ui_error = UI_OK;
+    break;
+  case 3: // BOOTRESET
+    MAIN_SoftReset(1);
+    //UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+    ui_error = UI_OK;
+    break;
+  default:
     UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
     return UI_ERROR;
+    break;
   }
   return ui_error;
 }
