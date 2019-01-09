@@ -178,3 +178,50 @@ void GPIO_Pulldown_Unused(void)
 	}
 	GPIOH->PUPDR = temp;
 }
+
+// Configures the External Interrupt on the selected pin
+// Input rise_fall_select should be selected from EXTI_None, EXTI_Rising,
+// EXTI_Falling, or EXTI_Rising_Falling
+// EXTI_None disables the interrupt
+void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin, uint8_t rise_fall_select)
+{
+  // Numerical GPIO number
+  // GPIOA = 0, GPIOB = 1, ... GPIOI = 8
+  uint32_t gpionum = ((uint32_t)gpio - AHB1PERIPH_BASE);
+      gpionum /= 0x0400;
+  // Exit early for any bad input
+  if((pin > 15) || gpionum > 8 ||
+      ((rise_fall_select != EXTI_Rising) && (rise_fall_select != EXTI_Falling)
+          && (rise_fall_select != EXTI_Rising_Falling) &&
+          (rise_fall_select != EXTI_None))) {
+    return;
+  }
+  // Figure out which EXTI register to edit
+  // This is based on the selected pin
+  uint8_t exticr_number = pin / 4;
+  uint8_t exticr_offset = pin % 4;
+  // Clear the config register
+  SYSCFG->EXTICR[exticr_number] &= ~(0xF << (4*exticr_offset));
+  if(rise_fall_select != EXTI_None) {
+    // Set for this port
+    SYSCFG->EXTICR[exticr_number] |= (gpionum << (4*exticr_offset));
+    // Set the interrupt mask bit
+    EXTI->IMR |= (1 << pin);
+    if((rise_fall_select | EXTI_Falling) != 0) {
+      EXTI->FTSR |= (1 << pin);
+    }
+    if((rise_fall_select | EXTI_Rising) != 0) {
+      EXTI->RTSR |= (1 << pin);
+    }
+    uint32_t nvic_irqn = 0;
+  } else {
+    // Clear the mask bit, disable this interrupt source
+    EXTI->IMR &= ~(1 << pin);
+    // Clear rising and falling edge selections
+    EXTI->RTSR &= ~(1 << pin);
+    EXTI->FTSR &= ~(1 << pin);
+  }
+}
+
+
+
