@@ -112,9 +112,19 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
       // Enable overflow interrupt. This occurs when no pedaling has been
       // detected for one full timer cycle.
       PAS1_TIM->DIER |= TIM_DIER_UIE;
+
+      /* Setting the URS bit allows only a timer overflow to trigger an
+       * interrupt. Without it, whenever the timer is reset (including when
+       * the UG bit is set, like after a rising edge on the PAS is captured)
+       * would cause this interrupt to be triggered. This would be bad.
+       * The PAS would then always think it was timing out and not actually
+       * reading any switching signals. */
+      PAS1_TIM->CR1 |= TIM_CR1_URS;
+
       NVIC_SetPriority(PAS1_TIMER_IRQn, PRIO_PAS);
       NVIC_EnableIRQ(PAS1_TIMER_IRQn);
 
+      // Enable the timer counting
       PAS1_TIM->CR1 |= TIM_CR1_CEN;
 
     }
@@ -165,6 +175,10 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
       NVIC_SetPriority(PAS2_TIMER_IRQn, PRIO_PAS);
       NVIC_EnableIRQ(PAS2_TIMER_IRQn);
 
+      // Only allow timer overflow to trigger the interrupt.
+      PAS2_TIM->CR1 |= TIM_CR1_URS;
+
+      // Start the timer counting
       PAS2_TIM->CR1 |= TIM_CR1_CEN;
     }
   }
@@ -303,9 +317,15 @@ void throttle_pas_process(uint8_t thrnum) {
   // This function is entered at any rising edge of the PAS signal
   // Get the timer reading now
   if (thrnum == 1) {
+    // Capture timer reading
     newcount = PAS1_TIM->CNT;
+    // Reset timer counter
+    PAS1_TIM->EGR |= TIM_EGR_UG;
   } else if (thrnum == 2) {
+    // Capture timer reading
     newcount = PAS2_TIM->CNT;
+    // Reset timer counter
+    PAS2_TIM->EGR |= TIM_EGR_UG;
   } else
     return;
 
