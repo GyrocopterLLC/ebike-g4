@@ -25,6 +25,7 @@ Throttle_PAS_Type sPasThrottle2 = THROTTLE_PAS_DEFAULTS;
 Throttle_PAS_Type *psPasThrottles[2] = {&sPasThrottle1, &sPasThrottle2};
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
+static void throttle_set_scale(Throttle_Analog_Type* thr);
 //static void throttle_detect_min_max(uint8_t thrnum); // Currently unused
 
 void throttle_init(void) {
@@ -39,7 +40,7 @@ void throttle_init(void) {
   psThrottles[0]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE1, THROTTLE_RISE_DEFAULT);
   psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(EE_ADR_MIN1, THROTTLE_MIN_DEFAULT);
   psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(EE_ADR_MAX1, THROTTLE_MAX_DEFAULT);
-  psAnalogThrottles[0]->scale_factor = (1.0f)/((psAnalogThrottles[0]->max) - (psAnalogThrottles[0]->min));
+  throttle_set_scale(psAnalogThrottles[0]);
 
   psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2, THROTTLE_TYPE_ANALOG);
   throttle_switch_type(2, psThrottles[1]->throttle_type);
@@ -50,7 +51,7 @@ void throttle_init(void) {
   psThrottles[1]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE2, THROTTLE_RISE_DEFAULT);
   psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(EE_ADR_MIN2, THROTTLE_MIN_DEFAULT);
   psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(EE_ADR_MAX2, THROTTLE_MAX_DEFAULT);
-  psAnalogThrottles[1]->scale_factor = (1.0f)/((psAnalogThrottles[1]->max) - (psAnalogThrottles[1]->min));
+  throttle_set_scale(psAnalogThrottles[1]);
 }
 
 void throttle_save_to_eeprom(void) {
@@ -248,6 +249,11 @@ static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
   }
   thr->prev_output = thr->throttle_command;
 }
+
+static void throttle_set_scale(Throttle_Analog_Type* thr)
+{
+  thr->scale_factor = (1.0f)/((thr->max) - (thr->min));
+}
 /*
 static void throttle_detect_min_max(uint8_t thrnum) {
 // Old code. Figure out what to keep in here.
@@ -405,6 +411,7 @@ uint8_t throttle_set_min(uint8_t thrnum, float thrmin)
   if((thrnum == 1) || (thrnum == 2)) {
     if(thrmin >= 0.0f) {
       psAnalogThrottles[thrnum-1]->min = thrmin;
+      throttle_set_scale(psAnalogThrottles[thrnum-1]);
       return UI_OK;
     }
   }
@@ -434,6 +441,7 @@ uint8_t throttle_set_max(uint8_t thrnum, float thrmax) {
   if ((thrnum == 1) || (thrnum == 2)) {
     if(thrmax >= 0.0f) {
       psAnalogThrottles[thrnum - 1]->max = thrmax;
+      throttle_set_scale(psAnalogThrottles[thrnum-1]);
       return UI_OK;
     }
   }
