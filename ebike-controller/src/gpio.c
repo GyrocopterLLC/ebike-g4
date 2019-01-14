@@ -70,6 +70,23 @@ void GPIO_InputPD(GPIO_TypeDef* gpio, uint8_t pin)
 
 }
 
+/**
+ * @brief  Configures a GPIO pin for input with pullup.
+ * @param  gpio: The GPIO Port to be modified
+ *         pin: The pin to be set as an input
+ * @retval None
+ */
+void GPIO_InputPU(GPIO_TypeDef* gpio, uint8_t pin)
+{
+  // Clear MODER for this pin (input mode)
+  gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+  // Clear pullup/down register
+  gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+  // Apply pull down
+  gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_0 << (pin * 2));
+
+}
+
 void GPIO_Analog(GPIO_TypeDef* gpio, uint8_t pin)
 {
 	// Clear pull-up/down resistor setting
@@ -198,20 +215,24 @@ void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin, uint8_t rise_fall_select)
   }
   // Figure out which EXTI register to edit
   // This is based on the selected pin
-  uint8_t exticr_number = pin / 4;
-  uint8_t exticr_offset = pin % 4;
+  // config register = pin / 4
+  // config offset (within the register) = pin % 4
   // Clear the config register
-  SYSCFG->EXTICR[exticr_number] &= ~(0xF << (4*exticr_offset));
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  SYSCFG->EXTICR[(pin / 4)] &= ~(0xF << (4*(pin % 4)));
   if(rise_fall_select != EXTI_None) {
     // Set for this port
-    SYSCFG->EXTICR[exticr_number] |= (gpionum << (4*exticr_offset));
+    SYSCFG->EXTICR[(pin / 4)] |= (gpionum << (4*(pin % 4)));
     // Set the interrupt mask bit
     EXTI->IMR |= (1 << pin);
-    if((rise_fall_select | EXTI_Falling) != 0) {
+    if(rise_fall_select == EXTI_Falling) {
       EXTI->FTSR |= (1 << pin);
     }
-    if((rise_fall_select | EXTI_Rising) != 0) {
+    else if(rise_fall_select == EXTI_Rising) {
       EXTI->RTSR |= (1 << pin);
+    } else if(rise_fall_select == EXTI_Rising_Falling) {
+      EXTI->RTSR |= (1 << pin);
+      EXTI->FTSR |= (1 << pin);
     }
     uint32_t nvic_irqn = 0;
   } else {

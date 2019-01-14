@@ -97,7 +97,7 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
 
     } else if (thrtype == THROTTLE_TYPE_PAS) {
       // Set throttle pin to digital input
-      GPIO_Input(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+      GPIO_InputPU(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
       // Enable pin change interrupt
       GPIO_EXTI_Config(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN, EXTI_Rising);
       // Enable this interrupt in the NVIC
@@ -156,7 +156,7 @@ void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
 
     } else if (thrtype == THROTTLE_TYPE_PAS) {
       // Set throttle pin to digital input
-      GPIO_Input(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+      GPIO_InputPU(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
       // Enable pin change interrupt
       GPIO_EXTI_Config(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN, EXTI_Rising);
 
@@ -228,6 +228,9 @@ void throttle_process(uint8_t thrnum) {
 }
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
+  // TODO: Think harder about this function. Didn't seem to be working properly,
+  // especially not for the PAS throttle.
+
   if (thr->state) {
     // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
     if (thr->throttle_command <= (thr->hyst)) {
@@ -336,7 +339,7 @@ void throttle_pas_process(uint8_t thrnum) {
     return;
 
   // Figure out the rate of rotation in Hz
-  float howfastwego = ((float)newcount) / ((float)PAS_CLK) / ((float)PAS_PPR);
+  float howfastwego = ((float)PAS_CLK) / ((float)PAS_PPR) / ((float)newcount);
 
   // Filter the speed with a rolling low-pass filter
   psPasThrottles[thrnum-1]->filtered_speed = howfastwego * PAS_FILTER +
@@ -344,6 +347,7 @@ void throttle_pas_process(uint8_t thrnum) {
 
   float temp_cmd;
   // Scale and limit the output
+  // TODO: Proper setting of scale factor here. Possibly min/max
   temp_cmd = psPasThrottles[thrnum-1]->filtered_speed * psPasThrottles[thrnum-1]->scale_factor;
   if (temp_cmd < THROTTLE_OUTPUT_MIN)
     temp_cmd = THROTTLE_OUTPUT_MIN;
@@ -374,9 +378,10 @@ uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype)
 {
   if((thrnum == 1) || (thrnum == 2)) {
     if((thrtype == THROTTLE_TYPE_NONE) || (thrtype == THROTTLE_TYPE_PAS) ||
-        (thrtype == THROTTLE_TYPE_PAS))
+        (thrtype == THROTTLE_TYPE_ANALOG))
     {
       psThrottles[thrnum-1]->throttle_type = thrtype;
+      throttle_switch_type(thrnum, thrtype);
       return UI_OK;
     }
   }
