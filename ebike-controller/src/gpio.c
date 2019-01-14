@@ -217,6 +217,7 @@ void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin, uint8_t rise_fall_select)
   // This is based on the selected pin
   // config register = pin / 4
   // config offset (within the register) = pin % 4
+
   // Clear the config register
   RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
   SYSCFG->EXTICR[(pin / 4)] &= ~(0xF << (4*(pin % 4)));
@@ -225,16 +226,16 @@ void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin, uint8_t rise_fall_select)
     SYSCFG->EXTICR[(pin / 4)] |= (gpionum << (4*(pin % 4)));
     // Set the interrupt mask bit
     EXTI->IMR |= (1 << pin);
-    if(rise_fall_select == EXTI_Falling) {
+    // Clear the rise/fall bits. The correct ones will be set after this.
+    EXTI->FTSR &= ~(1 << pin);
+    EXTI->RTSR &= ~(1 << pin);
+    if((rise_fall_select & EXTI_Falling) != 0) {
       EXTI->FTSR |= (1 << pin);
     }
-    else if(rise_fall_select == EXTI_Rising) {
+    if((rise_fall_select & EXTI_Rising) != 0) {
       EXTI->RTSR |= (1 << pin);
-    } else if(rise_fall_select == EXTI_Rising_Falling) {
-      EXTI->RTSR |= (1 << pin);
-      EXTI->FTSR |= (1 << pin);
     }
-    uint32_t nvic_irqn = 0;
+
   } else {
     // Clear the mask bit, disable this interrupt source
     EXTI->IMR &= ~(1 << pin);
