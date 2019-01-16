@@ -228,21 +228,23 @@ void throttle_process(uint8_t thrnum) {
 }
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
-  // TODO: Think harder about this function. Didn't seem to be working properly,
-  // especially not for the PAS throttle.
 
-  if (thr->state) {
-    // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
-    if (thr->throttle_command <= (thr->hyst)) {
-      thr->throttle_command = 0.0f;
-      thr->state = 0;
-    }
-  } else {
-    // If throttle was off but passes above hysteresis level, turn it on
-    if (thr->throttle_command >= (2.0f*(thr->hyst))) {
-      thr->state = 1;
+  // Hysteresis is not necessary for PAS.
+  // Off is no pedaling - no interrupts triggered.
+  if (thr->throttle_type == THROTTLE_TYPE_ANALOG) {
+    if (thr->state) {
+      // Hysteresis. If throttle was on but passes below hysteresis level, turn it off
+      if (thr->throttle_command <= (thr->hyst)) {
+        thr->throttle_command = 0.0f;
+        thr->state = 0;
+      }
     } else {
-      thr->throttle_command = 0.0f;
+      // If throttle was off but passes above hysteresis level, turn it on
+      if (thr->throttle_command >= (2.0f*(thr->hyst))) {
+        thr->state = 1;
+      } else {
+        thr->throttle_command = 0.0f;
+      }
     }
   }
   // Rate limit (upward only! no limit on how fast the throttle can fall)
@@ -347,15 +349,16 @@ void throttle_pas_process(uint8_t thrnum) {
 
   float temp_cmd;
   // Scale and limit the output
-  // TODO: Proper setting of scale factor here. Possibly min/max
-  temp_cmd = psPasThrottles[thrnum-1]->filtered_speed * psPasThrottles[thrnum-1]->scale_factor;
+  temp_cmd = (psPasThrottles[thrnum-1]->filtered_speed
+      - psAnalogThrottles[thrnum - 1]->min)
+      * (psAnalogThrottles[thrnum - 1]->scale_factor);
+  // Clip min/max
   if (temp_cmd < THROTTLE_OUTPUT_MIN)
     temp_cmd = THROTTLE_OUTPUT_MIN;
   if (temp_cmd > THROTTLE_OUTPUT_MAX)
     temp_cmd = THROTTLE_OUTPUT_MAX;
 
   psThrottles[thrnum-1]->throttle_command = temp_cmd;
-  throttle_hyst_and_rate_limiting(psThrottles[thrnum-1]);
 }
 
 void throttle_pas_timer_overflow(uint8_t thrnum)
