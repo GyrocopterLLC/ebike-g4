@@ -163,7 +163,7 @@ void HBD_IRQ(void)
 		}
 
 		HBD_UART->DR = s_TxBuffer.Buffer[s_TxBuffer.RdPos++];
-		if(s_TxBuffer.RdPos > HBD_BUFFER_LENGTH)
+		if(s_TxBuffer.RdPos >= HBD_BUFFER_LENGTH)
 		{
 			// Wrap around the read pointer
 			s_TxBuffer.RdPos = 0;
