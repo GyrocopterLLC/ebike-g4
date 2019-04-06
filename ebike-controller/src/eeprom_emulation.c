@@ -1,27 +1,34 @@
-/**
-  ******************************************************************************
-  * @file    EEPROM_Emulation/src/eeprom.c
-  * @author  MCD Application Team
-  * @version V1.0.0
-  * @date    10-October-2011
-  * @brief   This file provides all the EEPROM emulation firmware functions.
-  ******************************************************************************
-  * @attention
-  *
-  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
-  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
-  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
-  * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
-  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
-  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
-  *
-  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
-  ******************************************************************************
-  */
+/******************************************************************************
+ * Filename: eeprom_emulation.c
+ * Description: Uses the STM32 Flash memory as if it were EEPROM. All "EEPROM"
+ *              variables are saved in Flash with an associated variable
+ *              address. Saving a new value to a particular address actually
+ *              just stores a new variable/address combo. Erases are only
+ *              performed when a page becomes completely full. The most recent
+ *              saved value for each variable is transferred to the alternate
+ *              storage page, and the alternate page is marked as active.
+ ******************************************************************************
 
-/** @addtogroup EEPROM_Emulation
-  * @{
-  */
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 
 /* Includes ------------------------------------------------------------------*/
 #include "eeprom_emulation.h"

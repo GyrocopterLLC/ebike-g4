@@ -1,20 +1,55 @@
-/*
+/******************************************************************************
+ * Filename: DavidsFOCLib.c
+ * Description: David's Field Oriented Control Software Library
+ * Contents:
+ * 1. Space Vector Modulate (dfsl_svm, dfsl_svmf)
+ *    Calculates three-phase duty cycles (A, B, and C) for a two-phase
+ *    stationary input (alpha and beta). Fixed- and floating-point math
+ *    versions are provided.
+ * 2. Biquadratic Filter (dfsl_biquadf, dfsl_biquadcalc_lpf)
+ *    Performs biquad filtering on arbitrary floating point input signals.
+ *    Helper function to calculate biquad parameters for a low-pass filter is
+ *    also provided.
+ * 3. Field-Oriented Control (FOC) functions
+ *    (dfsl_clarke, dfsl_clarkef, dfsl_park, dfsl_parkf, dfsl_ipark,
+ *    dfsl_iparkf)
+ *    Performs Clarke, Park, and inverse Park transforms. Fixed- and floating-
+ *    point versions available.
+ * 4. Proportional-Integral-Derivative (PID) Controller
+ *    (dfsl_pid, dfsl_pidf, dfsl_pi, dfsl_pif)
+ *    Functions to implement a PID feedback control system. Calculations with
+ *    and without derivative control, and in either fixed- or floating-point are
+ *    available.
+ * 5. Helper functions for PID control
+ *    (dfsl_pid_defaults, dfsl_pid_reset, dfsl_pid_defaultsf, dfsl_pid_resetf)
+ *    Set constants to default values, or reset integrator/derivative. In both
+ *    fixed- and floating-point.
+ * 6. Ramp generator (dfsl_rampgen, dfsl_rampctrl)
+ *    Provides a fixed frequency ramp signal that wraps around at the limit of
+ *    a 16-bit integer. The control function (dfsl_rampctrl) helps set the
+ *    frequency of the ramp.
+ ******************************************************************************
 
-David's Field Oriented Control Software Library
+Copyright (c) 2019 David Miller
 
-Contents:
-1. Space Vector Modulate
-	Calculates three-phase duty cycles (A, B, and C) for a two-phase stationary input (alpha and beta)
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Version 1
-May 20, 2014
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-Version 2
-March 22, 2016
- ---Changed SVM code. The old version, based on TI's source, outputs inverted transistor on-times.
-	Their intended processor/board inverted those values, but I don't intend to.
-
-*/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 
 #include "DavidsFOCLib.h"
 
