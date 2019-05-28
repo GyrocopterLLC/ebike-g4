@@ -98,6 +98,8 @@ typedef struct
 
 void dfsl_rampgen(uint16_t* rampAngle, uint16_t rampInc);
 uint16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq);
+void dfsl_rampgenf(float* rampAngle, float rampInc);
+float dfsl_rampctrl(float callingFreq, float rampFreq);
 void dfsl_pid_defaults(PID_Type* pid);
 void dfsl_pid_reset(PID_Type* pid);
 void dfsl_pid_defaultsf(PID_Float_Type* pid);

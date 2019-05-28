@@ -37,6 +37,7 @@ typedef enum _Motor_RunState
 	Motor_SixStep,  // Running in trapezoidal mode
 	Motor_Startup,	// In FOC, but with untrustworthy angle
 	Motor_AtSpeed,	// Switched to FOC full control
+	Motor_OpenLoop, // Open-loop with fixed frequency rotation
 	Motor_Fault		// Something fd up
 } Motor_RunState;
 

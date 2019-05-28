@@ -59,16 +59,31 @@ SOFTWARE.
 #define Q_mpy(A, B)		(int32_t)((((int64_t)(A)) * ((int64_t)(B))) >> Q_FACTOR)
 /** Function Definitions **/
 
-void dfsl_rampgen(uint16_t* rampAngle, uint16_t rampInc)
+void dfsl_rampgen(uint16_t* rampAngle, int16_t rampInc)
 {
 	*rampAngle += rampInc;
 }
 
-uint16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq)
+int16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq)
 {
 	uint64_t temp = rampFreq << 16;	// convert whole number frequency to q16
 	temp = temp / callingFreq; // Should be less than one, that's why the previous conversion to q16
 	return (uint16_t) temp;
+}
+
+void dfsl_rampgenf(float* rampAngle, float rampInc)
+{
+	*rampAngle += rampInc;
+	if(*rampAngle > 1.0f) {
+		*rampAngle -= 1.0f;
+	}
+	if(*rampAngle < 0.0f) {
+		*rampAngle += 1.0f;
+	}
+}
+
+float dfsl_rampctrlf(float callingFreq, float rampFreq) {
+	return rampFreq / callingFreq;
 }
 
 void dfsl_pid_defaults(PID_Type* pid)

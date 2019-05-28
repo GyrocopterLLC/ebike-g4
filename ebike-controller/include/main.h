@@ -75,7 +75,9 @@ typedef enum
 #define DEBOUNCE_MAX      5 // Must get integrator up to 5 to count as "pressed"
 
 #define RAMP_CALLFREQ   (20000)
+#define RAMP_CALLFREQF  (20000.0f)
 #define RAMP_DEFAULTSPEED (5)
+#define RAMP_DEFAULTSPEEDF (5.0f)
 
 #define BOOTLOADER_RESET_FLAG 0xDEADBEEF
 

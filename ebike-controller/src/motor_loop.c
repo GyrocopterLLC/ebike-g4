@@ -135,8 +135,8 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
         }
       break;
     case Motor_Startup:
-      // During this startup routine, the FOC is active but the angle of the motor
-      // is discontinuous (similar to 6-step)
+      // During this startup routine, the FOC is active but the angle
+      // of the motor is discontinuous (similar to 6-step)
       if (lastRunState != Motor_Startup)
         {
           PHASE_A_PWM();
@@ -206,10 +206,7 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
         }
       MLoop_Turn_Off_Check(cntl);
       // Running full-fledged FOC algorithm now!
-
       // **************** FEEDBACK PATH *****************
-      // Read angle from Hall sensors
-//		obv->RotorAngle = ((float)HallSensor_Get_Angle())/65536.0f;
       // Transform sensor readings
       dfsl_clarkef (obv->iA, obv->iB, &(foc->Clarke_Alpha),
                     &(foc->Clarke_Beta));
@@ -223,7 +220,7 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
        dfsl_biquadf(&Id_Filt);
        dfsl_biquadf(&Iq_Filt);
        */
-      // Pass filtered current to the PI(D)s
+      // Pass current to the PI(D)s
       foc->Id_PID->Err = 0.0f - foc->Park_D;
       foc->Iq_PID->Err = (FULLSCALE_THROTTLE) * (cntl->ThrottleCommand)
           - foc->Park_Q;
@@ -239,6 +236,50 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
       // **************** FORWARD PATH *****************
       // Feed to inverse Park
       dfsl_iparkf (foc->Id_PID->Out, foc->Iq_PID->Out, obv->RotorAngle,
+                   &ipark_a, &ipark_b);
+      //dfsl_iparkf(0, cntl->ThrottleCommand, obv->RotorAngle, &ipark_a, &ipark_b);
+      // Inverse Park outputs to space vector modulation, output three-phase waveforms
+      dfsl_svmf (ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
+      break;
+
+    case Motor_OpenLoop:
+      // Current control is active, but only on the D-phase.
+      // The forced ramp angle is used instead of the actual motor angle,
+      // which means that the motor is locked to a fixed rotational frequency.
+      if (lastRunState != Motor_OpenLoop)
+        {
+          PHASE_A_PWM();
+          PHASE_B_PWM();
+          PHASE_C_PWM();
+          PWM_MotorON();
+          // Resetting the PID means the motor is gonna jump a little bit
+          dfsl_pid_resetf(foc->Id_PID);
+          dfsl_pid_resetf(foc->Iq_PID);
+        }
+        MLoop_Turn_Off_Check(cntl);
+      // **************** FEEDBACK PATH *****************
+      // Transform sensor readings
+      dfsl_clarkef (obv->iA, obv->iB, &(foc->Clarke_Alpha),
+                    &(foc->Clarke_Beta));
+      dfsl_parkf (foc->Clarke_Alpha, foc->Clarke_Beta, cntl->RampAngle,
+                  &(foc->Park_D), &(foc->Park_Q));
+      // Input feedbacks to the Id and Iq controllers
+      // Pass current to the PI(D)s
+      foc->Id_PID->Err = (FULLSCALE_THROTTLE) * (cntl->ThrottleCommand) 
+                          - foc->Park_D;
+      foc->Iq_PID->Err =  0.0f - foc->Park_Q;
+      //Id_control.Err = 0.0f - Id_Filt.Y;
+      //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
+      // Don't integrate unless the throttle is active
+      if (cntl->ThrottleCommand > 0.0f)
+        {
+          dfsl_pidf (foc->Id_PID);
+          dfsl_pidf (foc->Iq_PID);
+        }
+
+      // **************** FORWARD PATH *****************
+      // Feed to inverse Park
+      dfsl_iparkf (foc->Id_PID->Out, foc->Iq_PID->Out, cntl->RampAngle,
                    &ipark_a, &ipark_b);
       //dfsl_iparkf(0, cntl->ThrottleCommand, obv->RotorAngle, &ipark_a, &ipark_b);
       // Inverse Park outputs to space vector modulation, output three-phase waveforms

@@ -44,9 +44,8 @@ SOFTWARE.
 /* Private variables ---------------------------------------------------------*/
 __IO uint32_t g_MainSysTick;
 
-uint8_t g_rampdir;
-uint16_t g_rampAngle;
-uint16_t g_rampInc;
+float g_rampAngle;
+float g_rampInc;
 uint32_t g_ledcount;
 
 uint32_t g_errorCode;
@@ -283,8 +282,8 @@ int main(void) {
   USB_Start();
 
   /* Initialize ramp angle increment at 5 Hz*/
-  g_rampdir = 0; // Going forward at start.
-  g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
+  // Going forward at start. rampInc is positive
+  g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
 
   /* Initialize PID controllers */
   dfsl_pid_defaultsf(&Id_control);
@@ -614,11 +613,12 @@ void User_PWMTIM_IRQ(void) {
 #ifdef TESTING_2X
   HallSensor2_Inc_Angle();
 #endif
-  if (g_rampdir == 0) {
-    g_rampAngle += g_rampInc;
-  } else {
-    g_rampAngle -= g_rampInc;
-  }
+  dfsl_rampgenf(g_rampAngle, g_rampInc);
+  // if (g_rampdir == 0) {
+  //   g_rampAngle += g_rampInc;
+  // } else {
+  //   g_rampAngle -= g_rampInc;
+  // }
   Mctrl.RampAngle = g_rampAngle;
 #ifdef TESTING_2X
   Mobv.RotorAngle = HallSensor2_Get_Anglef();
@@ -645,7 +645,7 @@ void User_PWMTIM_IRQ(void) {
   usbdacvals[4] = tB;
   usbdacvals[5] = tC;
   usbdacvals[6] = (uint16_t)(Throttle_cmd * 65536.0f);
-  usbdacvals[7] = g_rampAngle;
+  usbdacvals[7] = (uint16_t)(Mctrl.RampAngle*65536.0f);
   usbdacvals[8] = HallSensor_Get_Angle();
   usbdacvals[9] = HallSensor_Get_Speed();
   usbdacvals[10] = (uint32_t)(adcGetVbus()*655.36f); // Bus voltage scaled to 0->100V
@@ -671,7 +671,7 @@ void User_PWMTIM_IRQ(void) {
   usbdacvals[4] = Mpwm.tB;
   usbdacvals[5] = Mpwm.tC;
   usbdacvals[6] = Throttle_cmd;
-  usbdacvals[7] = ((float) g_rampAngle) / 65535.0f;
+  usbdacvals[7] = Mctrl.RampAngle;
   usbdacvals[8] = HallSensor_Get_Anglef();
   usbdacvals[9] = HallSensor_Get_Speedf();
   usbdacvals[10] = Mctrl.BusVoltage;
@@ -733,12 +733,14 @@ void User_PWMTIM_IRQ(void) {
 // Calculates power usage
 void User_BasicTIM_IRQ(void) {
 
-  throttle_process(1);
-  Throttle_cmd = throttle_get_command(1);
-
-  // Trim to 99%
-  if (Throttle_cmd >= 1.0f)
-    Throttle_cmd = 0.99f;
+  // Check the throttle command, but skip if in a forced state
+  if((Mctrl.state != Motor_Fault) && (Mctrl.state != Motor_OpenLoop)) {
+    throttle_process(1);
+    Throttle_cmd = throttle_get_command(1);
+    // Trim to 99%
+    if (Throttle_cmd >= 1.0f)
+      Throttle_cmd = 0.99f;
+  }
 
   // Blink the LEDs
   g_ledcount++;
@@ -792,6 +794,8 @@ uint8_t MAIN_DetectHallPositions(float curlimit)
    */
 
   // Step 1: Disable just about everything.
+  PWM_MotorOFF();
+  PWM_SetDutyF(0.0f, 0.0f, 0.0f);
 
 
   // Step 2: Set the current limit as D-phase current. Q can be zero. This
@@ -863,16 +867,20 @@ uint8_t MAIN_GetUSBDebugging(void) {
 }
 
 uint8_t MAIN_SetRampSpeed(uint32_t newspeed) {
-  g_rampInc = dfsl_rampctrl(RAMP_CALLFREQ, newspeed);
+  g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQF, (float)newspeed);
   return UI_OK;
 }
 
 uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards) {
   if (forwardOrBackwards == 0) {
     // Forwards!
-    g_rampdir = 0;
+    // g_rampdir = 0;
+    if(g_rampInc < 0)
+      g_rampInc = -g_rampInc;
   } else {
-    g_rampdir = 1;
+    // g_rampdir = 1;
+    if(g_rampInc > 0)
+      g_rampInc = -g_rampInc;
   }
   return UI_OK;
 }
