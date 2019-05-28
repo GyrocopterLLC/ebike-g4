@@ -283,7 +283,7 @@ int main(void) {
 
   /* Initialize ramp angle increment at 5 Hz*/
   // Going forward at start. rampInc is positive
-  g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQ, RAMP_DEFAULTSPEED);
+  g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQF, RAMP_DEFAULTSPEEDF);
 
   /* Initialize PID controllers */
   dfsl_pid_defaultsf(&Id_control);
@@ -613,7 +613,7 @@ void User_PWMTIM_IRQ(void) {
 #ifdef TESTING_2X
   HallSensor2_Inc_Angle();
 #endif
-  dfsl_rampgenf(g_rampAngle, g_rampInc);
+  dfsl_rampgenf(&g_rampAngle, g_rampInc);
   // if (g_rampdir == 0) {
   //   g_rampAngle += g_rampInc;
   // } else {
@@ -876,11 +876,11 @@ uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards) {
     // Forwards!
     // g_rampdir = 0;
     if(g_rampInc < 0)
-      g_rampInc = -g_rampInc;
+      g_rampInc = -1.0f*g_rampInc;
   } else {
     // g_rampdir = 1;
     if(g_rampInc > 0)
-      g_rampInc = -g_rampInc;
+      g_rampInc = -1.0f*g_rampInc;
   }
   return UI_OK;
 }

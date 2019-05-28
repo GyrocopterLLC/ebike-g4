@@ -66,9 +66,9 @@ void dfsl_rampgen(uint16_t* rampAngle, int16_t rampInc)
 
 int16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq)
 {
-	uint64_t temp = rampFreq << 16;	// convert whole number frequency to q16
+	int64_t temp = rampFreq << 16;	// convert whole number frequency to q16
 	temp = temp / callingFreq; // Should be less than one, that's why the previous conversion to q16
-	return (uint16_t) temp;
+	return (int16_t) temp;
 }
 
 void dfsl_rampgenf(float* rampAngle, float rampInc)
