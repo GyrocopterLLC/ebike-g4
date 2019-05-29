@@ -61,6 +61,210 @@ static void HallSensor2_CalcSpeed(void);
 
 /*################### Public functions ######################################*/
 
+/********************* Helper functions **************************************/
+// These functions aren't frequently called, but they can be used to generate
+// parameter data.
+
+/** HallSensor_AutoGenFwdTable
+ * Auto-generates the forward rotation table 
+ * from a list of Hall state transition angles.
+ */
+uint8_t HallSensor_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float lowestval;
+	uint8_t loweststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		lowestval = 99.9f;
+		loweststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] < lowestval) {
+					lowestval = angleTab[k];
+					loweststate = k;
+				}
+			}
+		}
+		fwdTab[j] = loweststate;
+		already_used_states |= (1 << loweststate);
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenFwdInvTable
+ * Auto-generates the inverse forward rotation table from a list of Hall state 
+ * transition angles. The inverse table gives the previous Hall state for a 
+ * given state if the motor is rotating forwards. For example:
+ * fwdInvTable[3] = 2
+ * This means that if we are currently in Hall state 3, the correct previous 
+ * state was 2.
+ */
+uint8_t HallSensor_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+	uint8_t fwdTab[8];
+	uint8_t invTab[8];
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float lowestval;
+	uint8_t loweststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		lowestval = 99.9f;
+		loweststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] < lowestval) {
+					lowestval = angleTab[k];
+					loweststate = k;
+				}
+			}
+		}
+		fwdTab[j] = loweststate;
+		invTab[loweststate] = j;
+		already_used_states |= (1 << loweststate);
+	}
+	// The invTab gives the order (1 through 6) for each state. You can look up
+	// the state to see which order it is in. The fwdTab gives the state for a
+	// particular order.
+	// We need to get the *previous* state for each state.
+	// Search the invTable for each state to get which order it's in, subtract
+	// one from the order to get the previous state, look up the state in 
+	// fwdTable by its order. Just don't forget to wrap around from 1 --> 6
+	fwdInvTab[0] = 0;
+	fwdInvTab[7] = 0;
+	uint8_t temp;
+	for(uint8_t ii = 1; ii <= 6; ii++) {
+		temp = invTab[ii]; // Get this state's order
+		temp--; // The previous order
+		if(temp == 0) { temp = 6;} // Wraparound. Zero is invalid.
+		fwdInvTab[ii] = fwdTab[temp]; // Get the state at the previous order
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenRevTable
+ * Auto-generates the reverse rotation table 
+ * from a list of Hall state transition angles.
+ */
+uint8_t HallSensor_AutoGenRevTable(float* angleTab, uint8_t* revTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float highestval;
+	uint8_t higheststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		highestval = -1.0f;
+		higheststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] > highestval) {
+					highestval = angleTab[k];
+					higheststate = k;
+				}
+			}
+		}
+		revTab[j] = higheststate;
+		already_used_states |= (1 << higheststate);
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenRevInvTable
+ * Auto-generates the inverse reverse rotation table from a list of Hall state 
+ * transition angles. The inverse table gives the previous Hall state for a 
+ * given state if the motor is rotating reverse. For example:
+ * fwdInvTable[2] = 3
+ * This means that if we are currently in Hall state 2, the correct previous 
+ * state was 3.
+ */
+uint8_t HallSensor_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab) {
+		// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+	uint8_t revTab[8];
+	uint8_t invTab[8];
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float highestval;
+	uint8_t higheststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		highestval = -1.0f;
+		higheststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] > highestval) {
+					highestval = angleTab[k];
+					higheststate = k;
+				}
+			}
+		}
+		revTab[j] = higheststate;
+		invTab[higheststate] = j;
+		already_used_states |= (1 << higheststate);
+	}
+	// The invTab gives the order (1 through 6) for each state. You can look up
+	// the state to see which order it is in. The fwdTab gives the state for a
+	// particular order.
+	// We need to get the *previous* state for each state.
+	// Search the invTable for each state to get which order it's in, subtract
+	// one from the order to get the previous state, look up the state in 
+	// fwdTable by its order. Just don't forget to wrap around from 1 --> 6
+	revInvTab[0] = 0;
+	revInvTab[7] = 0;
+	uint8_t temp;
+	for(uint8_t ii = 1; ii <= 6; ii++) {
+		temp = invTab[ii]; // Get this state's order
+		temp--; // The previous order
+		if(temp == 0) { temp = 6;} // Wraparound. Zero is invalid.
+		revInvTab[ii] = revTab[temp]; // Get the state at the previous order
+	}
+	return 1;
+}
+
 /** HallSensor_Get_State
  * Retrieves the state (number 0-7) corresponding to the Hall Sensor
  * inputs. States 0 and 7 are invalid, since the Hall Sensors should

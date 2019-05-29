@@ -89,6 +89,11 @@ typedef struct
 
 /************ Functions ************/
 
+uint8_t HallSensor_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab);
+uint8_t HallSensor_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab);
+uint8_t HallSensor_AutoGenRevTable(float* angleTab, uint8_t* revTab);
+uint8_t HallSensor_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab);
+
 uint8_t HallSensor_Get_State(void);
 void HallSensor_Inc_Angle(void);
 uint16_t HallSensor_Get_Angle(void);
