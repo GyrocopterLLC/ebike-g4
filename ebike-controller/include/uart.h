@@ -42,7 +42,7 @@ SOFTWARE.
 #define BMS_BRR					(22 << 4) + 13
 
 #define HBD_BUFFER_LENGTH		64
-#define HBD_TXMT_TIMEOUT		100 // ms
+#define HBD_TXMT_TIMEOUT		3 // ms
 
 typedef struct
 {

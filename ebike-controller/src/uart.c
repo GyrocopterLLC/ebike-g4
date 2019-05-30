@@ -62,10 +62,10 @@ void HBD_Init(void)
 	NVIC_EnableIRQ(HBD_IRQn);
 }
 
-uint8_t HBD_Receive(uint8_t* buf, uint8_t count)
+int32_t HBD_Receive(uint8_t* buf, uint32_t count)
 {
-	uint8_t buffer_remaining = 0;
-	uint8_t place = 0;
+	uint32_t buffer_remaining = 0;
+	uint32_t place = 0;
 	// Copy up to "count" bytes from the read buffer
 	if(!s_RxBuffer.Done)
 	{
@@ -92,9 +92,9 @@ uint8_t HBD_Receive(uint8_t* buf, uint8_t count)
 	return place;
 }
 
-uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
+int32_t HBD_Transmit(uint8_t* buf, uint32_t count)
 {
-	uint8_t place = 0;
+	uint32_t place = 0;
 	if(s_TxBuffer.Done)
 	{
 		// In the rare chance that the transmitter is just finishing,
@@ -104,7 +104,8 @@ uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
 		{
 			if(GetTick() > (timeout + HBD_TXMT_TIMEOUT))
 			{
-				return 0;
+				// Timeout fail
+				return -1;
 			}
 		}
 
@@ -144,7 +145,8 @@ uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
 		}
 		else
 		{
-			return 0;
+			// Buffer was full, fail.
+			return -1;
 		}
 	}
 	// Return the number of written bytes.

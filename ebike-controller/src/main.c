@@ -37,12 +37,15 @@ typedef struct _HallDetectHelperStruct {
 } HallDetectHelperStruct;
 /* Private define ------------------------------------------------------------*/
 
-#define MAINFLAG_SERIALDATAPRINT  ((uint32_t)0x00000001)
-#define MAINFLAG_SERIALDATAON   ((uint32_t)0x00000002)
-#define MAINFLAG_DUMPRECORD     ((uint32_t)0x00000004)
-#define MAINFLAG_DUMPDATAPRINT    ((uint32_t)0x00000008)
-#define MAINFLAG_DUMPDATAON     ((uint32_t)0x00000010)
+#define MAINFLAG_SERIALDATAPRINT    ((uint32_t)0x00000001)
+#define MAINFLAG_SERIALDATAON       ((uint32_t)0x00000002)
+#define MAINFLAG_DUMPRECORD         ((uint32_t)0x00000004)
+#define MAINFLAG_DUMPDATAPRINT      ((uint32_t)0x00000008)
+#define MAINFLAG_DUMPDATAON         ((uint32_t)0x00000010)
 #define MAINFLAG_CONVERTTEMPERATURE ((uint32_t)0x00000020)
+#define MAINFLAG_HALLDETECTFAIL     ((uint32_t)0x00000040)
+#define MAINFLAG_HALLDETECTPASS     ((uint32_t)0x00000080)
+#define MAINFLAG_LASTCOMMSERIAL     ((uint32_t)0x00000100)
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -122,14 +125,15 @@ uint8_t usb_debug_prefix[USB_PREFIX_LENGTH] = DEFAULT_USB_PREFIX;
 #else
     float usbdacvals[MAX_USB_VALS];
 #endif
-    /* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
-    uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
+/* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
+uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
 
-    char vcp_buffer[UI_MAX_BUFFER_LENGTH];
+char vcp_buffer[UI_MAX_BUFFER_LENGTH];
+char uart_buffer[UI_MAX_BUFFER_LENGTH];
 
-    uint32_t systick_debounce_counter;
-    uint8_t debounce_integrator;
-    volatile PB_TypeDef pb_state;
+uint32_t systick_debounce_counter;
+uint8_t debounce_integrator;
+volatile PB_TypeDef pb_state;
 
 //extern uint16_t adc_conv[NUM_ADC_CH];
 
@@ -147,6 +151,9 @@ static void User_LED_Init(void);
 static void User_DAC_Init(void);
 static void User_BasicTim_Init(void);
 static void RunHallDetectRoutine(void);
+// static uint32_t HallDetectResult(char* buf);
+static void VCP_SendWrapper(char* buf, uint32_t len);
+static void HBD_SendWrapper(char* buf, uint32_t len);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -326,14 +333,16 @@ int main(void) {
   /* Run Application (Interrupt mode) */
   while (1) {
     uint32_t vcp_buf_len;
+    uint32_t uart_buf_len;
     // Feed the watchdog!
     WDT_feed();
 
     //Toggle_Leds();
     if (VCP_Read(&byte, 1) != 0) {
+      // Current communication is NOT serial port.
+      g_MainFlags &= ~(MAINFLAG_LASTCOMMSERIAL);
       // Echo it
-      while (VCP_Write(&byte, 1) < 0)
-        ;
+      VCP_SendWrapper(&byte, 1);
       // Add it to the VCP buffer
 
       vcp_buf_len = strlen(vcp_buffer);
@@ -357,39 +366,43 @@ int main(void) {
         // Send response if it exists
         resplen = UI_RespLen();
         if (resplen > 0) {
-          if (resplen <= CDC_DATA_FS_MAX_PACKET_SIZE) {
-            while (VCP_Write(UI_SendBuf(), resplen) < 0)
-              ;
-          } else {
-            // Copy to local memory
-            memcpy(vcp_buffer, UI_SendBuf(), resplen);
-            vcp_buf_len = resplen;
-            uint32_t vcp_pointer = 0;
-            while (vcp_buf_len > 0) {
-              if (vcp_buf_len > (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) {
-                while (VCP_Write(&(vcp_buffer[vcp_pointer]),
-                    (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) < 0)
-                  ;
-                vcp_pointer += (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
-                vcp_buf_len -= (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
-              } else {
-                while (VCP_Write(&(vcp_buffer[vcp_pointer]), vcp_buf_len) < 0)
-                  ;
-                vcp_buf_len = 0;
-                vcp_buffer[0] = 0;
-              }
-            }
-          }
+          // Copy to local memory
+          memcpy(vcp_buffer, UI_SendBuf(), resplen);
+          VCP_SendWrapper(vcp_buffer, resplen);
         }
       }
     }
-    /*
-     if(HBD_Receive(&byte, 1) != 0)
-     {
-     // Read a byte from the HBD UART
-     UI_Process(byte);
-     }
-     */
+/*    
+    // Read a byte from the HBD UART
+    if(HBD_Receive(&byte, 1) != 0)
+    {
+      g_MainFlags |= MAINFLAG_LASTCOMMSERIAL; // Replies should be over serial
+      // Echo
+      HBD_SendWrapper(&byte, 1);
+      // Add the received byte to the uart buffer
+      uart_buf_len = strlen(uart_buffer);
+      if(uart_buf_len < (UI_MAX_BUFFER_LENGTH - 1)) {
+        uart_buffer[uart_buf_len] = byte;
+        uart_buffer[uart_buf_len + 1] = 0;
+      } else {
+        // Flush the buffer - ignore long strings
+        uart_buffer[0] = 0;
+      }
+      if(byte == '\n') {
+        // Send to the UI processor!
+        UI_TopLevelProcess(uart_buffer);
+        // and flush
+        uart_buffer[0] = 0;
+        // Send back response if it exists
+        resplen = UI_RespLen();
+        if(resplen > 0) {
+          // Copy to local memory
+          memcpy(uart_buffer, UI_SendBuf(), resplen);
+          HBD_SendWrapper(uart_buffer, resplen);
+        }
+      }
+    }
+*/    
     if (pb_state == PB_PRESSED) {
       // Wait until release
       while (pb_state == PB_PRESSED) {
@@ -407,6 +420,27 @@ int main(void) {
           usb_debug_buffer_pos = 0;
         }
       }
+    }
+    if(g_MainFlags & MAINFLAG_HALLDETECTFAIL) {
+      if(g_MainFlags & MAINFLAG_LASTCOMMSERIAL) {
+        HBD_SendWrapper("Hall detection failed.\n", 23);
+      } else {
+        VCP_SendWrapper("Hall detection failed.\n", 23);
+      }
+      g_MainFlags &= ~(MAINFLAG_HALLDETECTFAIL);
+    }
+    if(g_MainFlags & MAINFLAG_HALLDETECTPASS) {
+      uint32_t result_len;
+      if(g_MainFlags & MAINFLAG_LASTCOMMSERIAL) {
+        HBD_SendWrapper("Hall detection success.\n",24);
+        // result_len = HallDetectResult(uart_buffer);
+        // HBD_SendWrapper(uart_buffer, result_len);
+      } else {
+        VCP_SendWrapper("Hall detection success.\n",24);
+        // result_len = HallDetectResult(vcp_buffer);
+        // VCP_SendWrapper(vcp_buffer, result_len);
+      }
+      g_MainFlags &= ~(MAINFLAG_HALLDETECTPASS);
     }
     if(Mctrl.state == Motor_OpenLoop) {
       RunHallDetectRoutine();
@@ -439,6 +473,44 @@ int main(void) {
   }
 }
 
+static void VCP_SendWrapper(char* buf, uint32_t len){
+  if (len <= CDC_DATA_FS_MAX_PACKET_SIZE) {
+    while (VCP_Write(buf, len) < 0) ;
+  } else {
+    uint32_t vcp_pointer = 0;
+    while (len > 0) {
+      if (len > (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) {
+        while(VCP_Write(&(buf[vcp_pointer]),
+          (CDC_DATA_FS_MAX_PACKET_SIZE - 4)) < 0) ;
+        vcp_pointer += (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
+        len -= (CDC_DATA_FS_MAX_PACKET_SIZE - 4);
+      } else {
+        while (VCP_Write(&(buf[vcp_pointer]), len) < 0) ;
+        len = 0;
+        buf[0] = 0;
+      }
+    }
+  }
+}
+
+static void HBD_SendWrapper(char* buf, uint32_t len) {
+  if (len <= HBD_BUFFER_LENGTH) {
+    while (HBD_Transmit(buf, len) < 0) ;
+  } else {
+    uint32_t hbd_pointer = 0;
+    while (len > 0) {
+      if (len > (HBD_BUFFER_LENGTH)) {
+        while (HBD_Transmit(&(buf[hbd_pointer]), HBD_BUFFER_LENGTH) < 0) ;
+        hbd_pointer += HBD_BUFFER_LENGTH;
+        len -= HBD_BUFFER_LENGTH;
+      } else {
+        while (HBD_Transmit(&(buf[hbd_pointer]), len) < 0) ;
+        len = 0;
+        buf[0] = 0;
+      }
+    }
+  }
+}
 /**
  * @brief  System Clock Configuration
  *         The system Clock is configured as follow :
@@ -846,7 +918,7 @@ static void RunHallDetectRoutine(void) {
       PWM_SetDutyF(0.0f, 0.0f, 0.0f);
       Throttle_cmd = 0.0f;
       Mctrl.state = Motor_Off;
-      // TODO: Report failure
+      g_MainFlags |= MAINFLAG_HALLDETECTFAIL;
     }
 
     if(HallSensor_Get_State() != hdhs.old_state) {
@@ -867,7 +939,7 @@ static void RunHallDetectRoutine(void) {
       PWM_SetDutyF(0.0f, 0.0f, 0.0f);
       Throttle_cmd = 0.0f;
       Mctrl.state = Motor_Off;
-      // TODO: Report failure
+      g_MainFlags |= MAINFLAG_HALLDETECTFAIL;
     }
     if(HallSensor_Get_State() != hdhs.old_state) {
       hdhs.transitions_seen++;
@@ -878,7 +950,18 @@ static void RunHallDetectRoutine(void) {
       PWM_SetDutyF(0.0f, 0.0f, 0.0f);
       Throttle_cmd = 0.0f;
       Mctrl.state = Motor_Off;
-      // TODO: Average and return the samples
+      // Average the results
+      // Using the first position in the array to perform and store the average
+      for(uint8_t i = 1; i < HALL_DETECT_TRANSITIONS_TO_AVG; i++) {
+        for(uint8_t j = 0; j < 6; j++) {
+          g_hallDetectTable[j][0] += g_hallDetectTable[j][i];
+      }
+      for(uint8_t k = 0; k < 6; k++) {
+        g_hallDetectTable[k][0] = 
+          g_hallDetectTable[k][0] / ((float)HALL_DETECT_TRANSITIONS_TO_AVG);
+      }
+
+      g_MainFlags |= MAINFLAG_HALLDETECTPASS;
     }
   }
 
