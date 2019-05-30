@@ -53,6 +53,10 @@ uint8_t HallStateReverseOrder[8] = REVERSE_HALL_INVTABLE;
 
 uint32_t HallSampleBuffer[HALL_NUM_SAMPLES];
 
+float** HallDetectAngleTable;
+uint8_t HallDetectTableLength;
+uint32_t HallDetectTransitionsDone[6];
+
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
 #ifdef TESTING_2X
@@ -452,6 +456,8 @@ uint8_t HallSensor2_Get_Direction(void)
 void HallSensor_Init_NoHal(uint32_t callingFrequency)
 {
 
+  HallDetectAngleTable = (float**) 0;
+  HallDetectTableLength = 0;
 	//HALL_PORT_CLK_ENABLE();
 	GPIO_Clk(HALL_PORT);
 	HALL_TIM_CLK_ENABLE();
@@ -591,6 +597,18 @@ static void HallSensor2_CalcSpeed(void)
   HallSensor_2x.CaptureValue = 0;
 }
 #endif
+
+void HallSensor_Enable_Hall_Detection(float** angleTable, uint8_t tableLength) {
+  HallDetectAngleTable = angleTable;
+  HallDetectTableLength = tableLength;
+  for(uint8_t i = 0; i < 6; i++) {
+    HallDetectTransitionsDone[i] = 0;
+  }
+}
+void HallSensor_Disable_Hall_Detection(void) {
+  HallDetectAngleTable = (float**) 0;
+  HallDetectTableLength = 0;
+}
 
 /** HallSensor_UpdateCallback
  * Triggered when the Hall Sensor timer overflows (counts past 65535)
@@ -853,5 +871,15 @@ void DMA2_Stream1_IRQHandler(void)
 			HallSensor.CurrentState = voted_state;
 		}
 	}
+	// If the Hall detection routine is running, save the angle this transition
+	// occurred at.
+	if((HallDetectTableLength > 0) && (HallDetectAngleTable != (float**) 0)) {
+	  if(HallDetectTransitionsDone[voted_state] < HallDetectTableLength) {
+	    HallDetectAngleTable[voted_state][HallDetectTransitionsDone[voted_state]] =
+	        MAIN_GetCurrentRampAngle();
+	    HallDetectTransitionsDone[voted_state]++;
+	  }
+	}
+
 }
 

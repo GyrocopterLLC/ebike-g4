@@ -29,7 +29,12 @@ SOFTWARE.
 #include "main.h"
 
 /* Private typedef -----------------------------------------------------------*/
-
+typedef struct _HallDetectHelperStruct {
+  uint8_t transitions_seen;
+  uint32_t ticks_now;
+  uint8_t startup_success;
+  uint8_t old_state;
+} HallDetectHelperStruct;
 /* Private define ------------------------------------------------------------*/
 
 #define MAINFLAG_SERIALDATAPRINT  ((uint32_t)0x00000001)
@@ -67,6 +72,9 @@ float g_FetTemp;
 PowerCalcs Mpc;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
+float g_hallDetectTable[6][HALL_DETECT_TRANSITIONS_TO_AVG];
+
+HallDetectHelperStruct hdhs;
 
 /** Debugging outputs **
  *
@@ -138,6 +146,7 @@ static void User_PB_Init(void);
 static void User_LED_Init(void);
 static void User_DAC_Init(void);
 static void User_BasicTim_Init(void);
+static void RunHallDetectRoutine(void);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -399,6 +408,10 @@ int main(void) {
         }
       }
     }
+    if(Mctrl.state == Motor_OpenLoop) {
+      RunHallDetectRoutine();
+    }
+
 #ifdef DEBUG_DUMP_USED
     if(g_MainFlags & MAINFLAG_DUMPDATAON)
     {
@@ -786,26 +799,91 @@ void User_BasicTIM_IRQ(void) {
   power_calc(&Mpc);
 }
 
-uint8_t MAIN_DetectHallPositions(float curlimit)
+float MAIN_GetCurrentRampAngle(void)
+{
+  return g_rampAngle;
+}
+
+void MAIN_DetectHallPositions(float curlimit)
 {
   /* Run this method to determine the Hall sensor position angles
    * around the motor. This function will slowly rotate the motor with
    * a fixed current. Make sure the motor is free to move!
    */
 
-  // Step 1: Disable just about everything.
+  // Disable just about everything.
   PWM_MotorOFF();
   PWM_SetDutyF(0.0f, 0.0f, 0.0f);
 
-
-  // Step 2: Set the current limit as D-phase current. Q can be zero. This
+  // Set the current limit as D-phase current. Q can be zero. This
   // will lock the rotor to the driven angle.
+  Mctrl.state = Motor_OpenLoop;
+  if(curlimit < FULLSCALE_THROTTLE)
+    Throttle_cmd = curlimit / FULLSCALE_THROTTLE;
+  else
+    Throttle_cmd = 0.99f;
+  // Make sure the ramp is running forwards
+  MAIN_SetRampSpeed(HALL_DETECT_RAMP_SPEED);
+  MAIN_SetRampDir(0);
 
-  // Step 3: Lock the rotor and wait for Hall sensor edges.
+  // Wait for Hall sensor edges.
+  hdhs.old_state = HallSensor_Get_State();
+  hdhs.startup_success = 0;
+  hdhs.ticks_now = GetTick();
+  hdhs.transitions_seen = 0;
+  // Rest of routine will be called by main().
+  // This ensures everything else (like USB comms) will still work normally.
 
-  // Step 4: Re-enable the same just about everything we disabled at the start.
-  return 0;
 }
+
+static void RunHallDetectRoutine(void) {
+
+  if(hdhs.startup_success == 0) {
+    // First portion - waiting for motor to startup
+    if(GetTick() - hdhs.ticks_now > HALL_DETECT_TIMEOUT_MS) {
+      // Timeout! Return to normal operation
+      PWM_MotorOFF();
+      PWM_SetDutyF(0.0f, 0.0f, 0.0f);
+      Throttle_cmd = 0.0f;
+      Mctrl.state = Motor_Off;
+      // TODO: Report failure
+    }
+
+    if(HallSensor_Get_State() != hdhs.old_state) {
+      hdhs.transitions_seen++;
+    }
+
+    if(hdhs.transitions_seen > HALL_DETECT_MIN_TRANSITIONS) {
+      hdhs.startup_success = 1;
+      HallSensor_Enable_Hall_Detection(g_hallDetectTable, HALL_DETECT_TRANSITIONS_TO_AVG);
+      hdhs.transitions_seen = 0;
+      hdhs.ticks_now = GetTick();
+    }
+  }
+  else {
+    if(GetTick() - hdhs.ticks_now > HALL_DETECT_TIMEOUT_MS) {
+      // Timeout! Return to normal operation
+      PWM_MotorOFF();
+      PWM_SetDutyF(0.0f, 0.0f, 0.0f);
+      Throttle_cmd = 0.0f;
+      Mctrl.state = Motor_Off;
+      // TODO: Report failure
+    }
+    if(HallSensor_Get_State() != hdhs.old_state) {
+      hdhs.transitions_seen++;
+    }
+    if(hdhs.transitions_seen > (6*HALL_DETECT_TRANSITIONS_TO_AVG)) {
+      // Sensing success! Return to normal.
+      PWM_MotorOFF();
+      PWM_SetDutyF(0.0f, 0.0f, 0.0f);
+      Throttle_cmd = 0.0f;
+      Mctrl.state = Motor_Off;
+      // TODO: Average and return the samples
+    }
+  }
+
+}
+
 
 uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum) {
   // Set the new output

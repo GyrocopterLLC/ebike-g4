@@ -114,7 +114,9 @@ void SYSTICK_IRQHandler(void);
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
 
-uint8_t MAIN_DetectHallPositions(float curlimit);
+float MAIN_GetCurrentRampAngle(void);
+
+void MAIN_DetectHallPositions(float curlimit);
 
 uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum);

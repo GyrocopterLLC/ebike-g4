@@ -33,6 +33,12 @@ SOFTWARE.
 // Throttle setting
 #define FULLSCALE_THROTTLE	(5.0f) // Amps
 
+// For the Hall sensor detection routine
+#define HALL_DETECT_RAMP_SPEED (5.0f) // 5 Hz = 300 eRPM = 13 RPM
+#define HALL_DETECT_MIN_TRANSITIONS 100
+#define HALL_DETECT_TRANSITIONS_TO_AVG  (32)
+#define HALL_DETECT_TIMEOUT_MS 500
+
 // Angle definitions - integer
 // This set of defines are the integer values of angles
 // as defined for a 16 bit unsigned integer.
