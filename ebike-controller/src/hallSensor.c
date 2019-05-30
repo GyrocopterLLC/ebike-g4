@@ -45,7 +45,8 @@ HallSensor_HandleTypeDef HallSensor_2x;
 
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
-float HallStateAnglesFloat[8] = HALL_ANGLES_FLOAT;
+float HallStateAnglesFwdFloat[8] = HALL_ANGLES_FORWARD_FLOAT;
+float HallStateAnglesRevFloat[8] = HALL_ANGLES_REVERSE_FLOAT;
 
 // Motor rotation order -> 5, 1, 3, 2 ,6, 4...
 uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
@@ -436,6 +437,26 @@ uint8_t HallSensor2_Get_Direction(void)
 }
 #endif
 
+void HallSensor_SetAngleTable(float* angleTab) {
+	// Copy over the foward angle table
+	for(uint8_t i = 0; i < 8; i++) {
+		HallStateAnglesFwdFloat[i] = angleTab[i];
+	}
+	// Update the forward and reverse lookup tables
+	HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat, HallStateForwardOrder);
+	HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat, HallStateReverseOrder);
+	// Generate the reverse angle table
+	for(uint8_t i = 1; i <= 6; i++) {
+		HallStateAnglesRevFloat[HallStateForwardOrder[i]] = 
+			HallStateAnglesFwdFloat[i];
+	}
+
+}
+
+float* HallSensor_GetAngleTable(void) {
+	return HallStateAnglesFwdFloat;
+}
+
 /** HallSensor_Init
  * Starts the time base for the Hall Sensor Timer and the GPIOs associated
  * with the Hall Sensors. The timer is started in the UP counting mode, with
@@ -682,7 +703,7 @@ void HallSensor_CaptureCallback(void)
 	{
 	case HALL_ROT_FORWARD:
 		nextState = HallStateReverseOrder[lastState];
-		HallSensor.Angle = HallStateAnglesFloat[nextState] - F32_30_DEG;
+		HallSensor.Angle = HallStateAnglesFwdFloat[nextState];
 		if(HallSensor.Angle < 0.0f) { HallSensor.Angle += 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;
@@ -692,7 +713,7 @@ void HallSensor_CaptureCallback(void)
 		}
 		if(nextState == 2 || nextState == 5) // Using the A hall sensor change
 		{
-		  HallSensor_2x.Angle = HallStateAnglesFloat[nextState] - F32_30_DEG;
+		  HallSensor_2x.Angle = HallStateAnglesFwdFloat[nextState];
 		  if(HallSensor_2x.Angle < 0.0f) { HallSensor_2x.Angle += 1.0f; }
 		  if((HallSensor_2x.Status & HALL_STOPPED) == 0)
 		  {
@@ -705,7 +726,7 @@ void HallSensor_CaptureCallback(void)
 		break;
 	case HALL_ROT_REVERSE:
 		nextState = HallStateForwardOrder[lastState];
-		HallSensor.Angle = HallStateAnglesFloat[nextState] + F32_30_DEG;
+		HallSensor.Angle = HallStateAnglesRevFloat[nextState];
 		if(HallSensor.Angle > 1.0f) { HallSensor.Angle -= 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;
@@ -715,7 +736,7 @@ void HallSensor_CaptureCallback(void)
     }
     if(nextState == 3 || nextState == 4) // Using the A hall sensor change
     {
-      HallSensor_2x.Angle = HallStateAnglesFloat[nextState] + F32_30_DEG;
+      HallSensor_2x.Angle = HallStateAnglesRevFloat[nextState];
       if(HallSensor_2x.Angle > 1.0f) { HallSensor_2x.Angle -= 1.0f; }
       if((HallSensor_2x.Status & HALL_STOPPED) == 0)
       {
