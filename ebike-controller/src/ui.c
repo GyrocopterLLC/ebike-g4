@@ -1206,6 +1206,10 @@ uint8_t UI_2nd_Level_Process_FOC(char* inputstring) {
 
 uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
   uint8_t ui_error = UI_ERROR;
+  char tempbuf[8];
+  uint8_t templen;
+  float* angleTable;
+  float newval_f;
 
   // Which command?
   int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_motor_commands,
@@ -1236,8 +1240,17 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
     case 7:
     case 8:
     case 9: // HALLANG 1 through 6
-      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
-      ui_error = UI_OK;
+      angleTable = HallSensor_GetAngleTable();
+      newval_f = UI_atof(inputstring);
+      if(newval_f <= 0.0f || newval_f >= 360.0f) {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        ui_error = UI_ERROR;
+      } else {
+        angleTable[command_num - 3] = newval_f;
+        HallSensor_SetAngleTable(angleTable);
+        UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+        ui_error = UI_OK;
+      }
       break;
     default:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
@@ -1269,7 +1282,12 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
     case 7:
     case 8:
     case 9: // HALLANG 1 through 6
-      UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      angleTable = HallSensor_GetAngleTable();
+      templen = _ftoa(tempbuf, angleTable[command_num-3]*360.0f, 3);
+      UI_SerialOut(tempbuf, templen);
+      UI_SerialOut(UI_ENDLINE, UI_LENGTH_ENDLINE);
+      // UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
+      
       ui_error = UI_OK;
       break;
     default:
