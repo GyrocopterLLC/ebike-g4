@@ -333,7 +333,7 @@ int main(void) {
   /* Run Application (Interrupt mode) */
   while (1) {
     uint32_t vcp_buf_len;
-    uint32_t uart_buf_len;
+//    uint32_t uart_buf_len;
     // Feed the watchdog!
     WDT_feed();
 
@@ -931,8 +931,7 @@ static void RunHallDetectRoutine(void) {
       hdhs.transitions_seen = 0;
       hdhs.ticks_now = GetTick();
     }
-  }
-  else {
+  } else {
     if(GetTick() - hdhs.ticks_now > HALL_DETECT_TIMEOUT_MS) {
       // Timeout! Return to normal operation
       PWM_MotorOFF();
@@ -955,6 +954,7 @@ static void RunHallDetectRoutine(void) {
       for(uint8_t i = 1; i < HALL_DETECT_TRANSITIONS_TO_AVG; i++) {
         for(uint8_t j = 0; j < 6; j++) {
           g_hallDetectTable[j][0] += g_hallDetectTable[j][i];
+        }
       }
       for(uint8_t k = 0; k < 6; k++) {
         g_hallDetectTable[k][0] = 
@@ -964,7 +964,6 @@ static void RunHallDetectRoutine(void) {
       g_MainFlags |= MAINFLAG_HALLDETECTPASS;
     }
   }
-
 }
 
 

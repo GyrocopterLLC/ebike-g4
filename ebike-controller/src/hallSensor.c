@@ -342,7 +342,7 @@ uint16_t HallSensor_Get_Angle(void)
 #if defined(USE_FLOATING_POINT)
 	if((HallSensor.Status & HALL_STOPPED) != 0)
 	{
-		return (uint16_t)(HallStateAnglesFloat[HallSensor_Get_State()] * 65536.0f);
+		return (uint16_t)(HallStateAnglesFwdFloat[HallSensor_Get_State()] * 65536.0f);
 	}
 	return (uint16_t)(HallSensor.Angle * 65536.0f);
 #else
@@ -360,7 +360,7 @@ uint16_t HallSensor2_Get_Angle(void)
 #if defined(USE_FLOATING_POINT)
   if((HallSensor_2x.Status & HALL_STOPPED) != 0)
   {
-    return (uint16_t)(HallStateAnglesFloat[HallSensor2_Get_State()] * 65536.0f);
+    return (uint16_t)(HallStateAnglesFwdFloat[HallSensor2_Get_State()] * 65536.0f);
   }
   return (uint16_t)(HallSensor_2x.Angle * 65536.0f);
 #else
@@ -881,12 +881,14 @@ void DMA2_Stream1_IRQHandler(void)
 				HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
 				// Need to update angle here instead of in the capture callback
 #if defined(USE_FLOATING_POINT)
-				HallSensor.Angle = HallStateAnglesFloat[voted_state];
+				HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                          + HallStateAnglesRevFloat[voted_state])/2.0f;
 #else
 				HallSensor.Angle = HallStateAngles[voted_state];
 #endif
 #ifdef TESTING_2X
-				HallSensor_2x.Angle = HallStateAnglesFloat[voted_state];
+				HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                          + HallStateAnglesRevFloat[voted_state])/2.0f;
 #endif
 			}
 			HallSensor.CurrentState = voted_state;
