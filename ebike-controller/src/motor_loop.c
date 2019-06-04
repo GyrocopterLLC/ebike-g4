@@ -60,10 +60,7 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
       dfsl_pid_resetf(foc->Iq_PID);
       PWM_MotorOFF();
 
-      // Check if we should change out of standby
-      if(cntl->ThrottleCommand > 0.0f) {
-        cntl->state = Motor_Startup;
-      }
+
       break;
     case Motor_SixStep:
       if(lastRunState != Motor_SixStep) {

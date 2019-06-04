@@ -343,8 +343,8 @@ int main(void) {
       g_MainFlags &= ~(MAINFLAG_LASTCOMMSERIAL);
       // Echo it
       VCP_SendWrapper(&byte, 1);
-      // Add it to the VCP buffer
 
+      // Add it to the VCP buffer
       vcp_buf_len = strlen(vcp_buffer);
       if (vcp_buf_len < (UI_MAX_BUFFER_LENGTH - 1)) {
         vcp_buffer[vcp_buf_len] = byte;
@@ -369,6 +369,8 @@ int main(void) {
           // Copy to local memory
           memcpy(vcp_buffer, UI_SendBuf(), resplen);
           VCP_SendWrapper(vcp_buffer, resplen);
+          // And flush
+          vcp_buffer[0] = 0;
         }
       }
     }
@@ -399,6 +401,8 @@ int main(void) {
           // Copy to local memory
           memcpy(uart_buffer, UI_SendBuf(), resplen);
           HBD_SendWrapper(uart_buffer, resplen);
+          // And flush
+          uart_buffer[0] = 0;
         }
       }
     }
@@ -487,7 +491,6 @@ static void VCP_SendWrapper(char* buf, uint32_t len){
       } else {
         while (VCP_Write(&(buf[vcp_pointer]), len) < 0) ;
         len = 0;
-        buf[0] = 0;
       }
     }
   }
@@ -506,7 +509,6 @@ static void HBD_SendWrapper(char* buf, uint32_t len) {
       } else {
         while (HBD_Transmit(&(buf[hbd_pointer]), len) < 0) ;
         len = 0;
-        buf[0] = 0;
       }
     }
   }
@@ -826,7 +828,10 @@ void User_BasicTIM_IRQ(void) {
     if (Throttle_cmd >= 1.0f)
       Throttle_cmd = 0.99f;
   }
-
+  // Check if we should change out of standby
+  if((Throttle_cmd > 0.0f) && (Mctrl.state == Motor_Off)) {
+    Mctrl.state = Motor_Startup;
+  }
   // Blink the LEDs
   g_ledcount++;
   if (g_ledcount > MAXLEDCOUNT) {
