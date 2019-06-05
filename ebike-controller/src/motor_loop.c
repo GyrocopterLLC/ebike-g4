@@ -33,7 +33,7 @@ SOFTWARE.
 uint8_t lastHallState = 0;
 Motor_RunState lastRunState = Motor_Off;
 
-float HallStateToDriveFloat[8] = HALL_ANGLES_FLOAT;
+float HallStateToDriveFloat[8] = HALL_ANGLES_TO_DRIVE_FLOAT;
 
 static void MLoop_Turn_Off_Check(Motor_Controls* cntl) {
   if(cntl->ThrottleCommand <= 0.0f) {

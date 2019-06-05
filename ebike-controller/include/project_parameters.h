@@ -152,4 +152,13 @@ SOFTWARE.
                                             F32_30_DEG, \
                                             F32_0_DEG }
 
+#define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
+                                            F32_270_DEG,\
+                                            F32_150_DEG,\
+                                            F32_210_DEG,\
+                                            F32_30_DEG,\
+                                            F32_330_DEG,\
+                                            F32_90_DEG,\
+                                            F32_0_DEG	}
+
 #endif /* PROJECT_PARAMETERS_H_ */
