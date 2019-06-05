@@ -881,14 +881,52 @@ void DMA2_Stream1_IRQHandler(void)
 				HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
 				// Need to update angle here instead of in the capture callback
 #if defined(USE_FLOATING_POINT)
-				HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]
-				                          + HallStateAnglesRevFloat[voted_state])/2.0f;
+				if(((HallStateAnglesFwdFloat[voted_state] > F32_270_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] < F32_90_DEG)) ||
+					 ((HallStateAnglesFwdFloat[voted_state] < F32_90_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] > F32_270_DEG))) {
+					// This takes care of wraparound. If one angle is close to 1.0 and
+					// the other is close to 0.0, we can't just simply average the two.
+					// The average would then be around 0.5 when it should be closer to 
+					// 0.0 or 1.0.
+					// Instead, add 1.0 to the sum (effectively pushing one or the other
+					// angle to more than 1.0), average them, and then add or subtract 
+					// 1.0 if needed.
+					HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state] + 
+						HallStateAnglesRevFloat[voted_state] + 1.0f) * 0.5f;
+					while(HallSensor.Angle > 1.0f) {
+						HallSensor.Angle -= 1.0f;
+					}
+					while (HallSensor.Angle < 0.0f)
+					{
+						HallSensor.Angle += 1.0f;
+					}
+					
+				} else {
+					HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                    + HallStateAnglesRevFloat[voted_state])*0.5f;
+				}
 #else
 				HallSensor.Angle = HallStateAngles[voted_state];
 #endif
 #ifdef TESTING_2X
-				HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state]
-				                          + HallStateAnglesRevFloat[voted_state])/2.0f;
+				if(((HallStateAnglesFwdFloat[voted_state] > F32_270_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] < F32_90_DEG)) ||
+					 ((HallStateAnglesFwdFloat[voted_state] < F32_90_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] > F32_270_DEG))) {
+							// See above description for explanation.
+					HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state] + 
+						HallStateAnglesRevFloat[voted_state] + 1.0f) * 0.5f;
+					while(HallSensor_2x.Angle > 1.0f) {
+						HallSensor_2x.Angle -= 1.0f;
+					}
+					while(HallSensor_2x.Angle < 0.0f) {
+						HallSensor_2x.Angle += 1.0f;
+					}
+				} else {
+					HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                        + HallStateAnglesRevFloat[voted_state]) * 0.5f;
+				}
 #endif
 			}
 			HallSensor.CurrentState = voted_state;
