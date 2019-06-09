@@ -81,9 +81,10 @@ SOFTWARE.
                                       "HALLANG3",\
                                       "HALLANG4",\
                                       "HALLANG5",\
-                                      "HALLANG6" }
-#define UI_MOTOR_NUMCMD         10
-#define UI_MOTOR_CMDLEN         {2,2,2,4,8,8,8,8,8,8}
+                                      "HALLANG6",\
+                                      "LEARN"}
+#define UI_MOTOR_NUMCMD         11
+#define UI_MOTOR_CMDLEN         {2,2,2,4,8,8,8,8,8,8,5}
 
 #define UI_UTIL_COMMANDS        {     "SAVE",\
                                       "LOAD",\

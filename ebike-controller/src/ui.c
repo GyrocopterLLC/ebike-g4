@@ -1252,6 +1252,19 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
         ui_error = UI_OK;
       }
       break;
+    case 10: // LEARN - discover Hall positions
+      // The input value is the current limit
+      newval_f = UI_atof(inputstring);
+      if( (newval_f < FULLSCALE_THROTTLE) &&
+          (newval_f > 0.0f)) {
+        UI_SerialOut("Learning Hall positions...\r\n",28);
+        ui_error = UI_OK;
+        MAIN_DetectHallPositions(newval_f);
+      } else {
+        UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
+        return UI_ERROR;
+      }
+      break;
     default:
       UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
       return UI_ERROR;
