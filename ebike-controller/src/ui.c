@@ -1210,12 +1210,15 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
   uint8_t templen;
   float* angleTable;
   float newval_f;
+  char command_type;
 
   // Which command?
   int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_motor_commands,
       ui_2nd_level_motor_cmdlen, UI_MOTOR_NUMCMD);
   inputstring += ui_2nd_level_motor_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
+  command_type = inputstring[0];
+  inputstring++;
+  if (command_type == UI_MENU_SET) {
     // Perform setting variable
     switch(command_num){
     case 0: // PP
@@ -1246,7 +1249,7 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
         UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
         ui_error = UI_ERROR;
       } else {
-        angleTable[command_num - 3] = newval_f;
+        angleTable[command_num - 3] = newval_f*0.0027777777777778f;
         HallSensor_SetAngleTable(angleTable);
         UI_SerialOut(UI_RESPGOOD, UI_LENGTH_RESPGOOD);
         ui_error = UI_OK;
@@ -1270,7 +1273,7 @@ uint8_t UI_2nd_Level_Process_Motor(char* inputstring) {
       return UI_ERROR;
       break;
     }
-  } else if (inputstring[0] == UI_MENU_QUERY) {
+  } else if (command_type == UI_MENU_QUERY) {
     // Return the current value of the variable
     switch(command_num){
     case 0: // PP
@@ -1354,12 +1357,15 @@ uint8_t UI_2nd_Level_Process_Util(char* inputstring) {
 
 uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
   uint8_t ui_error = UI_ERROR;
+  char command_type;
 
   // Which command?
   int16_t command_num = UI_FindInOptionList(inputstring, ui_2nd_level_ctrl_commands,
       ui_2nd_level_ctrl_cmdlen, UI_CTRL_NUMCMD);
   inputstring += ui_2nd_level_ctrl_cmdlen[command_num];
-  if (inputstring[0] == UI_MENU_SET) {
+  command_type = inputstring[0];
+  inputstring++;
+  if (command_type == UI_MENU_SET) {
     // Perform setting variable
     switch(command_num){
       case 0: // IAGAIN
@@ -1383,7 +1389,7 @@ uint8_t UI_2nd_Level_Process_Ctrl(char* inputstring) {
         return UI_ERROR;
         break;
       }
-  } else if (inputstring[0] == UI_MENU_QUERY) {
+  } else if (command_type == UI_MENU_QUERY) {
     // Return the current value of the variable
     switch(command_num){
       case 0: // IAGAIN

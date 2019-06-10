@@ -35,9 +35,9 @@ SOFTWARE.
 
 // For the Hall sensor detection routine
 #define HALL_DETECT_RAMP_SPEED (5.0f) // 5 Hz = 300 eRPM = 13 RPM
-#define HALL_DETECT_MIN_TRANSITIONS 100
-#define HALL_DETECT_TRANSITIONS_TO_AVG  (32)
-#define HALL_DETECT_TIMEOUT_MS 500
+#define HALL_DETECT_MIN_TRANSITIONS (16)
+#define HALL_DETECT_TRANSITIONS_TO_AVG  (16)
+#define HALL_DETECT_TIMEOUT_MS (1500)
 
 // Angle definitions - integer
 // This set of defines are the integer values of angles
@@ -92,13 +92,18 @@ SOFTWARE.
 // Hall A (PC6) -> NineContinent Green wire
 // Hall B (PC7) -> NineContinent Blue wire
 // Hall C (PC8) -> NineContinent Yellow wire
-#define FORWARD_HALL_TABLE	{ 1, 5, 4, 6, 2, 3 }
+//#define FORWARD_HALL_TABLE	{ 1, 5, 4, 6, 2, 3 }
+#define FORWARD_HALL_TABLE { 2, 6, 4, 5, 1, 3 } // Ebikeling 700C 1200W motor
 // Same thing but reversed
-#define REVERSE_HALL_TABLE	{ 3, 2, 6, 4, 5, 1 }
+//#define REVERSE_HALL_TABLE	{ 3, 2, 6, 4, 5, 1 }
+#define REVERSE_HALL_TABLE  { 1, 5, 4, 6, 2, 3} // Ebikeline 700C 1200W motor
 // Inverse lookup tables: Useful for determining rotation direction
 // State is the table index, value is the previous state for that rotation direction
-#define FORWARD_HALL_INVTABLE	{ 0, 3, 6, 2, 5, 1, 4, 0}
-#define REVERSE_HALL_INVTABLE	{ 0, 5, 3, 1, 6, 4, 2, 0}
+//#define FORWARD_HALL_INVTABLE	{ 0, 3, 6, 2, 5, 1, 4, 0}
+//#define REVERSE_HALL_INVTABLE	{ 0, 5, 3, 1, 6, 4, 2, 0}
+// For the Ebikeling 700C 1200W motor
+#define FORWARD_HALL_INVTABLE { 0, 5, 3, 1, 6, 4, 2, 0}
+#define REVERSE_HALL_INVTABLE { 0, 3, 6, 2, 5, 1, 4, 0}
 
 // Hall Angle correlations
 // This table equates the 6 valid Hall states (1 - 6) with
@@ -125,40 +130,70 @@ SOFTWARE.
 								U16_0_DEG    /* State 7 - undefined */	\
 							}
 // And the same for floating point
-#define HALL_ANGLES_FLOAT	            {   F32_0_DEG,\
-                                            F32_180_DEG,\
-                                            F32_60_DEG,\
-                                            F32_120_DEG,\
-                                            F32_300_DEG,\
-                                            F32_240_DEG,\
-                                            F32_0_DEG,\
-                                            F32_0_DEG	}
+//#define HALL_ANGLES_FLOAT	            {   F32_0_DEG,\
+//                                            F32_180_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_120_DEG,\
+//                                            F32_300_DEG,\
+//                                            F32_240_DEG,\
+//                                            F32_0_DEG,\
+//                                            F32_0_DEG	}
 
+//#define HALL_ANGLES_FORWARD_FLOAT       {   F32_0_DEG,\
+//                                            F32_150_DEG,\
+//                                            F32_30_DEG,\
+//                                            F32_90_DEG,\
+//                                            F32_270_DEG,\
+//                                            F32_210_DEG,\
+//                                            F32_330_DEG,\
+//                                            F32_0_DEG }
+// For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_FORWARD_FLOAT       {   F32_0_DEG,\
-                                            F32_150_DEG,\
-                                            F32_30_DEG,\
-                                            F32_90_DEG,\
-                                            F32_270_DEG,\
-                                            F32_210_DEG,\
-                                            F32_330_DEG,\
+                                            (0.743786f),\
+                                            (0.089677f),\
+                                            (0.905861f),\
+                                            (0.412525f),\
+                                            (0.593083f),\
+                                            (0.240492f),\
                                             F32_0_DEG }
 
+//#define HALL_ANGLES_REVERSE_FLOAT       {   F32_0_DEG, \
+//                                            F32_210_DEG, \
+//                                            F32_90_DEG, \
+//                                            F32_150_DEG, \
+//                                            F32_330_DEG, \
+//                                            F32_270_DEG, \
+//                                            F32_30_DEG, \
+//                                            F32_0_DEG }
+
+// For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_REVERSE_FLOAT       {   F32_0_DEG, \
-                                            F32_210_DEG, \
-                                            F32_90_DEG, \
-                                            F32_150_DEG, \
-                                            F32_330_DEG, \
-                                            F32_270_DEG, \
-                                            F32_30_DEG, \
+                                            (0.905861f), \
+                                            (0.240492f), \
+                                            (0.089677f), \
+                                            (0.593083f), \
+                                            (0.743786f), \
+                                            (0.412525f), \
                                             F32_0_DEG }
 
+// Middle of the Hall state - average of Fwd and Rev
+//#define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
+//                                            F32_270_DEG,\
+//                                            F32_150_DEG,\
+//                                            F32_210_DEG,\
+//                                            F32_30_DEG,\
+//                                            F32_330_DEG,\
+//                                            F32_90_DEG,\
+//                                            F32_0_DEG	}
+
+// For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
-                                            F32_270_DEG,\
-                                            F32_150_DEG,\
-                                            F32_210_DEG,\
-                                            F32_30_DEG,\
-                                            F32_330_DEG,\
-                                            F32_90_DEG,\
-                                            F32_0_DEG	}
+                                            (0.824824f),\
+                                            (0.165085f),\
+                                            (0.997769f),\
+                                            (0.502804f),\
+                                            (0.668435f),\
+                                            (0.326508f),\
+                                            F32_0_DEG }
 
 #endif /* PROJECT_PARAMETERS_H_ */

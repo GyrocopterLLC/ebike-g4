@@ -75,7 +75,7 @@ float g_FetTemp;
 PowerCalcs Mpc;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
-float g_hallDetectTable[6][HALL_DETECT_TRANSITIONS_TO_AVG];
+float g_hallDetectTable[6*HALL_DETECT_TRANSITIONS_TO_AVG];
 
 HallDetectHelperStruct hdhs;
 
@@ -427,20 +427,42 @@ int main(void) {
     }
     if(g_MainFlags & MAINFLAG_HALLDETECTFAIL) {
       if(g_MainFlags & MAINFLAG_LASTCOMMSERIAL) {
-        HBD_SendWrapper("Hall detection failed.\n", 23);
+        HBD_SendWrapper("Hall detection failed.\r\n", 24);
       } else {
-        VCP_SendWrapper("Hall detection failed.\n", 23);
+        VCP_SendWrapper("Hall detection failed.\r\n", 24);
       }
       g_MainFlags &= ~(MAINFLAG_HALLDETECTFAIL);
     }
     if(g_MainFlags & MAINFLAG_HALLDETECTPASS) {
       uint32_t result_len;
       if(g_MainFlags & MAINFLAG_LASTCOMMSERIAL) {
-        HBD_SendWrapper("Hall detection success.\n",24);
+        HBD_SendWrapper("Hall detection success.\r\n",25);
+        for(uint8_t ii = 0; ii < 6; ii++) {
+          HBD_SendWrapper("Hall",4);
+          byte='1'+ii;
+          HBD_SendWrapper(&byte,1);
+          HBD_SendWrapper(": ",2);
+          resplen = _ftoa(uart_buffer, g_hallDetectTable[ii],6);
+          HBD_SendWrapper(uart_buffer, resplen);
+          uart_buffer[0] = 0;
+          resplen = 0;
+          HBD_SendWrapper(UI_ENDLINE, UI_LENGTH_ENDLINE);
+        }
         // result_len = HallDetectResult(uart_buffer);
         // HBD_SendWrapper(uart_buffer, result_len);
       } else {
-        VCP_SendWrapper("Hall detection success.\n",24);
+        VCP_SendWrapper("Hall detection success.\r\n",25);
+        for(uint8_t ii = 0; ii < 6; ii++) {
+          VCP_SendWrapper("Hall",4);
+          byte='1'+ii;
+          VCP_SendWrapper(&byte,1);
+          VCP_SendWrapper(": ",2);
+          resplen = _ftoa(vcp_buffer, g_hallDetectTable[ii],6);
+          VCP_SendWrapper(vcp_buffer, resplen);
+          vcp_buffer[0] = 0;
+          resplen = 0;
+          VCP_SendWrapper(UI_ENDLINE, UI_LENGTH_ENDLINE);
+        }
         // result_len = HallDetectResult(vcp_buffer);
         // VCP_SendWrapper(vcp_buffer, result_len);
       }
@@ -928,6 +950,7 @@ static void RunHallDetectRoutine(void) {
 
     if(HallSensor_Get_State() != hdhs.old_state) {
       hdhs.transitions_seen++;
+      hdhs.old_state = HallSensor_Get_State();
     }
 
     if(hdhs.transitions_seen > HALL_DETECT_MIN_TRANSITIONS) {
@@ -937,7 +960,7 @@ static void RunHallDetectRoutine(void) {
       hdhs.ticks_now = GetTick();
     }
   } else {
-    if(GetTick() - hdhs.ticks_now > HALL_DETECT_TIMEOUT_MS) {
+    if(GetTick() - hdhs.ticks_now > 6*HALL_DETECT_TIMEOUT_MS) {
       // Timeout! Return to normal operation
       PWM_MotorOFF();
       PWM_SetDutyF(0.0f, 0.0f, 0.0f);
@@ -947,6 +970,7 @@ static void RunHallDetectRoutine(void) {
     }
     if(HallSensor_Get_State() != hdhs.old_state) {
       hdhs.transitions_seen++;
+      hdhs.old_state = HallSensor_Get_State();
     }
     if(hdhs.transitions_seen > (6*HALL_DETECT_TRANSITIONS_TO_AVG)) {
       // Sensing success! Return to normal.
@@ -958,12 +982,12 @@ static void RunHallDetectRoutine(void) {
       // Using the first position in the array to perform and store the average
       for(uint8_t i = 1; i < HALL_DETECT_TRANSITIONS_TO_AVG; i++) {
         for(uint8_t j = 0; j < 6; j++) {
-          g_hallDetectTable[j][0] += g_hallDetectTable[j][i];
+          g_hallDetectTable[j] += g_hallDetectTable[j+6*i];
         }
       }
       for(uint8_t k = 0; k < 6; k++) {
-        g_hallDetectTable[k][0] = 
-          g_hallDetectTable[k][0] / ((float)HALL_DETECT_TRANSITIONS_TO_AVG);
+        g_hallDetectTable[k] =
+          g_hallDetectTable[k] / ((float)HALL_DETECT_TRANSITIONS_TO_AVG);
       }
 
       g_MainFlags |= MAINFLAG_HALLDETECTPASS;

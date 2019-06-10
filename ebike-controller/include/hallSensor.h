@@ -113,9 +113,9 @@ uint8_t HallSensor2_Get_Direction(void);
 
 void HallSensor_SetAngleTable(float* angleTab);
 float* HallSensor_GetAngleTable(void);
-void HallSensor_Init(uint32_t callingFrequency);
+//void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
-void HallSensor_Enable_Hall_Detection(float** angleTable, uint8_t tableLength);
+void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength);
 void HallSensor_Disable_Hall_Detection(void);
 void HallSensor_UpdateCallback(void);
 void HallSensor_CaptureCallback(void);
