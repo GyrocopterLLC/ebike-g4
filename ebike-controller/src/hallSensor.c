@@ -47,6 +47,7 @@ uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
 float HallStateAnglesFwdFloat[8] = HALL_ANGLES_FORWARD_FLOAT;
 float HallStateAnglesRevFloat[8] = HALL_ANGLES_REVERSE_FLOAT;
+//float HallWidthTable[8] = HALL_STATE_WIDTHS_FLOAT;
 
 // Motor rotation order -> 5, 1, 3, 2 ,6, 4...
 uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
@@ -586,8 +587,21 @@ static void HallSensor_CalcSpeed(void)
 	// Hall state frequency / 6 = motor electrical frequency
 
 #if defined(USE_FLOATING_POINT)
-	HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
-	HallSensor.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+//	HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
+  // Sum up all 6 states
+  float full_rotation_capture = 0.0f;
+  for(uint8_t i = 0; i < 6; i++){
+    full_rotation_capture += ((float)(HallSensor.CaptureForState[i])) * ((float)(HallSensor.PrescalerForState[i]+1));
+  }
+
+  if((HallSensor.RotationDirection == HALL_ROT_FORWARD) || (HallSensor.RotationDirection == HALL_ROT_REVERSE)) {
+    HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) / full_rotation_capture;
+    HallSensor.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+  } else {
+    HallSensor.Speed = 0;
+    HallSensor.AngleIncrement = 0;
+  }
+
 #else
 
 	uint32_t freq = ((uint32_t)HALL_TIMER_INPUT_CLOCK) << 4; // Clock input frequency in (Hz * 2^4)
@@ -679,6 +693,7 @@ void HallSensor_CaptureCallback(void)
 	uint8_t lastState = HallSensor.CurrentState;
 	uint8_t nextState;
 	HallSensor.CaptureValue = HALL_TIMER->CCR1;
+
 	//HallSensor.CurrentState = HallSensor_Get_State();
 	HALL_SAMPLE_TIMER->CR1 |= TIM_CR1_CEN; // Start the sampling for the next state
 
@@ -704,6 +719,8 @@ void HallSensor_CaptureCallback(void)
 	case HALL_ROT_FORWARD:
 		nextState = HallStateReverseOrder[lastState];
 		HallSensor.Angle = HallStateAnglesFwdFloat[nextState];
+		HallSensor.CaptureForState[nextState-1] = HallSensor.CaptureValue;
+		HallSensor.PrescalerForState[nextState-1] = HallSensor.Prescaler;
 		if(HallSensor.Angle < 0.0f) { HallSensor.Angle += 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;
@@ -727,6 +744,8 @@ void HallSensor_CaptureCallback(void)
 	case HALL_ROT_REVERSE:
 		nextState = HallStateForwardOrder[lastState];
 		HallSensor.Angle = HallStateAnglesRevFloat[nextState];
+		HallSensor.CaptureForState[nextState-1] = HallSensor.CaptureValue;
+		HallSensor.PrescalerForState[nextState-1] = HallSensor.Prescaler;
 		if(HallSensor.Angle > 1.0f) { HallSensor.Angle -= 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;

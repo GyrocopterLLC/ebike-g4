@@ -136,6 +136,7 @@ uint8_t debounce_integrator;
 volatile PB_TypeDef pb_state;
 
 //extern uint16_t adc_conv[NUM_ADC_CH];
+extern HallSensor_HandleTypeDef HallSensor;
 
 PID_Float_Type Id_control, Iq_control;
 //Biquad_Float_Type Throttle_filt=BIQ_LPF_DEFAULTS;
@@ -786,12 +787,14 @@ void User_PWMTIM_IRQ(void) {
   usbdacvals[10] = Mctrl.BusVoltage;
   usbdacvals[11] = Mfoc.Park_D;
   usbdacvals[12] = Mfoc.Park_Q;
-  Id_Filt.X = Mfoc.Park_D;
-  Iq_Filt.X = Mfoc.Park_Q;
-  dfsl_biquadf(&Id_Filt);
-  dfsl_biquadf(&Iq_Filt);
-  usbdacvals[13] = Id_Filt.Y;
-  usbdacvals[14] = Iq_Filt.Y;
+//  Id_Filt.X = Mfoc.Park_D;
+//  Iq_Filt.X = Mfoc.Park_Q;
+//  dfsl_biquadf(&Id_Filt);
+//  dfsl_biquadf(&Iq_Filt);
+//  usbdacvals[13] = Id_Filt.Y;
+//  usbdacvals[14] = Iq_Filt.Y;
+  usbdacvals[13] = (float)HallSensor.CaptureValue;
+  usbdacvals[14] = (float)HallSensor.Prescaler;
   //usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
   //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
   usbdacvals[15] = (float) (g_errorCode);
@@ -853,6 +856,7 @@ void User_BasicTIM_IRQ(void) {
   // Check if we should change out of standby
   if((Throttle_cmd > 0.0f) && (Mctrl.state == Motor_Off)) {
     Mctrl.state = Motor_Startup;
+//    Mctrl.state = Motor_SixStep;
   }
   // Blink the LEDs
   g_ledcount++;

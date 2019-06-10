@@ -196,4 +196,21 @@ SOFTWARE.
                                             (0.326508f),\
                                             F32_0_DEG }
 
+//#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
+//                                            (0.162075f),\
+//                                            (0.150814f),\
+//                                            (0.183817f),\
+//                                            (0.180558f),\
+//                                            (0.150703f),\
+//                                            (0.172033f),\
+//                                            F32_0_DEG }
+
+//#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
+//                                            F32_60_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_60_DEG,\
+//                                            F32_0_DEG }
 #endif /* PROJECT_PARAMETERS_H_ */

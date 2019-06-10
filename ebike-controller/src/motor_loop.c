@@ -90,36 +90,66 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
             // sent as power demand (in form of PWM duty cycle)
             // Enable the "participating" phases. One phase pwm, one phase low-side on,
             // and the third phase completely turned off
-            case 6:
-              PHASE_A_OFF();
-              PHASE_C_LOW();
-              PHASE_B_PWM();
-              break;
             case 2:
-              PHASE_C_OFF();
-              PHASE_A_LOW();
               PHASE_B_PWM();
-              break;
-            case 3:
-              PHASE_B_OFF();
               PHASE_A_LOW();
-              PHASE_C_PWM();
-              break;
-            case 1:
-              PHASE_A_OFF();
-              PHASE_B_LOW();
-              PHASE_C_PWM();
-              break;
-            case 5:
               PHASE_C_OFF();
-              PHASE_B_LOW();
-              PHASE_A_PWM();
+              break;
+            case 6:
+              PHASE_C_PWM();
+              PHASE_A_LOW();
+              PHASE_B_OFF();
               break;
             case 4:
-              PHASE_B_OFF();
-              PHASE_C_LOW();
-              PHASE_A_PWM();
+              PHASE_C_PWM();
+              PHASE_B_LOW();
+              PHASE_A_OFF();
               break;
+            case 5:
+              PHASE_A_PWM();
+              PHASE_B_LOW();
+              PHASE_C_OFF();
+              break;
+            case 1:
+              PHASE_A_PWM();
+              PHASE_C_LOW();
+              PHASE_B_OFF();
+              break;
+            case 3:
+              PHASE_B_PWM();
+              PHASE_C_LOW();
+              PHASE_A_OFF();
+              break;
+//            case 6:
+//              PHASE_A_OFF();
+//              PHASE_C_LOW();
+//              PHASE_B_PWM();
+//              break;
+//            case 2:
+//              PHASE_C_OFF();
+//              PHASE_A_LOW();
+//              PHASE_B_PWM();
+//              break;
+//            case 3:
+//              PHASE_B_OFF();
+//              PHASE_A_LOW();
+//              PHASE_C_PWM();
+//              break;
+//            case 1:
+//              PHASE_A_OFF();
+//              PHASE_B_LOW();
+//              PHASE_C_PWM();
+//              break;
+//            case 5:
+//              PHASE_C_OFF();
+//              PHASE_B_LOW();
+//              PHASE_A_PWM();
+//              break;
+//            case 4:
+//              PHASE_B_OFF();
+//              PHASE_C_LOW();
+//              PHASE_A_PWM();
+//              break;
             default:
               // Oh shit damage control
               cntl->state = Motor_Fault;
@@ -187,7 +217,10 @@ void Motor_Loop (Motor_Controls* cntl, Motor_Observations* obv,
         }
       }
       if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
-        cntl->state = Motor_AtSpeed;
+        // Hold off on changing to FOC until the angle is pretty darn close
+        // to lining up.
+        if(fabsf(HallStateToDriveFloat[obv->HallState] - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
+          cntl->state = Motor_AtSpeed;
       }
       break;
 

@@ -88,6 +88,7 @@ typedef enum
 
 #define SPEED_COUNTS_TO_FOC     (1000)
 #define MIN_SPEED_TO_FOC        (10.0f)
+#define FOC_SWITCH_ANGLE_EPS    (0.00833333333f) // about 3 degrees
 
 #define MAIN_STARTUP_SPEED_MAX      (65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT  (256)

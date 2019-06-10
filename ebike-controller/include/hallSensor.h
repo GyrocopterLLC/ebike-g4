@@ -67,7 +67,9 @@ typedef struct
 	float AngleIncrement;
 	float Angle;
 	uint32_t CaptureValue;
+	uint32_t CaptureForState[6];
 	uint16_t Prescaler;
+	uint16_t PrescalerForState[6];
 	uint8_t Status;
 	uint8_t OverflowCount;
 	uint8_t RotationDirection;
