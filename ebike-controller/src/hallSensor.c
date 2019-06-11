@@ -1,8 +1,33 @@
-/*
- * hallSensor.c
- *
- *  Created on: Aug 14, 2015
- *      Author: David
+/******************************************************************************
+ * Filename: hallSensor.c
+ * Description: Reads 3-input Hall effect sensors commonly used with BLDC
+ *              motors. Each sensor changes polarity at 180 degree increments,
+ *              and the sensors are spaced 60 degrees apart. The sensors
+ *              give the position of the rotor to the nearest 60 degree sector.
+ *              For higher resolution, the functions in this file count the
+ *              time between sensor changes, and interpolate the motor angle
+ *              in between actual sensor value flips.
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
 
 #include "hallSensor.h"
@@ -20,13 +45,19 @@ HallSensor_HandleTypeDef HallSensor_2x;
 
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 
-float HallStateAnglesFloat[8] = HALL_ANGLES_FLOAT;
+float HallStateAnglesFwdFloat[8] = HALL_ANGLES_FORWARD_FLOAT;
+float HallStateAnglesRevFloat[8] = HALL_ANGLES_REVERSE_FLOAT;
+//float HallWidthTable[8] = HALL_STATE_WIDTHS_FLOAT;
 
 // Motor rotation order -> 5, 1, 3, 2 ,6, 4...
 uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
 uint8_t HallStateReverseOrder[8] = REVERSE_HALL_INVTABLE;
 
 uint32_t HallSampleBuffer[HALL_NUM_SAMPLES];
+
+float* HallDetectAngleTable;
+uint8_t HallDetectTableLength;
+uint32_t HallDetectTransitionsDone[6];
 
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
@@ -35,6 +66,210 @@ static void HallSensor2_CalcSpeed(void);
 #endif
 
 /*################### Public functions ######################################*/
+
+/********************* Helper functions **************************************/
+// These functions aren't frequently called, but they can be used to generate
+// parameter data.
+
+/** HallSensor_AutoGenFwdTable
+ * Auto-generates the forward rotation table 
+ * from a list of Hall state transition angles.
+ */
+uint8_t HallSensor_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float lowestval;
+	uint8_t loweststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		lowestval = 99.9f;
+		loweststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] < lowestval) {
+					lowestval = angleTab[k];
+					loweststate = k;
+				}
+			}
+		}
+		fwdTab[j] = loweststate;
+		already_used_states |= (1 << loweststate);
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenFwdInvTable
+ * Auto-generates the inverse forward rotation table from a list of Hall state 
+ * transition angles. The inverse table gives the previous Hall state for a 
+ * given state if the motor is rotating forwards. For example:
+ * fwdInvTable[3] = 2
+ * This means that if we are currently in Hall state 3, the correct previous 
+ * state was 2.
+ */
+uint8_t HallSensor_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+	uint8_t fwdTab[8];
+	uint8_t invTab[8];
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float lowestval;
+	uint8_t loweststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		lowestval = 99.9f;
+		loweststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] < lowestval) {
+					lowestval = angleTab[k];
+					loweststate = k;
+				}
+			}
+		}
+		fwdTab[j] = loweststate;
+		invTab[loweststate] = j;
+		already_used_states |= (1 << loweststate);
+	}
+	// The invTab gives the order (1 through 6) for each state. You can look up
+	// the state to see which order it is in. The fwdTab gives the state for a
+	// particular order.
+	// We need to get the *previous* state for each state.
+	// Search the invTable for each state to get which order it's in, subtract
+	// one from the order to get the previous state, look up the state in 
+	// fwdTable by its order. Just don't forget to wrap around from 1 --> 6
+	fwdInvTab[0] = 0;
+	fwdInvTab[7] = 0;
+	uint8_t temp;
+	for(uint8_t ii = 1; ii <= 6; ii++) {
+		temp = invTab[ii]; // Get this state's order
+		temp--; // The previous order
+		if(temp == 0) { temp = 6;} // Wraparound. Zero is invalid.
+		fwdInvTab[ii] = fwdTab[temp]; // Get the state at the previous order
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenRevTable
+ * Auto-generates the reverse rotation table 
+ * from a list of Hall state transition angles.
+ */
+uint8_t HallSensor_AutoGenRevTable(float* angleTab, uint8_t* revTab) {
+	// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float highestval;
+	uint8_t higheststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		highestval = -1.0f;
+		higheststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] > highestval) {
+					highestval = angleTab[k];
+					higheststate = k;
+				}
+			}
+		}
+		revTab[j] = higheststate;
+		already_used_states |= (1 << higheststate);
+	}
+	return 1;
+}
+
+/** HallSensor_AutoGenRevInvTable
+ * Auto-generates the inverse reverse rotation table from a list of Hall state 
+ * transition angles. The inverse table gives the previous Hall state for a 
+ * given state if the motor is rotating reverse. For example:
+ * fwdInvTable[2] = 3
+ * This means that if we are currently in Hall state 2, the correct previous 
+ * state was 3.
+ */
+uint8_t HallSensor_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab) {
+		// Assume all tables are length 8. That's enough for all possible combos
+	// of the three Hall sensors, including the undefined 0 and 7 states.
+	uint8_t revTab[8];
+	uint8_t invTab[8];
+	// Enforce all states are valid (angle between 0.0 and 1.0)
+	for(uint8_t i = 1; i <= 6; i++) {
+		if((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+			return 0;
+		}
+	}
+
+	uint8_t already_used_states = 0;	// Bits set to one if the correspoding 
+																		// state was already selected.
+	float highestval;
+	uint8_t higheststate;
+	for(uint8_t j = 1; j <= 6; j++) {
+		
+		// Find the next lowest Hall state
+		highestval = -1.0f;
+		higheststate = 7;
+		for(uint8_t k = 1; k <= 6; k++)
+		{
+			if((already_used_states & (1 << k)) == 0) {
+				if(angleTab[k] > highestval) {
+					highestval = angleTab[k];
+					higheststate = k;
+				}
+			}
+		}
+		revTab[j] = higheststate;
+		invTab[higheststate] = j;
+		already_used_states |= (1 << higheststate);
+	}
+	// The invTab gives the order (1 through 6) for each state. You can look up
+	// the state to see which order it is in. The fwdTab gives the state for a
+	// particular order.
+	// We need to get the *previous* state for each state.
+	// Search the invTable for each state to get which order it's in, subtract
+	// one from the order to get the previous state, look up the state in 
+	// fwdTable by its order. Just don't forget to wrap around from 1 --> 6
+	revInvTab[0] = 0;
+	revInvTab[7] = 0;
+	uint8_t temp;
+	for(uint8_t ii = 1; ii <= 6; ii++) {
+		temp = invTab[ii]; // Get this state's order
+		temp--; // The previous order
+		if(temp == 0) { temp = 6;} // Wraparound. Zero is invalid.
+		revInvTab[ii] = revTab[temp]; // Get the state at the previous order
+	}
+	return 1;
+}
 
 /** HallSensor_Get_State
  * Retrieves the state (number 0-7) corresponding to the Hall Sensor
@@ -108,7 +343,7 @@ uint16_t HallSensor_Get_Angle(void)
 #if defined(USE_FLOATING_POINT)
 	if((HallSensor.Status & HALL_STOPPED) != 0)
 	{
-		return (uint16_t)(HallStateAnglesFloat[HallSensor_Get_State()] * 65536.0f);
+		return (uint16_t)(HallStateAnglesFwdFloat[HallSensor_Get_State()] * 65536.0f);
 	}
 	return (uint16_t)(HallSensor.Angle * 65536.0f);
 #else
@@ -126,7 +361,7 @@ uint16_t HallSensor2_Get_Angle(void)
 #if defined(USE_FLOATING_POINT)
   if((HallSensor_2x.Status & HALL_STOPPED) != 0)
   {
-    return (uint16_t)(HallStateAnglesFloat[HallSensor2_Get_State()] * 65536.0f);
+    return (uint16_t)(HallStateAnglesFwdFloat[HallSensor2_Get_State()] * 65536.0f);
   }
   return (uint16_t)(HallSensor_2x.Angle * 65536.0f);
 #else
@@ -203,6 +438,26 @@ uint8_t HallSensor2_Get_Direction(void)
 }
 #endif
 
+void HallSensor_SetAngleTable(float* angleTab) {
+	// Copy over the foward angle table
+	for(uint8_t i = 0; i < 8; i++) {
+		HallStateAnglesFwdFloat[i] = angleTab[i];
+	}
+	// Update the forward and reverse lookup tables
+	HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat, HallStateForwardOrder);
+	HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat, HallStateReverseOrder);
+	// Generate the reverse angle table
+	for(uint8_t i = 1; i <= 6; i++) {
+		HallStateAnglesRevFloat[HallStateForwardOrder[i]] = 
+			HallStateAnglesFwdFloat[i];
+	}
+
+}
+
+float* HallSensor_GetAngleTable(void) {
+	return HallStateAnglesFwdFloat;
+}
+
 /** HallSensor_Init
  * Starts the time base for the Hall Sensor Timer and the GPIOs associated
  * with the Hall Sensors. The timer is started in the UP counting mode, with
@@ -223,6 +478,8 @@ uint8_t HallSensor2_Get_Direction(void)
 void HallSensor_Init_NoHal(uint32_t callingFrequency)
 {
 
+  HallDetectAngleTable = (float*) 0;
+  HallDetectTableLength = 0;
 	//HALL_PORT_CLK_ENABLE();
 	GPIO_Clk(HALL_PORT);
 	HALL_TIM_CLK_ENABLE();
@@ -330,8 +587,21 @@ static void HallSensor_CalcSpeed(void)
 	// Hall state frequency / 6 = motor electrical frequency
 
 #if defined(USE_FLOATING_POINT)
-	HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
-	HallSensor.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+//	HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) /(6.0f * ((float)(HallSensor.Prescaler + 1)) * ((float)HallSensor.CaptureValue) );
+  // Sum up all 6 states
+  float full_rotation_capture = 0.0f;
+  for(uint8_t i = 0; i < 6; i++){
+    full_rotation_capture += ((float)(HallSensor.CaptureForState[i])) * ((float)(HallSensor.PrescalerForState[i]+1));
+  }
+
+  if((HallSensor.RotationDirection == HALL_ROT_FORWARD) || (HallSensor.RotationDirection == HALL_ROT_REVERSE)) {
+    HallSensor.Speed = ((float)HALL_TIMER_INPUT_CLOCK) / full_rotation_capture;
+    HallSensor.AngleIncrement = HallSensor.Speed / ((float)HallSensor.CallingFrequency);
+  } else {
+    HallSensor.Speed = 0;
+    HallSensor.AngleIncrement = 0;
+  }
+
 #else
 
 	uint32_t freq = ((uint32_t)HALL_TIMER_INPUT_CLOCK) << 4; // Clock input frequency in (Hz * 2^4)
@@ -362,6 +632,18 @@ static void HallSensor2_CalcSpeed(void)
   HallSensor_2x.CaptureValue = 0;
 }
 #endif
+
+void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength) {
+  HallDetectAngleTable = angleTable;
+  HallDetectTableLength = tableLength;
+  for(uint8_t i = 0; i < 6; i++) {
+    HallDetectTransitionsDone[i] = 0;
+  }
+}
+void HallSensor_Disable_Hall_Detection(void) {
+  HallDetectAngleTable = (float*) 0;
+  HallDetectTableLength = 0;
+}
 
 /** HallSensor_UpdateCallback
  * Triggered when the Hall Sensor timer overflows (counts past 65535)
@@ -411,6 +693,7 @@ void HallSensor_CaptureCallback(void)
 	uint8_t lastState = HallSensor.CurrentState;
 	uint8_t nextState;
 	HallSensor.CaptureValue = HALL_TIMER->CCR1;
+
 	//HallSensor.CurrentState = HallSensor_Get_State();
 	HALL_SAMPLE_TIMER->CR1 |= TIM_CR1_CEN; // Start the sampling for the next state
 
@@ -435,7 +718,9 @@ void HallSensor_CaptureCallback(void)
 	{
 	case HALL_ROT_FORWARD:
 		nextState = HallStateReverseOrder[lastState];
-		HallSensor.Angle = HallStateAnglesFloat[nextState] - F32_30_DEG;
+		HallSensor.Angle = HallStateAnglesFwdFloat[nextState];
+		HallSensor.CaptureForState[nextState-1] = HallSensor.CaptureValue;
+		HallSensor.PrescalerForState[nextState-1] = HallSensor.Prescaler;
 		if(HallSensor.Angle < 0.0f) { HallSensor.Angle += 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;
@@ -445,7 +730,7 @@ void HallSensor_CaptureCallback(void)
 		}
 		if(nextState == 2 || nextState == 5) // Using the A hall sensor change
 		{
-		  HallSensor_2x.Angle = HallStateAnglesFloat[nextState] - F32_30_DEG;
+		  HallSensor_2x.Angle = HallStateAnglesFwdFloat[nextState];
 		  if(HallSensor_2x.Angle < 0.0f) { HallSensor_2x.Angle += 1.0f; }
 		  if((HallSensor_2x.Status & HALL_STOPPED) == 0)
 		  {
@@ -458,7 +743,9 @@ void HallSensor_CaptureCallback(void)
 		break;
 	case HALL_ROT_REVERSE:
 		nextState = HallStateForwardOrder[lastState];
-		HallSensor.Angle = HallStateAnglesFloat[nextState] + F32_30_DEG;
+		HallSensor.Angle = HallStateAnglesRevFloat[nextState];
+		HallSensor.CaptureForState[nextState-1] = HallSensor.CaptureValue;
+		HallSensor.PrescalerForState[nextState-1] = HallSensor.Prescaler;
 		if(HallSensor.Angle > 1.0f) { HallSensor.Angle -= 1.0f; }
 #ifdef TESTING_2X
 		HallSensor_2x.CaptureValue += HallSensor.CaptureValue;
@@ -468,7 +755,7 @@ void HallSensor_CaptureCallback(void)
     }
     if(nextState == 3 || nextState == 4) // Using the A hall sensor change
     {
-      HallSensor_2x.Angle = HallStateAnglesFloat[nextState] + F32_30_DEG;
+      HallSensor_2x.Angle = HallStateAnglesRevFloat[nextState];
       if(HallSensor_2x.Angle > 1.0f) { HallSensor_2x.Angle -= 1.0f; }
       if((HallSensor_2x.Status & HALL_STOPPED) == 0)
       {
@@ -613,16 +900,66 @@ void DMA2_Stream1_IRQHandler(void)
 				HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
 				// Need to update angle here instead of in the capture callback
 #if defined(USE_FLOATING_POINT)
-				HallSensor.Angle = HallStateAnglesFloat[voted_state];
+				if(((HallStateAnglesFwdFloat[voted_state] > F32_270_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] < F32_90_DEG)) ||
+					 ((HallStateAnglesFwdFloat[voted_state] < F32_90_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] > F32_270_DEG))) {
+					// This takes care of wraparound. If one angle is close to 1.0 and
+					// the other is close to 0.0, we can't just simply average the two.
+					// The average would then be around 0.5 when it should be closer to 
+					// 0.0 or 1.0.
+					// Instead, add 1.0 to the sum (effectively pushing one or the other
+					// angle to more than 1.0), average them, and then add or subtract 
+					// 1.0 if needed.
+					HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state] + 
+						HallStateAnglesRevFloat[voted_state] + 1.0f) * 0.5f;
+					while(HallSensor.Angle > 1.0f) {
+						HallSensor.Angle -= 1.0f;
+					}
+					while (HallSensor.Angle < 0.0f)
+					{
+						HallSensor.Angle += 1.0f;
+					}
+					
+				} else {
+					HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                    + HallStateAnglesRevFloat[voted_state])*0.5f;
+				}
 #else
 				HallSensor.Angle = HallStateAngles[voted_state];
 #endif
 #ifdef TESTING_2X
-				HallSensor_2x.Angle = HallStateAnglesFloat[voted_state];
+				if(((HallStateAnglesFwdFloat[voted_state] > F32_270_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] < F32_90_DEG)) ||
+					 ((HallStateAnglesFwdFloat[voted_state] < F32_90_DEG) &&
+					  (HallStateAnglesRevFloat[voted_state] > F32_270_DEG))) {
+							// See above description for explanation.
+					HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state] + 
+						HallStateAnglesRevFloat[voted_state] + 1.0f) * 0.5f;
+					while(HallSensor_2x.Angle > 1.0f) {
+						HallSensor_2x.Angle -= 1.0f;
+					}
+					while(HallSensor_2x.Angle < 0.0f) {
+						HallSensor_2x.Angle += 1.0f;
+					}
+				} else {
+					HallSensor_2x.Angle = (HallStateAnglesFwdFloat[voted_state]
+				                        + HallStateAnglesRevFloat[voted_state]) * 0.5f;
+				}
 #endif
 			}
 			HallSensor.CurrentState = voted_state;
 		}
 	}
+	// If the Hall detection routine is running, save the angle this transition
+	// occurred at.
+	if((HallDetectTableLength > 0) && (HallDetectAngleTable != (float*) 0)) {
+	  if(HallDetectTransitionsDone[voted_state-1] < HallDetectTableLength) {
+	    HallDetectAngleTable[voted_state-1+(6*HallDetectTransitionsDone[voted_state-1])] =
+	        MAIN_GetCurrentRampAngle();
+	    HallDetectTransitionsDone[voted_state-1]++;
+	  }
+	}
+
 }
 

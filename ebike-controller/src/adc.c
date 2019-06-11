@@ -1,8 +1,28 @@
-/*
- * adc.c
- *
- *  Created on: Aug 19, 2015
- *      Author: David
+/******************************************************************************
+ * Filename: adc.c
+ * Description: Performs analog-to-digital converter initialization and data
+ *              capture.
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
 
 #include "adc.h"
@@ -38,9 +58,9 @@ void adcInit(void)
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IB_PIN);
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_IC_PIN);
 	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_VBUS_PIN);
-	GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN);
+	// GPIO_Analog(ADC_I_VBUS_THR1_PORT, ADC_THR1_PIN); // Done in throttle.c
 	GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_TEMP_PIN);
-	GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN);
+	// GPIO_Analog(ADC_THR2_AND_TEMP_PORT, ADC_THR2_PIN); // Done in throttle.c
 
 	ADC1->CR1 = ADC_CR1_SCAN; // Convert all channels each time a trigger occurs
 	ADC2->CR1 = ADC_CR1_SCAN;
@@ -191,10 +211,16 @@ uint16_t adcRaw(uint8_t which_cur)
 	return adc_conv[which_cur];
 }
 
-float adcGetThrottle(void)
+float adcGetThrottle(uint8_t thrnum)
 {
-	// Convert 12-bit adc result to floating point
-	float temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;
+  float temp_throttle = 0.0f;
+  if(thrnum == 1) {
+    // Convert 12-bit adc result to floating point
+    temp_throttle = ((float)adc_conv[ADC_THR1])/MAXCOUNTF;
+  }
+  else if(thrnum == 2) {
+    temp_throttle = ((float)adc_conv[ADC_THR2])/MAXCOUNTF;
+  }
 	// Convert to volts using reference measurement
 	temp_throttle *= adc_vref;
 	return temp_throttle;
@@ -230,7 +256,7 @@ float adcGetTempDegC(void)
 	// Convert to Kelvins using thermistor equation
 	temp = (1.0f/298.15f) + log(temp / THERM_R25) / THERM_B_VALUE;
 	temp = 1.0f / temp;
-	temp -= 273.15f; // Convert from K to °C
+	temp -= 273.15f; // Convert from K to ï¿½C
 
 	return temp;
 }

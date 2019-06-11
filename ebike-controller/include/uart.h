@@ -1,3 +1,28 @@
+/******************************************************************************
+ * Filename: uart.h
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+
 // Used resources:
 // USART2, USART3
 
@@ -5,12 +30,7 @@
 #define UART_H_
 
 #include "stm32f4xx.h"
-
-#define HBD_UART				USART3
-#define BMS_UART				USART2
-
-#define HBD_UART_CLK_ENABLE()	RCC->APB1ENR |= RCC_APB1ENR_USART3EN
-#define BMS_UART_CLK_ENABLE()	RCC->APB1ENR |= RCC_APB1ENR_USART2EN
+#include "periphconfig.h"
 
 #define USART_CLK				42000000
 #define HBD_BAUDRATE			115200
@@ -22,7 +42,7 @@
 #define BMS_BRR					(22 << 4) + 13
 
 #define HBD_BUFFER_LENGTH		64
-#define HBD_TXMT_TIMEOUT		100 // ms
+#define HBD_TXMT_TIMEOUT		3 // ms
 
 typedef struct
 {
@@ -33,7 +53,7 @@ typedef struct
 
 void HBD_Init(void);
 void HBD_IRQ(void);
-uint8_t HBD_Receive(uint8_t* buf, uint8_t count);
-uint8_t HBD_Transmit(uint8_t* buf, uint8_t count);
+int32_t HBD_Receive(uint8_t* buf, uint32_t count);
+int32_t HBD_Transmit(uint8_t* buf, uint32_t count);
 
 #endif // UART_H_

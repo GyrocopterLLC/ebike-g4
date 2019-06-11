@@ -1,3 +1,28 @@
+/******************************************************************************
+ * Filename: pinconfig.h
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+
 #ifndef __PINCONFIG_H
 #define __PINCONFIG_H
 
@@ -57,6 +82,26 @@
 #define BMS_UART_RX_PIN	3
 #define BMS_UART_PORT	GPIOA
 #define BMS_UART_AF		((uint8_t)7)
+
+// ADC
+#define ADC_IA_PIN    0
+#define ADC_IB_PIN    1
+#define ADC_IC_PIN    2
+#define ADC_VBUS_PIN  3
+#define ADC_THR1_PIN  5
+#define ADC_I_VBUS_THR1_PORT    GPIOC
+#define ADC_TEMP_PIN  1
+#define ADC_THR2_PIN  0
+#define ADC_THR2_AND_TEMP_PORT    GPIOB
+
+//#define ADC_I_VBUS_THR1_CLK_ENABLE()    __HAL_RCC_GPIOC_CLK_ENABLE()
+//#define ADC_THR2_AND_TEMP_CLK_ENABLE()    __HAL_RCC_GPIOB_CLK_ENABLE()
+
+// USB
+#define USB_PORT      GPIOA
+#define USB_DM_PIN      11
+#define USB_DP_PIN      12
+#define USB_AF        10
 
 // Unused Pins
 #define PORTA_UNUSED	(PIN0 | PIN1 | PIN6 | PIN7 | PIN15)

@@ -1,3 +1,28 @@
+/******************************************************************************
+ * Filename: main.h
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
+
 // Used resources:
 // DAC
 // TIM12
@@ -7,10 +32,12 @@
 #define __MAIN_H
 
 /* Constants */
+/*
 #define THROTTLE_MIN  (0.7f) // Less than 0.7V is zero throttle
 #define THROTTLE_MAX  (2.8f) // Above 2.8V is 100% throttle
 #define THROTTLE_SCALE  (0.47619f)
 #define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
+*/
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
@@ -23,6 +50,7 @@
 #include "adc.h"
 #include "pwm.h"
 #include "motor_loop.h"
+#include "eeprom_emulation.h"
 #include "throttle.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
@@ -47,7 +75,9 @@ typedef enum
 #define DEBOUNCE_MAX      5 // Must get integrator up to 5 to count as "pressed"
 
 #define RAMP_CALLFREQ   (20000)
+#define RAMP_CALLFREQF  (20000.0f)
 #define RAMP_DEFAULTSPEED (5)
+#define RAMP_DEFAULTSPEEDF (5.0f)
 
 #define BOOTLOADER_RESET_FLAG 0xDEADBEEF
 
@@ -58,6 +88,7 @@ typedef enum
 
 #define SPEED_COUNTS_TO_FOC     (1000)
 #define MIN_SPEED_TO_FOC        (10.0f)
+#define FOC_SWITCH_ANGLE_EPS    (0.00833333333f) // about 3 degrees
 
 #define MAIN_STARTUP_SPEED_MAX      (65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
 #define MAIN_STARTUP_CUR_AVG_COUNT  (256)
@@ -73,6 +104,7 @@ typedef enum
 #define DEFAULT_SERIAL_DATA_RATE  (400) // (20kHz/400 = 50Hz)
 
 #define MAIN_ERR_HALL_STATE   (0x00000800)
+
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 //uint32_t itoa(char* buf, int32_t num);
@@ -82,21 +114,29 @@ uint32_t _ftoa(char* buf, float num, uint32_t precision);
 void SYSTICK_IRQHandler(void);
 void User_BasicTIM_IRQ(void);
 void User_PWMTIM_IRQ(void);
-void MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
+
+float MAIN_GetCurrentRampAngle(void);
+
+void MAIN_DetectHallPositions(float curlimit);
+
+uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum);
-void MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs);
+uint8_t MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs);
 uint8_t MAIN_GetNumUSBDebugOutputs(void);
-void MAIN_SetUSBDebugSpeed(uint8_t speedChoice);
+uint8_t MAIN_SetUSBDebugSpeed(uint8_t speedChoice);
 uint8_t MAIN_GetUSBDebugSpeed(void);
-void MAIN_SetUSBDebugging(uint8_t on_or_off);
+uint8_t MAIN_SetUSBDebugging(uint8_t on_or_off);
 uint8_t MAIN_GetUSBDebugging(void);
-void MAIN_SetRampSpeed(uint32_t newspeed);
-void MAIN_SetRampDir(uint8_t forwardOrBackwards);
-void MAIN_SetVar(uint8_t var, float newval);
+uint8_t MAIN_SetRampSpeed(uint32_t newspeed);
+uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards);
+uint8_t MAIN_SetVar(uint8_t var, float newval);
 float MAIN_GetVar(uint8_t var);
+float MAIN_GetVar_EEPROM(uint8_t var);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 void MAIN_DumpRecord(void);
+void MAIN_SaveVariables(void);
+void MAIN_LoadVariables(void);
 #ifdef DEBUG_DUMP_USED
 void MAIN_SetDumpDebugOutput(uint8_t outputnum, uint8_t valuenum);
 uint8_t MAIN_GetDumpDebugOutput(uint8_t outputnum);

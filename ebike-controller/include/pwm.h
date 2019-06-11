@@ -1,9 +1,28 @@
-/*
- * pwm.h
- *
- *  Created on: Aug 19, 2015
- *      Author: David
+/******************************************************************************
+ * Filename: pwm.h
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
+
 
 // Used resources:
 // TIM1
@@ -12,45 +31,37 @@
 #define PWM_H_
 
 #include "stm32f4xx.h"
+#include "pinconfig.h"
+#include "periphconfig.h"
 
-/*********** GPIO defines **********/
-
-/*
-#define PWM_AHI_PIN		GPIO_PIN_10
-#define PWM_BHI_PIN		GPIO_PIN_9
-#define PWM_CHI_PIN		GPIO_PIN_8
-#define PWM_ALO_PIN		GPIO_PIN_15
-#define PWM_BLO_PIN		GPIO_PIN_14
-#define PWM_CLO_PIN		GPIO_PIN_13
-
-#define PWM_HI_PORT		GPIOA
-#define PWM_LO_PORT		GPIOB
-
-#define PWM_AF			GPIO_AF1_TIM1
-
-#define PWM_HI_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOA_CLK_ENABLE()
-#define PWM_LO_GPIO_CLK_ENABLE()	__HAL_RCC_GPIOB_CLK_ENABLE()
-*/
 
 /********** Timer defines ***********/
 
-#define PWM_TIMER					TIM1
-#define PWM_TIM_CLK_ENABLE()		RCC->APB2ENR |= RCC_APB2ENR_TIM1EN
-#define PWM_PERIOD					4199 // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
-#define PWM_PERIOD_F				4199.0f
-// Dead time calculation rules:
-// If DTG[7] = 0:
-// --- Dead time is DTG[6:0]*(t_DTS)
-// If DTG[7:6] = 10
-// --- Dead time is (DTG[5:0]+64)*(2*t_DTS)
-// If DTG[7:5] = 110
-// --- Dead time is (DTG[4:0]+32)*(8*t_DTS)
-// If DTG[7:5] = 111
-// --- Dead time is (DTG[4:0]+32)*(16*t_DTS)
+#define PWM_TIMER_FREQ      (168000000L)
+#define PWM_PERIOD					(4199) // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
+#define PWM_PERIOD_F				(4199.0f)
 
-// Since f_DTS is 168MHz (same as clock input), setting DTG = 01010100 gives us
-// Dead time = t_DTS * DTG[6:0] = (1/168MHz) * 84 = 5.95ns * 84 = 500ns
-#define PWM_DEAD_TIME				(TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
+
+/** Deadtime register settings **
+ * DTG[7:5]=0xx => DT=DTG[7:0]x tdtg with tdtg=tDTS.
+ * DTG[7:5]=10x => DT=(64+DTG[5:0])xtdtg with Tdtg=2xtDTS.
+ * DTG[7:5]=110 => DT=(32+DTG[4:0])xtdtg with Tdtg=8xtDTS.
+ * DTG[7:5]=111 => DT=(32+DTG[4:0])xtdtg with Tdtg=16xtDTS.
+ *
+ * If tDTS = 1/168MHz, then:
+ * DTG[7:5]=0xx => DT=DTG[7:0]x 5.952ns       (range: 0 -> 755.952ns)
+ * DTG[7:5]=10x => DT=(64+DTG[5:0])x 11.905ns (range: 761.905 -> 1511.905ns)
+ * DTG[7:5]=110 => DT=(32+DTG[4:0])x 47.619ns (range: 1523.809 -> 3000ns)
+ * DTG[7:5]=111 => DT=(32+DTG[4:0])x 95.238ns (range: 3047.619 -> 6000ns)
+ */
+
+#define DT_RANGE1_MAX     756
+#define DT_RANGE2_MAX     1511
+#define DT_RANGE3_MAX     3000
+#define DT_RANGE4_MAX     6000
+
+#define PWM_DEFAULT_DT_NS   500
+#define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/
 
@@ -67,6 +78,12 @@ inline void PWM_MotorON(void)
 */
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
+uint8_t PWM_SetDeadTime(int32_t newDT);
+int32_t PWM_GetDeadTime(void);
+int32_t PWM_GetDeadTime_EEPROM(void);
+uint8_t PWM_SetFreq(int32_t freq);
+int32_t PWM_GetFreq(void);
+int32_t PWM_GetFreq_EEPROM(void);
 
 /* Defines for directly changing PWM outputs */
 

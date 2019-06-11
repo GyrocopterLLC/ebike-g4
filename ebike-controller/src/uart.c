@@ -1,8 +1,28 @@
-/*
- * uart.c
- *
- *  Created on: Dec 15, 2016
- *      Author: David
+/******************************************************************************
+ * Filename: uart.c
+ * Description: Low level hardware driver for the Universal Asynchronous
+ *              Receiver/Transmitter (UART).
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
 
 #include "uart.h"
@@ -38,14 +58,14 @@ void HBD_Init(void)
 	HBD_UART->CR1 |= USART_CR1_UE;
 
 	// Interrupt config
-	NVIC_SetPriority(USART3_IRQn, PRIO_HBD_UART);
-	NVIC_EnableIRQ(USART3_IRQn);
+	NVIC_SetPriority(HBD_IRQn, PRIO_HBD_UART);
+	NVIC_EnableIRQ(HBD_IRQn);
 }
 
-uint8_t HBD_Receive(uint8_t* buf, uint8_t count)
+int32_t HBD_Receive(uint8_t* buf, uint32_t count)
 {
-	uint8_t buffer_remaining = 0;
-	uint8_t place = 0;
+	uint32_t buffer_remaining = 0;
+	uint32_t place = 0;
 	// Copy up to "count" bytes from the read buffer
 	if(!s_RxBuffer.Done)
 	{
@@ -72,9 +92,9 @@ uint8_t HBD_Receive(uint8_t* buf, uint8_t count)
 	return place;
 }
 
-uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
+int32_t HBD_Transmit(uint8_t* buf, uint32_t count)
 {
-	uint8_t place = 0;
+	uint32_t place = 0;
 	if(s_TxBuffer.Done)
 	{
 		// In the rare chance that the transmitter is just finishing,
@@ -84,7 +104,8 @@ uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
 		{
 			if(GetTick() > (timeout + HBD_TXMT_TIMEOUT))
 			{
-				return 0;
+				// Timeout fail
+				return -1;
 			}
 		}
 
@@ -124,7 +145,8 @@ uint8_t HBD_Transmit(uint8_t* buf, uint8_t count)
 		}
 		else
 		{
-			return 0;
+			// Buffer was full, fail.
+			return -1;
 		}
 	}
 	// Return the number of written bytes.
@@ -163,7 +185,7 @@ void HBD_IRQ(void)
 		}
 
 		HBD_UART->DR = s_TxBuffer.Buffer[s_TxBuffer.RdPos++];
-		if(s_TxBuffer.RdPos > HBD_BUFFER_LENGTH)
+		if(s_TxBuffer.RdPos >= HBD_BUFFER_LENGTH)
 		{
 			// Wrap around the read pointer
 			s_TxBuffer.RdPos = 0;

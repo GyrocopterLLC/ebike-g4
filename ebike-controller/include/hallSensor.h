@@ -1,9 +1,28 @@
-/*
- * hallSensor.h
- *
- *  Created on: Aug 14, 2015
- *      Author: David
+/******************************************************************************
+ * Filename: hallSensor.h
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
+
 
 // Used resources:
 // TIM3, TIM4
@@ -13,28 +32,11 @@
 #define HALLSENSOR_H_
 
 #include "stm32f4xx.h"
+#include "pinconfig.h"
+#include "periphconfig.h"
 
 #define USE_FLOATING_POINT
 #define TESTING_2X
-
-/*
-#define HALL_PIN_A						GPIO_PIN_6
-#define HALL_PIN_A_POS					6	// Used for bit-shifting the Hall state
-#define HALL_PIN_B						GPIO_PIN_7
-#define HALL_PIN_C						GPIO_PIN_8
-
-#define HALL_PORT						GPIOC
-#define HALL_PORT_CLK_ENABLE()			__HAL_RCC_GPIOC_CLK_ENABLE()
-#define HALL_PINS_AF					GPIO_AF2_TIM3
-*/
-
-#define HALL_TIMER						TIM3
-#define HALL_TIM_CLK_ENABLE()			RCC->APB1ENR |= RCC_APB1ENR_TIM3EN
-#define HALL_IRQn						TIM3_IRQn
-#define HALL_SAMPLE_TIMER				TIM8
-#define HALL_SAMPLE_TIMER_CLK_ENABLE()	RCC->APB2ENR |= RCC_APB2ENR_TIM8EN
-#define HALL_DMA						DMA2_Stream1
-#define HALL_DMA_CLK_ENABLE()			RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN
 
 #define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock * 2
 #define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock * 2 / 1000000
@@ -65,7 +67,9 @@ typedef struct
 	float AngleIncrement;
 	float Angle;
 	uint32_t CaptureValue;
+	uint32_t CaptureForState[6];
 	uint16_t Prescaler;
+	uint16_t PrescalerForState[6];
 	uint8_t Status;
 	uint8_t OverflowCount;
 	uint8_t RotationDirection;
@@ -87,6 +91,11 @@ typedef struct
 
 /************ Functions ************/
 
+uint8_t HallSensor_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab);
+uint8_t HallSensor_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab);
+uint8_t HallSensor_AutoGenRevTable(float* angleTab, uint8_t* revTab);
+uint8_t HallSensor_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab);
+
 uint8_t HallSensor_Get_State(void);
 void HallSensor_Inc_Angle(void);
 uint16_t HallSensor_Get_Angle(void);
@@ -103,8 +112,13 @@ uint32_t HallSensor2_Get_Speed(void);
 float HallSensor2_Get_Speedf(void);
 uint8_t HallSensor2_Get_Direction(void);
 #endif
-void HallSensor_Init(uint32_t callingFrequency);
+
+void HallSensor_SetAngleTable(float* angleTab);
+float* HallSensor_GetAngleTable(void);
+//void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
+void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength);
+void HallSensor_Disable_Hall_Detection(void);
 void HallSensor_UpdateCallback(void);
 void HallSensor_CaptureCallback(void);
 

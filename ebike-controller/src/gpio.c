@@ -1,8 +1,27 @@
-/*
- * gpio.c
- *
- *  Created on: May 31, 2016
- *      Author: David M Miller
+/******************************************************************************
+ * Filename: gpio.c
+ * Description: Helper functions for GPIO initialization.
+ ******************************************************************************
+
+Copyright (c) 2019 David Miller
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
  */
 
 #include "gpio.h"
@@ -44,13 +63,47 @@ void GPIO_Output(GPIO_TypeDef* gpio, uint8_t pin)
 /**
  * @brief  Configures a GPIO pin for input.
  * @param  gpio: The GPIO Port to be modified
- *         pin: The pin to be set as an output
+ *         pin: The pin to be set as an input
  * @retval None
  */
 void GPIO_Input(GPIO_TypeDef* gpio, uint8_t pin)
 {
 	// Clear MODER for this pin (input mode)
 	gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+}
+
+/**
+ * @brief  Configures a GPIO pin for input with pulldown.
+ * @param  gpio: The GPIO Port to be modified
+ *         pin: The pin to be set as an input
+ * @retval None
+ */
+void GPIO_InputPD(GPIO_TypeDef* gpio, uint8_t pin)
+{
+  // Clear MODER for this pin (input mode)
+  gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+  // Clear pullup/down register
+  gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+  // Apply pull down
+  gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
+
+}
+
+/**
+ * @brief  Configures a GPIO pin for input with pullup.
+ * @param  gpio: The GPIO Port to be modified
+ *         pin: The pin to be set as an input
+ * @retval None
+ */
+void GPIO_InputPU(GPIO_TypeDef* gpio, uint8_t pin)
+{
+  // Clear MODER for this pin (input mode)
+  gpio->MODER &= ~(GPIO_MODER_MODER0 << (pin * 2));
+  // Clear pullup/down register
+  gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+  // Apply pull down
+  gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_0 << (pin * 2));
+
 }
 
 void GPIO_Analog(GPIO_TypeDef* gpio, uint8_t pin)
@@ -161,3 +214,55 @@ void GPIO_Pulldown_Unused(void)
 	}
 	GPIOH->PUPDR = temp;
 }
+
+// Configures the External Interrupt on the selected pin
+// Input rise_fall_select should be selected from EXTI_None, EXTI_Rising,
+// EXTI_Falling, or EXTI_Rising_Falling
+// EXTI_None disables the interrupt
+void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin, uint8_t rise_fall_select)
+{
+  // Numerical GPIO number
+  // GPIOA = 0, GPIOB = 1, ... GPIOI = 8
+  uint32_t gpionum = ((uint32_t)gpio - AHB1PERIPH_BASE);
+      gpionum /= 0x0400;
+  // Exit early for any bad input
+  if((pin > 15) || gpionum > 8 ||
+      ((rise_fall_select != EXTI_Rising) && (rise_fall_select != EXTI_Falling)
+          && (rise_fall_select != EXTI_Rising_Falling) &&
+          (rise_fall_select != EXTI_None))) {
+    return;
+  }
+  // Figure out which EXTI register to edit
+  // This is based on the selected pin
+  // config register = pin / 4
+  // config offset (within the register) = pin % 4
+
+  // Clear the config register
+  RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
+  SYSCFG->EXTICR[(pin / 4)] &= ~(0xF << (4*(pin % 4)));
+  if(rise_fall_select != EXTI_None) {
+    // Set for this port
+    SYSCFG->EXTICR[(pin / 4)] |= (gpionum << (4*(pin % 4)));
+    // Set the interrupt mask bit
+    EXTI->IMR |= (1 << pin);
+    // Clear the rise/fall bits. The correct ones will be set after this.
+    EXTI->FTSR &= ~(1 << pin);
+    EXTI->RTSR &= ~(1 << pin);
+    if((rise_fall_select & EXTI_Falling) != 0) {
+      EXTI->FTSR |= (1 << pin);
+    }
+    if((rise_fall_select & EXTI_Rising) != 0) {
+      EXTI->RTSR |= (1 << pin);
+    }
+
+  } else {
+    // Clear the mask bit, disable this interrupt source
+    EXTI->IMR &= ~(1 << pin);
+    // Clear rising and falling edge selections
+    EXTI->RTSR &= ~(1 << pin);
+    EXTI->FTSR &= ~(1 << pin);
+  }
+}
+
+
+

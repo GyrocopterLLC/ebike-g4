@@ -1,15 +1,27 @@
-/*
+/******************************************************************************
+ * Filename: DavidsFOCLib.h
+ ******************************************************************************
 
-David's Field Oriented Control Software Library
+Copyright (c) 2019 David Miller
 
-Contents:
-1. Space Vector Modulate
-	Calculates three-phase duty cycles (A, B, and C) for a two-phase stationary input (alpha and beta)
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Version 1
-May 20, 2014
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-*/
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ */
 
 #ifndef _DAVIDS_FOC_LIB_H_
 #define _DAVIDS_FOC_LIB_H_
@@ -84,8 +96,10 @@ typedef struct
 	float Y;  // Output: filtered result
 }Biquad_Float_Type;
 
-void dfsl_rampgen(uint16_t* rampAngle, uint16_t rampInc);
-uint16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq);
+void dfsl_rampgen(uint16_t* rampAngle, int16_t rampInc);
+int16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq);
+void dfsl_rampgenf(float* rampAngle, float rampInc);
+float dfsl_rampctrlf(float callingFreq, float rampFreq);
 void dfsl_pid_defaults(PID_Type* pid);
 void dfsl_pid_reset(PID_Type* pid);
 void dfsl_pid_defaultsf(PID_Float_Type* pid);
