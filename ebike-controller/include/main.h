@@ -58,6 +58,7 @@ SOFTWARE.
 #include "ui.h"
 #include "wdt.h"
 #include "power_calcs.h"
+#include "crc32.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
