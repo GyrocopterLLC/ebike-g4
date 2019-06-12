@@ -23,6 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 
+#ifndef _DATA_PACKET_H_
+#define _DATA_PACKET_H_
+
 typedef struct
 {
     uint8_t RxReady;
@@ -33,3 +36,31 @@ typedef struct
     uint8_t TxReady;
     uint8_t* TxBuffer;
 } Data_Packet_Type;
+
+#define PACKET_MAX_LENGTH       (128)
+
+// SOP defines
+#define PACKET_START_0          (0x9A)
+#define PACKET_START_1          (0xCC)
+
+// Packet type defines, Host to Controller
+#define GET_RAM_VARIABLE        (0x01)
+#define SET_RAM_VARIABLE        (0x02)
+#define GET_EEPROM_VARIABLE     (0x03)
+#define SET_EEPROM_VARIABLE     (0x04)
+#define ENABLE_FEATURE          (0x05)
+#define DISABLE_FEATURE         (0x06)
+#define RUN_ROUTINE             (0x07)
+#define HOST_STREAM_DATA        (0x08)
+#define HOST_ACK                (0x11)
+#define HOST_NACK               (0x12)
+// Packet type defines, Controller to Host
+#define GET_RAM_RESULT          (0x81)
+#define GET_EEPROM_RESULT       (0x83)
+#define ROUTINE_RESULT          (0x87)
+#define CONTROLLER_STREAM_DATA  (0x88)
+#define CONTROLLER_ACK          (0x91)
+#define CONTROLLER_NACK         (0x92)
+
+
+#endif //_DATA_PACKET_H_

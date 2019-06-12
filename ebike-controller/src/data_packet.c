@@ -5,13 +5,17 @@
  *              with CRC to ensure data integrity.
  *
  * Packet structure:
- *  - Start of packet (2 bytes)
+ *  - Start of packet "SOP" (2 bytes)
  *  --- 0x9A, 0xCC
  *  - Packet type (1 byte)
  *  - nPacket type (1 byte, inverse of previous byte)
  *  - Data length (2 bytes)
  *  - Data (n bytes, depending on type)
  *  - CRC-32 (4 bytes)
+ *  --- CRC is generated on ALL bytes.
+ *      This includes the SOP, type, inverted type, length, and data.
+ *      Check crc32.c/h for details on CRC generation. It's the same as the
+ *      Ethernet CRC-32 standard. 
  *
  ******************************************************************************
 
@@ -38,7 +42,7 @@ SOFTWARE.
 
 #include "main.h"
 /**
- * Packet type:
+ * Packet types:
  * - From host to controller:
  * -- 0x01 - Get variable from RAM
  * -- 0x02 - Set variable in RAM
@@ -48,10 +52,15 @@ SOFTWARE.
  * -- 0x06 - Disable feature
  * -- 0x07 - Run routine
  * -- 0x08 - Stream data
+ * -- 0x11 - ACK
+ * -- 0x12 - NACK
  * - From controller to host:
- * -- 0x81 - Requested data
- * -- 0x87 - Routine status
+ * -- 0x81 - Requested RAM data
+ * -- 0x83 - Requested EEPROM data
+ * -- 0x87 - Routine result
  * -- 0x88 - Stream data
+ * -- 0x91 - ACK
+ * -- 0x92 - NACK
  */
 
 uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, uint16_t datalen) {
