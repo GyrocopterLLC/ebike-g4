@@ -37,38 +37,54 @@ SOFTWARE.
  */
 
 #include "main.h"
+/**
+ * Packet type:
+ * - From host to controller:
+ * -- 0x01 - Get variable from RAM
+ * -- 0x02 - Set variable in RAM
+ * -- 0x03 - Get variable from EEPROM
+ * -- 0x04 - Set variable in EEPROM
+ * -- 0x05 - Enable feature
+ * -- 0x06 - Disable feature
+ * -- 0x07 - Run routine
+ * -- 0x08 - Stream data
+ * - From controller to host:
+ * -- 0x81 - Requested data
+ * -- 0x87 - Routine status
+ * -- 0x88 - Stream data
+ */
 
-uint8_t data_create_packet(uint8_t type, uint8_t* data, uint16_t datalen) {
+uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, uint16_t datalen) {
   uint16_t place = 0;
   uint32_t crc;
 
   // Fail out if the packet can't fit in the buffer
   if(datalen + 8 > PACKET_MAX_LENGTH) {
-    data_packet.TxReady = 0;
+    pkt->TxReady = 0;
     return DATA_PACKET_FAIL;
   }
 
-  data_packet.TxBuffer[place++] = PACKET_START_0;
-  data_packet.TxBuffer[place++] = PACKET_START_1;
-  data_packet.TxBuffer[place++] = type;
-  data_packet.TxBuffer[place++] = type ^ 0xFF;
-  data_packet.TxBuffer[place++] = (uint8_t)((datalen & 0xFF00) >> 8);
-  data_packet.TxBuffer[place++] = (uint8_t)(datalen & 0x00FF);
+  pkt->TxBuffer[place++] = PACKET_START_0;
+  pkt->TxBuffer[place++] = PACKET_START_1;
+  pkt->TxBuffer[place++] = type;
+  pkt->TxBuffer[place++] = type ^ 0xFF;
+  pkt->TxBuffer[place++] = (uint8_t)((datalen & 0xFF00) >> 8);
+  pkt->TxBuffer[place++] = (uint8_t)(datalen & 0x00FF);
   for(uint16_t i = 0; i < datalen; i++) {
-    data_packet.TxBuffer[place++] = data[i];
+    pkt->TxBuffer[place++] = data[i];
   }
 
-  crc = CRC32_Generate(data_packet.TxBuffer, datalen + 6);
-  data_packet.TxBuffer[place++] = (uint8_t)((crc & 0xFF000000) >> 24);
-  data_packet.TxBuffer[place++] = (uint8_t)((crc & 0x00FF0000) >> 16);
-  data_packet.TxBuffer[place++] = (uint8_t)((crc & 0x0000FF00) >> 8);
-  data_packet.TxBuffer[place++] = (uint8_t)(crc & 0x000000FF);
-  data_packet.TxReady = 1;
+  crc = CRC32_Generate(pkt->TxBuffer, datalen + 6);
+  pkt->TxBuffer[place++] = (uint8_t)((crc & 0xFF000000) >> 24);
+  pkt->TxBuffer[place++] = (uint8_t)((crc & 0x00FF0000) >> 16);
+  pkt->TxBuffer[place++] = (uint8_t)((crc & 0x0000FF00) >> 8);
+  pkt->TxBuffer[place++] = (uint8_t)(crc & 0x000000FF);
+  pkt->TxReady = 1;
   return DATA_PACKET_SUCCESS;
 
 }
 
-uint8_t data_extract_packet(uint8_t* buf, uint16_t buflen) {
+uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, uint16_t buflen) {
   uint16_t place;
   uint8_t SOP_found = 0;
   uint32_t crc_local;
@@ -99,8 +115,8 @@ uint8_t data_extract_packet(uint8_t* buf, uint16_t buflen) {
   if(crc_local != crc_remote) {
     return DATA_PACKET_FAIL;
   }
-  data_packet.PacketType = packet_type;
-  data_packet.DataLength = data_length;
-  memcpy(data_packet.Data, &(buf[place]), data_packet.DataLength);
+  pkt->PacketType = packet_type;
+  pkt->DataLength = data_length;
+  memcpy(pkt->Data, &(buf[place]), pkt->DataLength);
   return DATA_PACKET_SUCCESS;
 }
