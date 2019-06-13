@@ -513,13 +513,18 @@ static uint8_t USB_GetLen(uint8_t *buf)
     return len;
 }
 
+int32_t VCP_InWaiting(void) {
+	int32_t remaining = USB_CDC_RxBuffer.Size - USB_CDC_RxBuffer.Position;
+	return remaining;
+}
+
 int32_t VCP_Read(void* data, int32_t len)
 {
 	if (!USB_CDC_RxBuffer.ReadDone)
 		return 0;
 
-	int remaining = USB_CDC_RxBuffer.Size - USB_CDC_RxBuffer.Position;
-	int todo = MIN(remaining, len);
+	int32_t remaining = USB_CDC_RxBuffer.Size - USB_CDC_RxBuffer.Position;
+	int32_t todo = MIN(remaining, len);
 	if (todo <= 0)
 		return 0;
 

@@ -120,6 +120,7 @@ void CDC_DataOut(uint8_t epnum);
 void CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length);
 void CDC_SetTxCompleteCallback(void(*Callback)(void));
 
+int32_t VCP_InWaiting(void);
 int32_t VCP_Read(void* data, int32_t len);
 int32_t VCP_Write(const void* data, int32_t len);
 

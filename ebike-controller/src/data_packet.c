@@ -63,7 +63,8 @@ SOFTWARE.
  * -- 0x92 - NACK
  */
 
-uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, uint16_t datalen) {
+uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, 
+                          uint16_t datalen) {
   uint16_t place = 0;
   uint32_t crc;
 
@@ -93,7 +94,8 @@ uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, u
 
 }
 
-uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, uint16_t buflen) {
+uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, 
+                            uint16_t buflen) {
   uint16_t place;
   uint8_t SOP_found = 0;
   uint32_t crc_local;
@@ -105,27 +107,48 @@ uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, uint16_t buflen
     if(buf[place] == PACKET_START_0 && buf[place+1] == PACKET_START_1) {
       SOP_found = 1;
     }
-    place++;
+    place++; // Advance to next byte and try again
   }
+  place++; // Move past the 2nd SOP byte
   if(!SOP_found) {
+    pkt->FaultCode = NO_START_DETECTED;
     return DATA_PACKET_FAIL;
   }
+
+  if((place+4) > buflen) {
+    pkt->FaultCode = INVALID_PACKET_LENGTH;
+    return DATA_PACKET_FAIL;
+  }
+
   packet_type = buf[place++];
   if(buf[place++] != (packet_type^0xFF)) {
+    pkt->FaultCode = BAD_PACKET_TYPE;
     return DATA_PACKET_FAIL;
   }
   data_length = ((uint16_t)(buf[place]) >> 8) + (uint16_t)(buf[place+1]);
   place += 2;
+  if(data_length > PACKET_MAX_DATA_LENGTH) {
+    pkt->FaultCode = INVALID_PACKET_LENGTH;
+    return DATA_PACKET_FAIL;
+  }
+  if((place+data_length+4) > buflen) {
+    pkt->FaultCode = INVALID_PACKET_LENGTH;
+    return DATA_PACKET_FAIL;
+  }
   crc_local = CRC32_Generate(buf[place-6],data_length+6);
   crc_remote = ((uint32_t)(buf[place+data_length]) << 24)
              + ((uint32_t)(buf[place+data_length+1]) << 16)
              + ((uint32_t)(buf[place+data_length+2]) << 8)
              + (uint32_t)(buf[place+data_length+3]);
   if(crc_local != crc_remote) {
+    pkt->FaultCode = BAD_CRC;
     return DATA_PACKET_FAIL;
   }
   pkt->PacketType = packet_type;
   pkt->DataLength = data_length;
+
   memcpy(pkt->Data, &(buf[place]), pkt->DataLength);
+  pkt->FaultCode = NO_FAULT;
+  pkt->RxReady = 1;
   return DATA_PACKET_SUCCESS;
 }

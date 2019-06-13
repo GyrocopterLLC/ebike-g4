@@ -31,13 +31,16 @@ typedef struct
     uint8_t RxReady;
     uint16_t DataLength;
     uint8_t PacketType;
+    uint8_t FaultCode;
+    uint8_t RxReady;
     uint8_t* Data;
 
     uint8_t TxReady;
     uint8_t* TxBuffer;
 } Data_Packet_Type;
 
-#define PACKET_MAX_LENGTH       (128)
+#define PACKET_MAX_LENGTH       (256)
+#define PACKET_MAX_DATA_LENGTH  (64)
 
 // SOP defines
 #define PACKET_START_0          (0x9A)
@@ -61,6 +64,19 @@ typedef struct
 #define CONTROLLER_STREAM_DATA  (0x88)
 #define CONTROLLER_ACK          (0x91)
 #define CONTROLLER_NACK         (0x92)
+
+// Fault codes
+#define NO_FAULT                (0x00)
+#define BAD_CRC                 (0x01)
+#define BAD_PACKET_TYPE         (0x02)
+#define NO_START_DETECTED       (0x04)
+#define INVALID_PACKET_LENGTH   (0x08)
+
+uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, 
+                          uint16_t datalen);
+
+uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, 
+                            uint16_t buflen);
 
 
 #endif //_DATA_PACKET_H_
