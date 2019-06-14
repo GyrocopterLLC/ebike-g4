@@ -35,6 +35,7 @@ typedef struct
     uint8_t* Data;
 
     uint8_t TxReady;
+    uint16_t TxLength;
     uint8_t* TxBuffer;
 } Data_Packet_Type;
 

@@ -91,6 +91,7 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
   pkt->TxBuffer[place++] = (uint8_t)((crc & 0x0000FF00) >> 8);
   pkt->TxBuffer[place++] = (uint8_t)(crc & 0x000000FF);
   pkt->TxReady = 1;
+  pkt->TxLength = place;
   return DATA_PACKET_SUCCESS;
 
 }
