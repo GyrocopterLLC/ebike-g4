@@ -41,6 +41,7 @@ SOFTWARE.
  */
 
 #include "main.h"
+#include "data_packet.h"
 /**
  * Packet types:
  * - From host to controller:
@@ -63,7 +64,7 @@ SOFTWARE.
  * -- 0x92 - NACK
  */
 
-uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, 
+uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
                           uint16_t datalen) {
   uint16_t place = 0;
   uint32_t crc;
@@ -94,7 +95,7 @@ uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
 
 }
 
-uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, 
+uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
                             uint16_t buflen) {
   uint16_t place;
   uint8_t SOP_found = 0;
@@ -102,6 +103,7 @@ uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf,
   uint32_t crc_remote;
   uint16_t data_length;
   uint8_t packet_type;
+  uint8_t nPacket_type;
   // Search forward to find SOP
   while((place < buflen-1) && (!SOP_found)) {
     if(buf[place] == PACKET_START_0 && buf[place+1] == PACKET_START_1) {
@@ -121,7 +123,9 @@ uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf,
   }
 
   packet_type = buf[place++];
-  if(buf[place++] != (packet_type^0xFF)) {
+  nPacket_type = buf[place++];
+  nPacket_type = ~(nPacket_type);
+  if(packet_type != nPacket_type) {
     pkt->FaultCode = BAD_PACKET_TYPE;
     return DATA_PACKET_FAIL;
   }
@@ -135,7 +139,7 @@ uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf,
     pkt->FaultCode = INVALID_PACKET_LENGTH;
     return DATA_PACKET_FAIL;
   }
-  crc_local = CRC32_Generate(buf[place-6],data_length+6);
+  crc_local = CRC32_Generate(&(buf[place-6]),data_length+6);
   crc_remote = ((uint32_t)(buf[place+data_length]) << 24)
              + ((uint32_t)(buf[place+data_length+1]) << 16)
              + ((uint32_t)(buf[place+data_length+2]) << 8)

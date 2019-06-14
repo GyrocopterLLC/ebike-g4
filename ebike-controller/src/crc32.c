@@ -41,7 +41,7 @@ void CRC32_Init(void) {
     RCC->AHB1ENR |= RCC_AHB1ENR_CRCEN;
 }
 
-uint32_t CRC32_Generate(uint32_t *buf, uint16_t len) {
+uint32_t CRC32_Generate(uint8_t *buf, uint16_t len) {
   // Reset the CRC to all 1's
   CRC->CR = CRC_CR_RESET;
   uint32_t crc_input;

@@ -27,4 +27,4 @@ SOFTWARE.
 // CRC
 
 void CRC32_Init(void);
-uint32_t CRC32_Generate(uint32_t *buf, uint16_t len);
+uint32_t CRC32_Generate(uint8_t *buf, uint16_t len);

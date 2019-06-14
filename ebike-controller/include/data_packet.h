@@ -28,7 +28,6 @@ SOFTWARE.
 
 typedef struct
 {
-    uint8_t RxReady;
     uint16_t DataLength;
     uint8_t PacketType;
     uint8_t FaultCode;
@@ -38,6 +37,9 @@ typedef struct
     uint8_t TxReady;
     uint8_t* TxBuffer;
 } Data_Packet_Type;
+
+#define DATA_PACKET_FAIL		(0)
+#define DATA_PACKET_SUCCESS		(1)
 
 #define PACKET_MAX_LENGTH       (256)
 #define PACKET_MAX_DATA_LENGTH  (64)
@@ -72,10 +74,10 @@ typedef struct
 #define NO_START_DETECTED       (0x04)
 #define INVALID_PACKET_LENGTH   (0x08)
 
-uint8_t data_create_packet(Data_Packet_Type* pkt, uint8_t type, uint8_t* data, 
+uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
                           uint16_t datalen);
 
-uint8_t data_extract_packet(Data_Packet_Type* pkt, uint8_t* buf, 
+uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
                             uint16_t buflen);
 
 
