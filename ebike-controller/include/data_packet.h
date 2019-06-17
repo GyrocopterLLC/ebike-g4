@@ -26,6 +26,8 @@ SOFTWARE.
 #ifndef _DATA_PACKET_H_
 #define _DATA_PACKET_H_
 
+#include <string.h>
+
 typedef struct
 {
     uint16_t DataLength;
@@ -74,6 +76,50 @@ typedef struct
 #define BAD_PACKET_TYPE         (0x02)
 #define NO_START_DETECTED       (0x04)
 #define INVALID_PACKET_LENGTH   (0x08)
+
+inline void data_packet_pack_8b(uint8_t* array, uint8_t value) {
+	array[0] = value;
+}
+
+inline uint8_t data_packet_extract_8b(uint8_t* array) {
+	return array[0];
+}
+
+inline void data_packet_pack_16b(uint8_t* array, uint16_t value) {
+	array[0] = (uint8_t)((value & 0xFF00) >> 8);
+	array[1] =  (uint8_t)(value & 0x00FF);
+}
+
+inline uint16_t data_packet_extract_16b(uint8_t* array) {
+	uint16_t u16Temp = (((uint16_t)(array[0])) << 8) + array[1];
+	return u16Temp;
+}
+
+inline void data_packet_pack_32b(uint8_t* array, uint32_t value) {
+	array[0] = (uint8_t)((value & 0xFF000000) >> 24);
+	array[1] = (uint8_t)((value & 0x00FF0000) >> 16);
+	array[2] = (uint8_t)((value & 0x0000FF00) >> 8);
+	array[3] =  (uint8_t)(value & 0x000000FF);
+}
+
+inline uint32_t data_packet_extract_32b(uint8_t* array) {
+	uint32_t u32Temp;
+	u32Temp  = (((uint32_t)(array[0])) << 24);
+	u32Temp += (((uint32_t)(array[1])) << 16);
+	u32Temp += (((uint32_t)(array[2])) << 8);
+	u32Temp += array[3];
+	return u32Temp;
+}
+
+inline void data_packet_pack_float(uint8_t* array, float value) {
+	memcpy(array, &value, 4);
+}
+
+inline float data_packet_extract_float(uint8_t* array) {
+	float fTemp;
+	memcpy(&fTemp, array, 4);
+	return fTemp;
+}
 
 uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
                           uint16_t datalen);

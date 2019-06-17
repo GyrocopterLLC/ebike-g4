@@ -73,9 +73,9 @@ SOFTWARE.
 #define CONFIG_THR_RISE2			(0x1426)
 
 uint16_t data_process_command(Data_Packet_Type* pkt);
-uint16_t command_get_ram(uint8_t* pktdata, void* retval);
+uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval);
 uint16_t command_set_ram(uint8_t* pktdata);
-uint16_t command_get_eeprom(uint8_t* pktdata, void* retval);
+uint16_t command_get_eeprom(uint8_t* pktdata, uint8_t* retval);
 uint16_t command_set_eeprom(uint8_t* pktdata);
 uint16_t command_enable_feature(uint8_t* pktdata);
 uint16_t command_disable_feature(uint8_t* pktdata);

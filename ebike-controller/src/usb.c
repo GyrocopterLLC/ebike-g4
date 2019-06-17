@@ -380,9 +380,18 @@ void USB_IRQ(void)
 					USB_TxFIFO_Empty_Callback(epnum);
 				}
 				// Don't care about time-out, NAK effective, IN token when empty, or endpoint disabled interrupts
-				if(( epint & USB_OTG_DIEPINT_TOC) == (USB_OTG_DIEPINT_TOC | USB_OTG_DIEPINT_INEPNE | USB_OTG_DIEPINT_ITTXFE | USB_OTG_DIEPINT_EPDISD))
+				if(( epint & USB_OTG_DIEPINT_TOC) == USB_OTG_DIEPINT_TOC)
 				{
-					USB_INEP(epnum)->DIEPINT |= (USB_OTG_DIEPINT_TOC | USB_OTG_DIEPINT_INEPNE | USB_OTG_DIEPINT_ITTXFE | USB_OTG_DIEPINT_EPDISD);
+					USB_INEP(epnum)->DIEPINT |= USB_OTG_DIEPINT_TOC;
+				}
+				if((epint & USB_OTG_DIEPINT_INEPNE) == USB_OTG_DIEPINT_INEPNE) {
+					USB_INEP(epnum)->DIEPINT |= USB_OTG_DIEPINT_INEPNE;
+				}
+				if((epint & USB_OTG_DIEPINT_ITTXFE) == USB_OTG_DIEPINT_ITTXFE) {
+					USB_INEP(epnum)->DIEPINT |= USB_OTG_DIEPINT_ITTXFE;
+				}
+				if((epint & USB_OTG_DIEPINT_EPDISD) == USB_OTG_DIEPINT_EPDISD) {
+					USB_INEP(epnum)->DIEPINT |= USB_OTG_DIEPINT_EPDISD;
 				}
 
 			}

@@ -130,23 +130,27 @@ SOFTWARE.
 								U16_0_DEG    /* State 7 - undefined */	\
 							}
 // And the same for floating point
-//#define HALL_ANGLES_FLOAT	            {   F32_0_DEG,\
-//                                            F32_180_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_120_DEG,\
-//                                            F32_300_DEG,\
-//                                            F32_240_DEG,\
-//                                            F32_0_DEG,\
-//                                            F32_0_DEG	}
+/*
+#define HALL_ANGLES_FLOAT	            {   F32_0_DEG,\
+                                            F32_180_DEG,\
+                                            F32_60_DEG,\
+                                            F32_120_DEG,\
+                                            F32_300_DEG,\
+                                            F32_240_DEG,\
+                                            F32_0_DEG,\
+                                            F32_0_DEG	}
+*/
 
-//#define HALL_ANGLES_FORWARD_FLOAT       {   F32_0_DEG,\
-//                                            F32_150_DEG,\
-//                                            F32_30_DEG,\
-//                                            F32_90_DEG,\
-//                                            F32_270_DEG,\
-//                                            F32_210_DEG,\
-//                                            F32_330_DEG,\
-//                                            F32_0_DEG }
+/*
+#define HALL_ANGLES_FORWARD_FLOAT       {   F32_0_DEG,\
+                                            F32_150_DEG,\
+                                            F32_30_DEG,\
+                                            F32_90_DEG,\
+                                            F32_270_DEG,\
+                                            F32_210_DEG,\
+                                            F32_330_DEG,\
+                                            F32_0_DEG }
+*/
 // For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_FORWARD_FLOAT       {   F32_0_DEG,\
                                             (0.743786f),\
@@ -157,14 +161,16 @@ SOFTWARE.
                                             (0.240492f),\
                                             F32_0_DEG }
 
-//#define HALL_ANGLES_REVERSE_FLOAT       {   F32_0_DEG, \
-//                                            F32_210_DEG, \
-//                                            F32_90_DEG, \
-//                                            F32_150_DEG, \
-//                                            F32_330_DEG, \
-//                                            F32_270_DEG, \
-//                                            F32_30_DEG, \
-//                                            F32_0_DEG }
+/*
+#define HALL_ANGLES_REVERSE_FLOAT       {   F32_0_DEG, \
+                                            F32_210_DEG, \
+                                            F32_90_DEG, \
+                                            F32_150_DEG, \
+                                            F32_330_DEG, \
+                                            F32_270_DEG, \
+                                            F32_30_DEG, \
+                                            F32_0_DEG }
+*/
 
 // For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_REVERSE_FLOAT       {   F32_0_DEG, \
@@ -177,14 +183,16 @@ SOFTWARE.
                                             F32_0_DEG }
 
 // Middle of the Hall state - average of Fwd and Rev
-//#define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
-//                                            F32_270_DEG,\
-//                                            F32_150_DEG,\
-//                                            F32_210_DEG,\
-//                                            F32_30_DEG,\
-//                                            F32_330_DEG,\
-//                                            F32_90_DEG,\
-//                                            F32_0_DEG	}
+/*
+#define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
+                                            F32_270_DEG,\
+                                            F32_150_DEG,\
+                                            F32_210_DEG,\
+                                            F32_30_DEG,\
+                                            F32_330_DEG,\
+                                            F32_90_DEG,\
+                                            F32_0_DEG	}
+*/
 
 // For Ebikeling 700C front 1200W motor
 #define HALL_ANGLES_TO_DRIVE_FLOAT      {   F32_0_DEG,\
@@ -196,21 +204,25 @@ SOFTWARE.
                                             (0.326508f),\
                                             F32_0_DEG }
 
-//#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
-//                                            (0.162075f),\
-//                                            (0.150814f),\
-//                                            (0.183817f),\
-//                                            (0.180558f),\
-//                                            (0.150703f),\
-//                                            (0.172033f),\
-//                                            F32_0_DEG }
+/*
+#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
+                                            (0.162075f),\
+                                            (0.150814f),\
+                                            (0.183817f),\
+                                            (0.180558f),\
+                                            (0.150703f),\
+                                            (0.172033f),\
+                                            F32_0_DEG }
+*/
 
-//#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
-//                                            F32_60_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_60_DEG,\
-//                                            F32_0_DEG }
+/*
+#define HALL_STATE_WIDTHS_FLOAT         {   F32_0_DEG, \
+                                            F32_60_DEG,\
+                                            F32_60_DEG,\
+                                            F32_60_DEG,\
+                                            F32_60_DEG,\
+                                            F32_60_DEG,\
+                                            F32_60_DEG,\
+                                            F32_0_DEG }
+*/
 #endif /* PROJECT_PARAMETERS_H_ */
