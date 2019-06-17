@@ -438,9 +438,17 @@ uint8_t HallSensor2_Get_Direction(void)
 }
 #endif
 
-void HallSensor_SetAngleTable(float* angleTab) {
+uint8_t HallSensor_SetAngleTable(float* angleTab) {
+  // Check that angles are okay
+  uint8_t i;
+  for(i = 1; i <= 6; i++) {
+    if((angleTab[i] < 0.0f) || (angleTab[i] > 1.0f)) {
+      // Fail, this is outside of the proper range
+      return UI_ERROR;
+    }
+  }
 	// Copy over the foward angle table
-	for(uint8_t i = 0; i < 8; i++) {
+	for(i = 0; i < 8; i++) {
 		HallStateAnglesFwdFloat[i] = angleTab[i];
 	}
 	// Update the forward and reverse lookup tables
@@ -451,7 +459,7 @@ void HallSensor_SetAngleTable(float* angleTab) {
 		HallStateAnglesRevFloat[HallStateForwardOrder[i]] = 
 			HallStateAnglesFwdFloat[i];
 	}
-
+	return UI_OK;
 }
 
 float* HallSensor_GetAngleTable(void) {

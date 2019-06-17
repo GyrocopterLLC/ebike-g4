@@ -98,7 +98,7 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
 
 uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
                             uint16_t buflen) {
-  uint16_t place;
+  uint16_t place = 0;
   uint8_t SOP_found = 0;
   uint32_t crc_local;
   uint32_t crc_remote;

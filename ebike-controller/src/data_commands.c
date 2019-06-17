@@ -1,7 +1,7 @@
 /******************************************************************************
  * Filename: data_commands.c
- * Description: 
- *
+ * Description: Forwards the commands that were properly decoded from a
+ *              communication channel packet to the correct function.
  *
  ******************************************************************************
 
@@ -153,7 +153,7 @@ uint16_t command_get_ram(uint8_t* pktdata, void* retval) {
     uint32_t retval32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    float* tempfptr;
+    float* fhalltableptr;
 
     switch(value_ID) {
     case CONFIG_DATA_SPEED:
@@ -252,38 +252,38 @@ uint16_t command_get_ram(uint8_t* pktdata, void* retval) {
     // case CONFIG_MOTOR_FLUX:
         // break;
     case CONFIG_MOTOR_HALL1:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[1];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[1];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_MOTOR_HALL2:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[2];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[2];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_MOTOR_HALL3:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[3];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[3];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_MOTOR_HALL4:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[4];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[4];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_MOTOR_HALL5:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[5];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[5];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_MOTOR_HALL6:
-        tempfptr = HallSensor_GetAngleTable();
-        retvalf = tempfptr[6];
+        fhalltableptr = HallSensor_GetAngleTable();
+        retvalf = fhalltableptr[6];
         *(float*)retval = retvalf;
         errCode = RESULT_IS_FLOAT;
         break;
@@ -354,47 +354,83 @@ uint16_t command_get_ram(uint8_t* pktdata, void* retval) {
 uint16_t command_set_ram(uint8_t* pktdata) {
     // Data is two bytes for value ID
     uint16_t value_ID = (((uint16_t)pktdata[0]) >> 8) + ((uint16_t)pktdata[1]);
-    // Then four bytes for value
+    // Then one to four bytes for value, depending on command
+    float* fhalltableptr;
+    float ftemphalltable[8];
     float valuef;
-    uint8_t value8b;
+    uint8_t value8b, value8b_2;
     uint16_t value16b;
     uint32_t value32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
     switch(value_ID) {
     case CONFIG_DATA_SPEED:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugSpeed(value8b);
+      break;
     case CONFIG_DATA_NUMVARS:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetNumUSBDebugOutputs(value8b);
+      break;
     case CONFIG_DATA_VAR1:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(0, value8b);
+      break;
     case CONFIG_DATA_VAR2:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(1, value8b);
+      break;
     case CONFIG_DATA_VAR3:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(2, value8b);
+      break;
     case CONFIG_DATA_VAR4:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(3, value8b);
+      break;
     case CONFIG_DATA_VAR5:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(4, value8b);
+      break;
     case CONFIG_DATA_VAR6:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(5, value8b);
+      break;
     case CONFIG_DATA_VAR7:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(6, value8b);
+      break;
     case CONFIG_DATA_VAR8:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(7, value8b);
+      break;
     case CONFIG_DATA_VAR9:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(8, value8b);
+      break;
     case CONFIG_DATA_VAR10:
-        break;
+      value8b = pktdata[2];
+      errCode = MAIN_SetUSBDebugOutput(9, value8b);
+      break;
     case CONFIG_FOC_KP:
-        break;
+      valuef = *((float*)(&(pktdata[2])));
+      errCode = MAIN_SetVar(0, valuef);
+      break;
     case CONFIG_FOC_KI:
-        break;
+      valuef = *((float*)(&(pktdata[2])));
+      errCode = MAIN_SetVar(1, valuef);
+      break;
     case CONFIG_FOC_KD:
-        break;
+      valuef = *((float*)(&(pktdata[2])));
+      errCode = MAIN_SetVar(2, valuef);
+      break;
     case CONFIG_FOC_KC:
-        break;
+      valuef = *((float*)(&(pktdata[2])));
+      errCode = MAIN_SetVar(3, valuef);
+      break;
     case CONFIG_FOC_DT:
-        break;
+      value32b = *((uint32_t*)(&(pktdata[2])));
+      errCode = MAIN_SetDeadTime(value32b);
+      break;
     // case CONFIG_FOC_FREQ:
         // break;
 //    case CONFIG_MOTOR_PP:
@@ -406,41 +442,71 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     // case CONFIG_MOTOR_FLUX:
         // break;
     case CONFIG_MOTOR_HALL1:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[1] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_MOTOR_HALL2:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[2] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_MOTOR_HALL3:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[3] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_MOTOR_HALL4:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[4] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_MOTOR_HALL5:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[5] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_MOTOR_HALL6:
-        break;
+      fhalltableptr = HallSensor_GetAngleTable();
+      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
+      valuef = *((float*)(&(pktdata[2])));
+      ftemphalltable[6] = valuef;
+      errCode = HallSensor_SetAngleTable(ftemphalltable);
+      break;
     case CONFIG_THR_TYPE1:
-        break;
+      break;
     case CONFIG_THR_MIN1:
-        break;
+      break;
     case CONFIG_THR_MAX1:
-        break;
+      break;
     case CONFIG_THR_HYST1:
-        break;
+      break;
     case CONFIG_THR_FILT1:
-        break;
+      break;
     case CONFIG_THR_RISE1:
-        break;
+      break;
     case CONFIG_THR_TYPE2:
-        break;
+      break;
     case CONFIG_THR_MIN2:
-        break;
+      break;
     case CONFIG_THR_MAX2:
-        break;
+      break;
     case CONFIG_THR_HYST2:
-        break;
+      break;
     case CONFIG_THR_FILT2:
-        break;
+      break;
     case CONFIG_THR_RISE2:
-        break;
+      break;
     }
     return errCode;
 }

@@ -113,7 +113,7 @@ float HallSensor2_Get_Speedf(void);
 uint8_t HallSensor2_Get_Direction(void);
 #endif
 
-void HallSensor_SetAngleTable(float* angleTab);
+uint8_t HallSensor_SetAngleTable(float* angleTab);
 float* HallSensor_GetAngleTable(void);
 //void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
