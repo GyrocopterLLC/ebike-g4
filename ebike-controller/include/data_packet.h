@@ -31,6 +31,7 @@ SOFTWARE.
 typedef struct
 {
     uint16_t DataLength;
+    uint16_t StartPosition;
     uint8_t PacketType;
     uint8_t FaultCode;
     uint8_t RxReady;
@@ -46,6 +47,10 @@ typedef struct
 
 #define PACKET_MAX_LENGTH       (256)
 #define PACKET_MAX_DATA_LENGTH  (64)
+
+#define PACKET_OVERHEAD_BYTES		(10)
+#define PACKET_CRC_BYTES			(4)
+#define PACKET_NONCRC_OVHD_BYTES	(PACKET_OVERHEAD_BYTES - PACKET_CRC_BYTES)
 
 // SOP defines
 #define PACKET_START_0          (0x9A)

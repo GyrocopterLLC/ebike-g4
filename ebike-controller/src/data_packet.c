@@ -70,7 +70,7 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
   uint32_t crc;
 
   // Fail out if the packet can't fit in the buffer
-  if(datalen + 8 > PACKET_MAX_LENGTH) {
+  if(datalen + PACKET_OVERHEAD_BYTES > PACKET_MAX_LENGTH) {
     pkt->TxReady = 0;
     return DATA_PACKET_FAIL;
   }
@@ -85,7 +85,7 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
     pkt->TxBuffer[place++] = data[i];
   }
 
-  crc = CRC32_Generate(pkt->TxBuffer, datalen + 6);
+  crc = CRC32_Generate(pkt->TxBuffer, datalen + PACKET_NONCRC_OVHD_BYTES);
   pkt->TxBuffer[place++] = (uint8_t)((crc & 0xFF000000) >> 24);
   pkt->TxBuffer[place++] = (uint8_t)((crc & 0x00FF0000) >> 16);
   pkt->TxBuffer[place++] = (uint8_t)((crc & 0x0000FF00) >> 8);
@@ -103,12 +103,14 @@ uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
   uint32_t crc_local;
   uint32_t crc_remote;
   uint16_t data_length;
+  uint16_t sop_place;
   uint8_t packet_type;
   uint8_t nPacket_type;
   // Search forward to find SOP
   while((place < buflen-1) && (!SOP_found)) {
     if(buf[place] == PACKET_START_0 && buf[place+1] == PACKET_START_1) {
       SOP_found = 1;
+      sop_place = place;
     }
     place++; // Advance to next byte and try again
   }
@@ -136,11 +138,12 @@ uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
     pkt->FaultCode = INVALID_PACKET_LENGTH;
     return DATA_PACKET_FAIL;
   }
-  if((place+data_length+4) > buflen) {
+  if((place+data_length+PACKET_CRC_BYTES) > buflen) {
     pkt->FaultCode = INVALID_PACKET_LENGTH;
     return DATA_PACKET_FAIL;
   }
-  crc_local = CRC32_Generate(&(buf[place-6]),data_length+6);
+  crc_local = CRC32_Generate(&(buf[place-PACKET_NONCRC_OVHD_BYTES]),
+		  data_length+PACKET_NONCRC_OVHD_BYTES);
   crc_remote = ((uint32_t)(buf[place+data_length]) << 24)
              + ((uint32_t)(buf[place+data_length+1]) << 16)
              + ((uint32_t)(buf[place+data_length+2]) << 8)
@@ -151,6 +154,7 @@ uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
   }
   pkt->PacketType = packet_type;
   pkt->DataLength = data_length;
+  pkt->StartPosition = sop_place;
 
   memcpy(pkt->Data, &(buf[place]), pkt->DataLength);
   pkt->FaultCode = NO_FAULT;
