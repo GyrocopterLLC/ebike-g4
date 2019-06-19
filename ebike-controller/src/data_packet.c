@@ -64,6 +64,19 @@ SOFTWARE.
  * -- 0x92 - NACK
  */
 
+/**
+ * @brief  Data Packet Create
+ * 		   Generates a data packet from the required fields. Packs the
+ * 		   transmission buffer with the proper byte order and creates the
+ * 		   CRC field for error checking.
+ * @param  pkt - pointer to the Data_Packet_Type which will hold the
+ *               generated packet bytes
+ * @param  type - packet type, defines the command type
+ * @param  data - pointer to data buffer to pack into the packet
+ * @param  datalen - length of the data buffer to be packed
+ * @retval DATA_PACKET_FAIL - the packet couldn't be created
+ * 		   DATA_PACKET_SUCCESS - packet was created, it can now be sent
+ */
 uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
                           uint16_t datalen) {
   uint16_t place = 0;
@@ -96,6 +109,22 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
 
 }
 
+/**
+ * @brief  Data Packet Extract
+ * 		   Decodes a data packet coming in from any data channel. Discovers
+ * 		   the packet type, pulls out the packet data, and checks the CRC
+ * 		   field for transmission errors.
+ * @param  pkt - pointer to the Data_Packet_Type which will hold the
+ *               decoded packet
+ * @param  buf - raw data packet buffer. The buffer will be searched to find
+ *               a valid packet, the packet doesn't have to be at the start
+ *               of the buffer and the end of the buffer can extend past
+ *               the end of the packet.
+ * @param  buflen - length of the data packet buffer - the number of bytes
+ *                  to search through when looking for valid packets
+ * @retval DATA_PACKET_FAIL - the packet was invalid and should be discarded
+ * 		   DATA_PACKET_SUCCESS - the packet was valid and was decoded
+ */
 uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
                             uint16_t buflen) {
   uint16_t place = 0;

@@ -30,6 +30,16 @@ SOFTWARE.
 #include "data_packet.h"
 #include "data_commands.h"
 
+
+/**
+ * @brief  Data Process Command
+ * 		   Interprets the command in a decoded packet. Calls the appropriate
+ * 		   sub-function for the requested command.
+ * @param  pkt - Data_Packet_Type pointer with the decoded communication data
+ * @retval DATA_COMMAND_FAIL - Unable to process the packet
+ * 		   DATA_COMMAND_SUCCESS - Packet was processed. Check the TxReady flag
+ * 		   						  to see if an outgoing packet was generated.
+ */
 uint16_t data_process_command(Data_Packet_Type* pkt) {
 
 	uint8_t retval[4];
@@ -139,6 +149,21 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
     return errCode;
 }
 
+/**
+ * @brief  Data Command: Get Ram
+ * 		   Interprets the command in a decoded packet. Calls the appropriate
+ * 		   sub-function for the requested command.
+ * @param  pktdata - Data field in the incoming packet
+ * @param  retval - Pointer to return value from the command request.
+ *                  Regardless of the return type, it will be placed into the
+ *                  location pointed to by retval. Data can be 8 to 32 bit
+ *                  (1 to 4 bytes).
+ * @retval DATA_COMMAND_FAIL - Unable to process the data
+ * 		   RESULT_IS_8B - The return value is an 8-bit integer
+ * 		   RESULT_IS_16B - The return value is an 16-bit integer
+ * 		   RESULT_IS_32B - The return value is an 32-bit integer
+ * 		   RESULT_IS_FLOAT - The return value is an 32-bit floating point
+ */
 uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // Data is two bytes for value ID
     uint16_t value_ID = (((uint16_t)pktdata[0]) >> 8) + ((uint16_t)pktdata[1]);
