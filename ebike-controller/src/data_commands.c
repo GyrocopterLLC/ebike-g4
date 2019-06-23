@@ -166,7 +166,8 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
  */
 uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // Data is two bytes for value ID
-    uint16_t value_ID = (((uint16_t)pktdata[0]) >> 8) + ((uint16_t)pktdata[1]);
+    uint16_t value_ID = data_packet_extract_16b(pktdata);
+//    uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     float retvalf;
     uint8_t retval8b;
     uint16_t retval16b;
@@ -373,7 +374,8 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
 
 uint16_t command_set_ram(uint8_t* pktdata) {
     // Data is two bytes for value ID
-    uint16_t value_ID = (((uint16_t)pktdata[0]) >> 8) + ((uint16_t)pktdata[1]);
+    uint16_t value_ID = data_packet_extract_16b(pktdata);
+    //uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     pktdata += 2;
     // Then one to four bytes for value, depending on command
     float* fhalltableptr;

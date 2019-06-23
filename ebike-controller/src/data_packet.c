@@ -142,6 +142,7 @@ uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
 
   // Do this until we run out of bytes
   while((place < buflen) && (!good_packet)) {
+    SOP_found = 0;
     retry = 0;
 
     // Search forward to find SOP

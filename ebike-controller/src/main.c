@@ -332,6 +332,7 @@ int main(void) {
   WDT_init();
 
   /* Start communications processor */
+  CRC32_Init();
   USB_Data_Comm_Init();
 
   /* Run Application (Interrupt mode) */
