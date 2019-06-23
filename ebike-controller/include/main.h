@@ -59,6 +59,9 @@ SOFTWARE.
 #include "wdt.h"
 #include "power_calcs.h"
 #include "crc32.h"
+#include "data_packet.h"
+#include "data_commands.h"
+#include "usb_data_comm.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

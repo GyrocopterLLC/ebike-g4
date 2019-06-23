@@ -128,58 +128,87 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
 uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
                             uint16_t buflen) {
   uint16_t place = 0;
-  uint8_t SOP_found = 0;
+  uint8_t SOP_found = 0;  // True when the Start Of Packet sequence has been
+                          //    found in the array
+  uint8_t retry = 0;      // True if we failed this packet detection and want
+                          //    to restart at the SOP detection step
+  uint8_t good_packet = 0;  // True when packet reception is successful
   uint32_t crc_local;
   uint32_t crc_remote;
-  uint16_t data_length;
-  uint16_t sop_place;
-  uint8_t packet_type;
+  uint16_t data_length = 0;
+  uint16_t sop_place = 0;
+  uint8_t packet_type = 0;
   uint8_t nPacket_type;
-  // Search forward to find SOP
-  while((place < buflen-1) && (!SOP_found)) {
-    if(buf[place] == PACKET_START_0 && buf[place+1] == PACKET_START_1) {
-      SOP_found = 1;
-      sop_place = place;
+
+  // Do this until we run out of bytes
+  while((place < buflen) && (!good_packet)) {
+    retry = 0;
+
+    // Search forward to find SOP
+    while((place < buflen-1) && (!SOP_found)) {
+      if(buf[place] == PACKET_START_0 && buf[place+1] == PACKET_START_1) {
+        SOP_found = 1;
+        sop_place = place;
+      }
+      place++; // Advance to next byte and try again
     }
-    place++; // Advance to next byte and try again
-  }
-  place++; // Move past the 2nd SOP byte
-  if(!SOP_found) {
-    pkt->FaultCode = NO_START_DETECTED;
-    return DATA_PACKET_FAIL;
-  }
+    place++; // Move past the 2nd SOP byte
+    if(!SOP_found) {
+      pkt->FaultCode = NO_START_DETECTED;
+      // Since there is no SOP in the whole array, we can return.
+      return DATA_PACKET_FAIL;
+    }
 
-  if((place+4) > buflen) {
-    pkt->FaultCode = INVALID_PACKET_LENGTH;
-    return DATA_PACKET_FAIL;
-  }
+    if((place+4) > buflen) {
+      pkt->FaultCode = INVALID_PACKET_LENGTH;
+      // Most likely the rest of the packet hasn't been received.
+      // Try again when more data comes in, save to return.
+      return DATA_PACKET_FAIL;
+    }
 
-  packet_type = buf[place++];
-  nPacket_type = buf[place++];
-  nPacket_type = ~(nPacket_type);
-  if(packet_type != nPacket_type) {
-    pkt->FaultCode = BAD_PACKET_TYPE;
-    return DATA_PACKET_FAIL;
-  }
-  data_length = ((uint16_t)(buf[place]) >> 8) + (uint16_t)(buf[place+1]);
-  place += 2;
-  if(data_length > PACKET_MAX_DATA_LENGTH) {
-    pkt->FaultCode = INVALID_PACKET_LENGTH;
-    return DATA_PACKET_FAIL;
-  }
-  if((place+data_length+PACKET_CRC_BYTES) > buflen) {
-    pkt->FaultCode = INVALID_PACKET_LENGTH;
-    return DATA_PACKET_FAIL;
-  }
-  crc_local = CRC32_Generate(&(buf[place-PACKET_NONCRC_OVHD_BYTES]),
-		  data_length+PACKET_NONCRC_OVHD_BYTES);
-  crc_remote = ((uint32_t)(buf[place+data_length]) << 24)
-             + ((uint32_t)(buf[place+data_length+1]) << 16)
-             + ((uint32_t)(buf[place+data_length+2]) << 8)
-             + (uint32_t)(buf[place+data_length+3]);
-  if(crc_local != crc_remote) {
-    pkt->FaultCode = BAD_CRC;
-    return DATA_PACKET_FAIL;
+    packet_type = buf[place++];
+    nPacket_type = buf[place++];
+    nPacket_type = ~(nPacket_type);
+    if(packet_type != nPacket_type) {
+      pkt->FaultCode = BAD_PACKET_TYPE;
+      // Could be a false SOP. Go back through the loop, starting just
+      // after the last SOP.
+      place -= 2;
+      retry = 1;
+    }
+
+    if(!retry) {
+      data_length = ((uint16_t)(buf[place]) << 8) + (uint16_t)(buf[place+1]);
+      place += 2;
+      if((data_length > PACKET_MAX_DATA_LENGTH) ||
+          ((place+data_length+PACKET_CRC_BYTES) > buflen)) {
+        pkt->FaultCode = INVALID_PACKET_LENGTH;
+        // This also could be a false SOP, or the remaining data hasn't arrived.
+        // First try going through the loop again. If there isn't another SOP,
+        // then we will return and try again when more data comes in.
+        place -= 4;
+        retry = 1;
+      }
+    }
+
+    if(!retry) {
+      crc_local = CRC32_Generate(&(buf[place-PACKET_NONCRC_OVHD_BYTES]),
+          data_length+PACKET_NONCRC_OVHD_BYTES);
+      crc_remote = ((uint32_t)(buf[place+data_length]) << 24)
+                 + ((uint32_t)(buf[place+data_length+1]) << 16)
+                 + ((uint32_t)(buf[place+data_length+2]) << 8)
+                 + (uint32_t)(buf[place+data_length+3]);
+      if(crc_local != crc_remote) {
+        pkt->FaultCode = BAD_CRC;
+        // Getting less and less likely that a false SOP came in, more likely
+        // to be a data error. Regardless, can try the rest of the array for a
+        // good packet.
+        place -= 4;
+      } else {
+        // Good packet! We can grab the data and go home
+        good_packet = 1;
+      }
+    }
   }
   pkt->PacketType = packet_type;
   pkt->DataLength = data_length;

@@ -331,14 +331,21 @@ int main(void) {
   /* Initialize watchdog timer */
   WDT_init();
 
+  /* Start communications processor */
+  USB_Data_Comm_Init();
+
   /* Run Application (Interrupt mode) */
   while (1) {
-    uint32_t vcp_buf_len;
+
 //    uint32_t uart_buf_len;
     // Feed the watchdog!
     WDT_feed();
 
+    // Check USB serial for data
+    USB_Data_Comm_Periodic_Check();
     //Toggle_Leds();
+/** Older USB comm method
+    uint32_t vcp_buf_len;
     if (VCP_Read(&byte, 1) != 0) {
       // Current communication is NOT serial port.
       g_MainFlags &= ~(MAINFLAG_LASTCOMMSERIAL);
@@ -375,7 +382,9 @@ int main(void) {
         }
       }
     }
-/*    
+*/
+/**
+ * Older UART comm method
     // Read a byte from the HBD UART
     if(HBD_Receive(&byte, 1) != 0)
     {
