@@ -159,6 +159,7 @@ int32_t PWM_GetDeadTime_EEPROM(void) {
 }
 
 uint8_t PWM_SetFreq(int32_t newFreq) {
+	((void)newFreq);
   return UI_OK;
 }
 

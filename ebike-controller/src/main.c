@@ -445,7 +445,7 @@ int main(void) {
       g_MainFlags &= ~(MAINFLAG_HALLDETECTFAIL);
     }
     if(g_MainFlags & MAINFLAG_HALLDETECTPASS) {
-      uint32_t result_len;
+//      uint32_t result_len;
       if(g_MainFlags & MAINFLAG_LASTCOMMSERIAL) {
         HBD_SendWrapper("Hall detection success.\r\n",25);
         for(uint8_t ii = 0; ii < 6; ii++) {
@@ -1165,6 +1165,7 @@ float MAIN_GetVar_EEPROM(uint8_t var) {
 }
 
 uint8_t MAIN_SetFreq(int32_t newfreq) {
+	((void)newfreq);
   // Not yet implemented
   return UI_ERROR;
 }
@@ -1174,6 +1175,7 @@ int32_t MAIN_GetFreq(void) {
 }
 
 uint8_t MAIN_SetDeadTime(int32_t newDT) {
+	((void)newDT);
   // Not yet implemented
   return UI_ERROR;
 }

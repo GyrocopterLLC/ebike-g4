@@ -62,8 +62,9 @@ void HBD_Init(void)
 	NVIC_EnableIRQ(HBD_IRQn);
 }
 
-int32_t HBD_Receive(uint8_t* buf, uint32_t count)
+int32_t HBD_Receive(void* buf, uint32_t count)
 {
+	uint8_t* buf8b = buf;
 	uint32_t buffer_remaining = 0;
 	uint32_t place = 0;
 	// Copy up to "count" bytes from the read buffer
@@ -82,7 +83,7 @@ int32_t HBD_Receive(uint8_t* buf, uint32_t count)
 	}
 	while((place < count) && (place < buffer_remaining))
 	{
-		buf[place++] = s_RxBuffer.Buffer[s_RxBuffer.RdPos++];
+		buf8b[place++] = s_RxBuffer.Buffer[s_RxBuffer.RdPos++];
 		if(s_RxBuffer.RdPos > HBD_BUFFER_LENGTH)
 			s_RxBuffer.RdPos = 0;
 	}
@@ -92,8 +93,9 @@ int32_t HBD_Receive(uint8_t* buf, uint32_t count)
 	return place;
 }
 
-int32_t HBD_Transmit(uint8_t* buf, uint32_t count)
+int32_t HBD_Transmit(void* buf, uint32_t count)
 {
+	uint8_t* buf8b = buf;
 	uint32_t place = 0;
 	if(s_TxBuffer.Done)
 	{
@@ -114,7 +116,7 @@ int32_t HBD_Transmit(uint8_t* buf, uint32_t count)
 		s_TxBuffer.WrPos = 0;
 		while((place < HBD_BUFFER_LENGTH) && (place < count))
 		{
-			s_TxBuffer.Buffer[s_TxBuffer.WrPos++] = buf[place++];
+			s_TxBuffer.Buffer[s_TxBuffer.WrPos++] = buf8b[place++];
 		}
 		// Start the transfer
 
@@ -140,7 +142,7 @@ int32_t HBD_Transmit(uint8_t* buf, uint32_t count)
 		{
 			while((place < buffer_remaining) && (place < count))
 			{
-				s_TxBuffer.Buffer[s_TxBuffer.WrPos++] = buf[place++];
+				s_TxBuffer.Buffer[s_TxBuffer.WrPos++] = buf8b[place++];
 			}
 		}
 		else

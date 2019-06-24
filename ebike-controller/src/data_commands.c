@@ -174,6 +174,8 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     uint32_t retval32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
+    ((void)retval16b);
+
     float* fhalltableptr;
 
     switch(value_ID) {
@@ -385,6 +387,9 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     uint16_t value16b;
     uint32_t value32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
+
+    ((void)value16b);
+
     switch(value_ID) {
     case CONFIG_DATA_SPEED:
       value8b = data_packet_extract_8b(pktdata);
@@ -535,21 +540,27 @@ uint16_t command_set_ram(uint8_t* pktdata) {
 }
 
 uint16_t command_get_eeprom(uint8_t* pktdata, uint8_t* retval) {
+	((void)pktdata);
+	((void)retval);
 	return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_set_eeprom(uint8_t* pktdata) {
+	((void)pktdata);
 	return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_enable_feature(uint8_t* pktdata) {
+	((void)pktdata);
 	return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_disable_feature(uint8_t* pktdata) {
+	((void)pktdata);
 	return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_run_routine(uint8_t* pktdata) {
+	((void)pktdata);
 	return DATA_COMMAND_FAIL;
 }

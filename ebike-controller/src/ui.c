@@ -747,6 +747,8 @@ uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
 #else// !DEBUG_DUMP_USED
 uint8_t UI_DumpVar_Command_Req(char cmdtype, char* options)
 {
+	((void)cmdtype);
+	((void)options);
   UI_SerialOut(UI_RESPBAD, UI_LENGTH_RESPBAD);
   return UI_ERROR;
 }

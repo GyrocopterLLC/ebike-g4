@@ -384,6 +384,7 @@ void CDC_Reset(void)
 
 void CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
+	((void)length);
 	switch (cmd)
 	{
 	case CDC_SEND_ENCAPSULATED_COMMAND:

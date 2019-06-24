@@ -53,7 +53,7 @@ typedef struct
 
 void HBD_Init(void);
 void HBD_IRQ(void);
-int32_t HBD_Receive(uint8_t* buf, uint32_t count);
-int32_t HBD_Transmit(uint8_t* buf, uint32_t count);
+int32_t HBD_Receive(void* buf, uint32_t count);
+int32_t HBD_Transmit(void* buf, uint32_t count);
 
 #endif // UART_H_
