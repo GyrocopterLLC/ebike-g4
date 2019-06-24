@@ -26,5 +26,10 @@ SOFTWARE.
 // Used resources:
 // CRC
 
+#ifndef _CRC32_H_
+#define _CRC32_H_
+
 void CRC32_Init(void);
 uint32_t CRC32_Generate(uint8_t *buf, uint16_t len);
+
+#endif // _CRC32_H_
