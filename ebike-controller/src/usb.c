@@ -196,7 +196,8 @@ void USB_Init(void)
 	// Set TX (IN packets) FIFO buffer size for Endpoint 1
 	// Start address is offset by RX buffer and TX EP0 buffer
 	USB_CORE->DIEPTXF[0] = (TX_FIFO_BUF_SIZE << 16) | (RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE);
-	USB_CORE->DIEPTXF[1] = (16 << 16) | (TX_FIFO_BUF_SIZE + RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE);
+//	USB_CORE->DIEPTXF[1] = (16 << 16) | (TX_FIFO_BUF_SIZE + RX_FIFO_BUF_SIZE + CMD_FIFO_BUF_SIZE);
+	USB_CORE->DIEPTXF[1] = 0; // Endpoint 2 is required in class descriptor, but never used.
 	USB_CORE->DIEPTXF[2] = 0;
 
 	USB_InEPs[0].mps = USB_MAX_EP0_SIZE;
@@ -1090,10 +1091,6 @@ void USB_SendData(uint8_t *pbuf, uint8_t epnum, uint16_t len)
 	USB_InEPs[epnum].total_xfer_len = len;
 	USB_InEPs[epnum].xfer_remaining = len;
 	USB_InEPs[epnum].xfer_done_count = 0;
-
-	// Flush this endpoint's TX buffer
-	// I shouldn't have to flush the FIFO. But without doing this, the IN packets fail to send!
-	USB_FlushTxFifo(epnum);
 
 	if(epnum == 0)
 		USB_Start_INEP0_Transfer(len);

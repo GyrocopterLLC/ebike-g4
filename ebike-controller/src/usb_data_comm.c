@@ -121,7 +121,7 @@ void USB_Data_Comm_Periodic_Check(void) {
 		memmove(USB_Data_Comm_RxBuffer,
 				USB_Data_Comm_RxBuffer + pkt_end,
 				PACKET_MAX_LENGTH - pkt_end);
-		USB_Data_Comm_RxBuffer_WrPlace = PACKET_MAX_LENGTH - pkt_end;
+		USB_Data_Comm_RxBuffer_WrPlace -= pkt_end;
 	}
 }
 
