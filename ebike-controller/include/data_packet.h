@@ -42,15 +42,15 @@ typedef struct
     uint8_t* TxBuffer;
 } Data_Packet_Type;
 
-#define DATA_PACKET_FAIL		(0)
-#define DATA_PACKET_SUCCESS		(1)
+#define DATA_PACKET_FAIL        (0)
+#define DATA_PACKET_SUCCESS     (1)
 
 #define PACKET_MAX_LENGTH       (256)
 #define PACKET_MAX_DATA_LENGTH  (64)
 
-#define PACKET_OVERHEAD_BYTES		(10)
-#define PACKET_CRC_BYTES			(4)
-#define PACKET_NONCRC_OVHD_BYTES	(PACKET_OVERHEAD_BYTES - PACKET_CRC_BYTES)
+#define PACKET_OVERHEAD_BYTES       (10)
+#define PACKET_CRC_BYTES            (4)
+#define PACKET_NONCRC_OVHD_BYTES    (PACKET_OVERHEAD_BYTES - PACKET_CRC_BYTES)
 
 // SOP defines
 #define PACKET_START_0          (0x9A)
@@ -82,48 +82,74 @@ typedef struct
 #define NO_START_DETECTED       (0x04)
 #define INVALID_PACKET_LENGTH   (0x08)
 
+/** All extraction/packing functions are assuming Big Endian (most significant byte first)
+ *
+ * For example: 32-bit int - save the value 4,000,050 as bytes:
+ * Hex value is 0x003D0932
+ * Bytes are transmitted as 0x00, 0x3D, 0x09, 0x32
+ *
+ * Another example: 32-bit single precision float - save the value 5.505 as bytes:
+ * Hex value is 0x40B028F6 (sign is 0b0, exponent is 0b10000001 (129, or 2^(129-127) = 2^2 = 4),
+ * mantissa is 0b01100000010100011110110 (3156214), so value is (1+(3156214*2^-23)) * 4 = 1.505000114...)
+ * Bytes are transmitted as 0x40, 0xB0, 0x28, 0xF6
+ *
+ */
+
 inline void data_packet_pack_8b(uint8_t* array, uint8_t value) {
-	array[0] = value;
+    array[0] = value;
 }
 
 inline uint8_t data_packet_extract_8b(uint8_t* array) {
-	return array[0];
+    return array[0];
 }
 
 inline void data_packet_pack_16b(uint8_t* array, uint16_t value) {
-	array[0] = (uint8_t)((value & 0xFF00) >> 8);
-	array[1] =  (uint8_t)(value & 0x00FF);
+    array[0] = (uint8_t)((value & 0xFF00) >> 8);
+    array[1] =  (uint8_t)(value & 0x00FF);
 }
 
 inline uint16_t data_packet_extract_16b(uint8_t* array) {
-	uint16_t u16Temp = (((uint16_t)(array[0])) << 8) + array[1];
-	return u16Temp;
+    uint16_t u16Temp = (((uint16_t)(array[0])) << 8) + array[1];
+    return u16Temp;
 }
 
 inline void data_packet_pack_32b(uint8_t* array, uint32_t value) {
-	array[0] = (uint8_t)((value & 0xFF000000) >> 24);
-	array[1] = (uint8_t)((value & 0x00FF0000) >> 16);
-	array[2] = (uint8_t)((value & 0x0000FF00) >> 8);
-	array[3] =  (uint8_t)(value & 0x000000FF);
+    array[0] = (uint8_t)((value & 0xFF000000) >> 24);
+    array[1] = (uint8_t)((value & 0x00FF0000) >> 16);
+    array[2] = (uint8_t)((value & 0x0000FF00) >> 8);
+    array[3] =  (uint8_t)(value & 0x000000FF);
 }
 
 inline uint32_t data_packet_extract_32b(uint8_t* array) {
-	uint32_t u32Temp;
-	u32Temp  = (((uint32_t)(array[0])) << 24);
-	u32Temp += (((uint32_t)(array[1])) << 16);
-	u32Temp += (((uint32_t)(array[2])) << 8);
-	u32Temp += array[3];
-	return u32Temp;
+    uint32_t u32Temp;
+    u32Temp  = (((uint32_t)(array[0])) << 24);
+    u32Temp += (((uint32_t)(array[1])) << 16);
+    u32Temp += (((uint32_t)(array[2])) << 8);
+    u32Temp += array[3];
+    return u32Temp;
 }
 
+// Note that internally the ARM Cortex M4 uses little-endian. The least significant
+// byte of a 32-bit value is stored first. The data format is big endian, so we gotta flip.
 inline void data_packet_pack_float(uint8_t* array, float value) {
-	memcpy(array, &value, 4);
+    uint8_t* fptr = (uint8_t*)(&value);
+
+    array[0] = fptr[3];
+    array[1] = fptr[2];
+    array[2] = fptr[1];
+    array[3] = fptr[0];
 }
 
 inline float data_packet_extract_float(uint8_t* array) {
-	float fTemp;
-	memcpy(&fTemp, array, 4);
-	return fTemp;
+    float fTemp;
+    uint8_t* fptr = (uint8_t*)(&fTemp);
+
+    fptr[0] = array[3];
+    fptr[1] = array[2];
+    fptr[2] = array[1];
+    fptr[3] = array[0];
+
+    return fTemp;
 }
 
 uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
