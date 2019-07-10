@@ -2,32 +2,30 @@
  * Filename: hallSensor.h
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
-
 
 // Used resources:
 // TIM3, TIM4
 // DMAx Stream x
-
 #ifndef HALLSENSOR_H_
 #define HALLSENSOR_H_
 
@@ -59,35 +57,34 @@ SOFTWARE.
 #define HALL_ROT_FORWARD				1
 #define HALL_ROT_REVERSE				2
 
-typedef struct
-{
+typedef struct {
 #if defined(USE_FLOATING_POINT)
-	float Speed;
-	uint32_t CallingFrequency;
-	float AngleIncrement;
-	float Angle;
-	uint32_t CaptureValue;
-	uint32_t CaptureForState[6];
-	uint16_t Prescaler;
-	uint16_t PrescalerForState[6];
-	uint8_t Status;
-	uint8_t OverflowCount;
-	uint8_t RotationDirection;
-	uint8_t CurrentState;
+    float Speed;
+    uint32_t CallingFrequency;
+    float AngleIncrement;
+    float Angle;
+    uint32_t CaptureValue;
+    uint32_t CaptureForState[6];
+    uint16_t Prescaler;
+    uint16_t PrescalerForState[6];
+    uint8_t Status;
+    uint8_t OverflowCount;
+    uint8_t RotationDirection;
+    uint8_t CurrentState;
 #else
-	uint32_t Speed; // Expressed in Hz * 2^16 (aka Q16 number)
-	uint32_t CallingFrequency; // How rapidly the speed calculation will be updated
-	uint32_t CaptureValue;
-	uint16_t AngleIncrement;
-	uint16_t Angle;
-	uint16_t Prescaler;
-	uint8_t Status;
-	uint8_t OverflowCount;
-	uint8_t RotationDirection;
-	uint8_t CurrentState;
+    uint32_t Speed; // Expressed in Hz * 2^16 (aka Q16 number)
+    uint32_t CallingFrequency;// How rapidly the speed calculation will be updated
+    uint32_t CaptureValue;
+    uint16_t AngleIncrement;
+    uint16_t Angle;
+    uint16_t Prescaler;
+    uint8_t Status;
+    uint8_t OverflowCount;
+    uint8_t RotationDirection;
+    uint8_t CurrentState;
 #endif
 
-}HallSensor_HandleTypeDef;
+} HallSensor_HandleTypeDef;
 
 /************ Functions ************/
 

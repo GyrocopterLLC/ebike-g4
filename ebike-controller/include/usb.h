@@ -2,27 +2,26 @@
  * Filename: usb.h
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
-
 
 #ifndef USB_H_
 #define USB_H_
@@ -43,7 +42,6 @@ SOFTWARE.
 #define STS_SETUP_COMP		4
 #define STS_SETUP_UPDT		6
 
-#define PRIO_USB			6
 #define CMD_FIFO_BUF_SIZE 0x80
 #define RX_FIFO_BUF_SIZE  0x40
 #define TX_FIFO_BUF_SIZE  0x80 // Up to 8 packets in the fifo at once
@@ -108,14 +106,12 @@ SOFTWARE.
 #define  USB_DESC_TYPE_DEVICE_QUALIFIER                    6
 #define  USB_DESC_TYPE_OTHER_SPEED_CONFIGURATION           7
 
-
 #define USB_CONFIG_REMOTE_WAKEUP                           2
 #define USB_CONFIG_SELF_POWERED                            1
 
 #define USB_FEATURE_EP_HALT                                0
 #define USB_FEATURE_REMOTE_WAKEUP                          1
 #define USB_FEATURE_TEST_MODE                              2
-
 
 #define USB_HS_MAX_PACKET_SIZE                            512
 #define USB_FS_MAX_PACKET_SIZE                            64
@@ -126,7 +122,6 @@ SOFTWARE.
 #define USB_STATE_ADDRESSED                              2
 #define USB_STATE_CONFIGURED                             3
 #define USB_STATE_SUSPENDED                              4
-
 
 /*  EP0 State */
 #define USB_EP0_IDLE                                     0
@@ -142,67 +137,63 @@ SOFTWARE.
 #define USB_EP_TYPE_BULK                                 2
 #define USB_EP_TYPE_INTR                                 3
 
-typedef struct
-{
-	uint16_t xfer_len;
-	uint16_t xfer_done_count;
-	uint16_t total_xfer_len;
-	uint16_t xfer_remaining;
-	uint16_t mps;
-	uint8_t* xfer_buffer;
+typedef struct {
+    uint16_t xfer_len;
+    uint16_t xfer_done_count;
+    uint16_t total_xfer_len;
+    uint16_t xfer_remaining;
+    uint16_t mps;
+    uint8_t* xfer_buffer;
 } USB_EndpointType;
 
-typedef struct
-{
-	uint8_t chnum;
-	uint16_t bcnt;
-	uint8_t dpid;
-	uint8_t pktsts;
+typedef struct {
+    uint8_t chnum;
+    uint16_t bcnt;
+    uint8_t dpid;
+    uint8_t pktsts;
 } USB_FIFOStatusTypedef;
 
-typedef struct
-{
-	uint8_t   bmRequest;
-	uint8_t   bRequest;
-	uint16_t  wValue;
-	uint16_t  wIndex;
-	uint16_t  wLength;
+typedef struct {
+    uint8_t bmRequest;
+    uint8_t bRequest;
+    uint16_t wValue;
+    uint16_t wIndex;
+    uint16_t wLength;
 } USB_SetupReqTypedef;
 
-typedef struct
-{
-	uint8_t* (*GetDeviceDescriptor)(uint16_t* len);
-	uint8_t* (*GetConfigDescriptor)(uint16_t* len);
-	uint8_t* (*GetLangIDStrDescriptor)(uint16_t* len);
-	uint8_t* (*GetManufacturerStrDescriptor)(uint16_t* len);
-	uint8_t* (*GetProductStrDescriptor)(uint16_t* len);
-	uint8_t* (*GetSerialStrDescriptor)(uint16_t* len);
-	uint8_t* (*GetConfigurationStrDescriptor)(uint16_t* len);
-	uint8_t* (*GetInterfaceStrDescriptor)(uint16_t* len);
+typedef struct {
+    uint8_t* (*GetDeviceDescriptor)(uint16_t* len);
+    uint8_t* (*GetConfigDescriptor)(uint16_t* len);
+    uint8_t* (*GetLangIDStrDescriptor)(uint16_t* len);
+    uint8_t* (*GetManufacturerStrDescriptor)(uint16_t* len);
+    uint8_t* (*GetProductStrDescriptor)(uint16_t* len);
+    uint8_t* (*GetSerialStrDescriptor)(uint16_t* len);
+    uint8_t* (*GetConfigurationStrDescriptor)(uint16_t* len);
+    uint8_t* (*GetInterfaceStrDescriptor)(uint16_t* len);
 
 } USB_ClassDescTypedef;
 
-typedef struct
-{
-	void  (*Connect)			(void);
-	void  (*Disconnect)			(void);
-	void  (*Reset)				(void);
-	void  (*Init)				(uint8_t configNum);
-	void  (*DeInit)				(void);
-	/* Control Endpoints*/
-	void  (*Setup)				(USB_SetupReqTypedef* stp);
-	void  (*EP0_TxSent)			(void);
-	void  (*EP0_RxReady)		(void);
-	/* Class Specific Endpoints*/
-	void  (*DataIn)				(uint8_t epnum);
-	void  (*DataOut)			(uint8_t epnum);
-	void  (*SOF)				(void);
-	void  (*IsoINIncomplete)	(uint8_t epnum);
-	void  (*IsoOUTIncomplete)	(uint8_t epnum);
+typedef struct {
+    void (*Connect)(void);
+    void (*Disconnect)(void);
+    void (*Reset)(void);
+    void (*Init)(uint8_t configNum);
+    void (*DeInit)(void);
+    /* Control Endpoints*/
+    void (*Setup)(USB_SetupReqTypedef* stp);
+    void (*EP0_TxSent)(void);
+    void (*EP0_RxReady)(void);
+    /* Class Specific Endpoints*/
+    void (*DataIn)(uint8_t epnum);
+    void (*DataOut)(uint8_t epnum);
+    void (*SOF)(void);
+    void (*IsoINIncomplete)(uint8_t epnum);
+    void (*IsoOUTIncomplete)(uint8_t epnum);
 } USB_ClassCallbackTypedef;
 
 void USB_Init(void);
-void USB_SetClass(USB_ClassDescTypedef* newclassdesc, USB_ClassCallbackTypedef* newclasscalls);
+void USB_SetClass(USB_ClassDescTypedef* newclassdesc,
+        USB_ClassCallbackTypedef* newclasscalls);
 void USB_Start(void);
 uint8_t USB_GetDevState(void);
 void USB_IRQ(void);

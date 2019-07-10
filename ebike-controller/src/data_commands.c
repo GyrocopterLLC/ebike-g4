@@ -5,54 +5,53 @@
  *
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
 
 #include "main.h"
 #include "data_packet.h"
 #include "data_commands.h"
 
-
 /**
  * @brief  Data Process Command
- * 		   Interprets the command in a decoded packet. Calls the appropriate
- * 		   sub-function for the requested command.
+ *              Interprets the command in a decoded packet. Calls the appropriate
+ *              sub-function for the requested command.
  * @param  pkt - Data_Packet_Type pointer with the decoded communication data
  * @retval DATA_COMMAND_FAIL - Unable to process the packet
- * 		   DATA_COMMAND_SUCCESS - Packet was processed. Check the TxReady flag
- * 		   						  to see if an outgoing packet was generated.
+ *         DATA_COMMAND_SUCCESS - Packet was processed. Check the TxReady flag
+ *                                 to see if an outgoing packet was generated.
  */
 uint16_t data_process_command(Data_Packet_Type* pkt) {
 
-	uint8_t retval[4];
+    uint8_t retval[4];
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    if(!pkt->RxReady) {
+    if (!pkt->RxReady) {
         return DATA_COMMAND_FAIL;
     }
-    switch(pkt->PacketType) {
-        // Responses from the host
+    switch (pkt->PacketType) {
+    // Responses from the host
     case GET_RAM_VARIABLE:
         errCode = command_get_ram(pkt->Data, retval);
-        switch(errCode) {
+        switch (errCode) {
         case RESULT_IS_8B:
             errCode = data_packet_create(pkt, GET_RAM_RESULT, retval, 1);
             break;
@@ -69,15 +68,15 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
         }
         break;
     case SET_RAM_VARIABLE:
-        if(command_set_ram(pkt->Data) == DATA_COMMAND_SUCCESS) {
-        	errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
+        if (command_set_ram(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
         } else {
-        	errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
+            errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
         }
         break;
     case GET_EEPROM_VARIABLE:
         errCode = command_get_eeprom(pkt->Data, retval);
-        switch(errCode) {
+        switch (errCode) {
         case RESULT_IS_8B:
             errCode = data_packet_create(pkt, GET_RAM_RESULT, retval, 1);
             break;
@@ -94,31 +93,31 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
         }
         break;
     case SET_EEPROM_VARIABLE:
-        if(command_set_eeprom(pkt->Data) == DATA_COMMAND_SUCCESS) {
-        	errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
+        if (command_set_eeprom(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
         } else {
-        	errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
+            errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
         }
         break;
     case ENABLE_FEATURE:
-        if(command_enable_feature(pkt->Data) == DATA_COMMAND_SUCCESS) {
-        	errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
+        if (command_enable_feature(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
         } else {
-        	errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
+            errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
         }
         break;
     case DISABLE_FEATURE:
-        if(command_disable_feature(pkt->Data) == DATA_COMMAND_SUCCESS) {
-        	errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
+        if (command_disable_feature(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
         } else {
-        	errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
+            errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
         }
         break;
     case RUN_ROUTINE:
-        if(command_run_routine(pkt->Data) == DATA_COMMAND_SUCCESS) {
-        	errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
+        if (command_run_routine(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, CONTROLLER_ACK, 0, 0);
         } else {
-        	errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
+            errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
         }
         break;
     case HOST_STREAM_DATA:
@@ -141,7 +140,7 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
         break;
     case CONTROLLER_NACK:
         break;
-    
+
     default:
         break;
     }
@@ -151,18 +150,18 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
 
 /**
  * @brief  Data Command: Get Ram
- * 		   Interprets the command in a decoded packet. Calls the appropriate
- * 		   sub-function for the requested command.
+ *            Interprets the command in a decoded packet. Calls the appropriate
+ *            sub-function for the requested command.
  * @param  pktdata - Data field in the incoming packet
  * @param  retval - Pointer to return value from the command request.
  *                  Regardless of the return type, it will be placed into the
  *                  location pointed to by retval. Data can be 8 to 32 bit
  *                  (1 to 4 bytes).
  * @retval DATA_COMMAND_FAIL - Unable to process the data
- * 		   RESULT_IS_8B - The return value is an 8-bit integer
- * 		   RESULT_IS_16B - The return value is an 16-bit integer
- * 		   RESULT_IS_32B - The return value is an 32-bit integer
- * 		   RESULT_IS_FLOAT - The return value is an 32-bit floating point
+ *            RESULT_IS_8B - The return value is an 8-bit integer
+ *            RESULT_IS_16B - The return value is an 16-bit integer
+ *            RESULT_IS_32B - The return value is an 32-bit integer
+ *            RESULT_IS_FLOAT - The return value is an 32-bit floating point
  */
 uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // Data is two bytes for value ID
@@ -174,11 +173,11 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     uint32_t retval32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    ((void)retval16b);
+    ((void) retval16b);
 
     float* fhalltableptr;
 
-    switch(value_ID) {
+    switch (value_ID) {
     case CONFIG_DATA_SPEED:
         retval8b = MAIN_GetUSBDebugSpeed();
         data_packet_pack_8b(retval, retval8b);
@@ -264,15 +263,15 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         data_packet_pack_32b(retval, retval32b);
         errCode = RESULT_IS_32B;
         break;
-    // case CONFIG_FOC_FREQ:
+        // case CONFIG_FOC_FREQ:
         // break;
-    // case CONFIG_MOTOR_PP:
+        // case CONFIG_MOTOR_PP:
         // break;
-    // case CONFIG_MOTOR_RS:
+        // case CONFIG_MOTOR_RS:
         // break;
-    // case CONFIG_MOTOR_LS:
+        // case CONFIG_MOTOR_LS:
         // break;
-    // case CONFIG_MOTOR_FLUX:
+        // case CONFIG_MOTOR_FLUX:
         // break;
     case CONFIG_MOTOR_HALL1:
         fhalltableptr = HallSensor_GetAngleTable();
@@ -388,179 +387,203 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     uint32_t value32b;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    ((void)value16b);
+    ((void) value16b);
 
-    switch(value_ID) {
+    switch (value_ID) {
     case CONFIG_DATA_SPEED:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugSpeed(value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugSpeed(value8b);
+        break;
     case CONFIG_DATA_NUMVARS:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetNumUSBDebugOutputs(value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetNumUSBDebugOutputs(value8b);
+        break;
     case CONFIG_DATA_VAR1:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(0, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(0, value8b);
+        break;
     case CONFIG_DATA_VAR2:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(1, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(1, value8b);
+        break;
     case CONFIG_DATA_VAR3:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(2, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(2, value8b);
+        break;
     case CONFIG_DATA_VAR4:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(3, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(3, value8b);
+        break;
     case CONFIG_DATA_VAR5:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(4, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(4, value8b);
+        break;
     case CONFIG_DATA_VAR6:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(5, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(5, value8b);
+        break;
     case CONFIG_DATA_VAR7:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(6, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(6, value8b);
+        break;
     case CONFIG_DATA_VAR8:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(7, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(7, value8b);
+        break;
     case CONFIG_DATA_VAR9:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(8, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(8, value8b);
+        break;
     case CONFIG_DATA_VAR10:
-      value8b = data_packet_extract_8b(pktdata);
-      errCode = MAIN_SetUSBDebugOutput(9, value8b);
-      break;
+        value8b = data_packet_extract_8b(pktdata);
+        errCode = MAIN_SetUSBDebugOutput(9, value8b);
+        break;
     case CONFIG_FOC_KP:
-      valuef = data_packet_extract_float(pktdata);
-      errCode = MAIN_SetVar(0, valuef);
-      break;
+        valuef = data_packet_extract_float(pktdata);
+        errCode = MAIN_SetVar(0, valuef);
+        break;
     case CONFIG_FOC_KI:
-      valuef = data_packet_extract_float(pktdata);
-      errCode = MAIN_SetVar(1, valuef);
-      break;
+        valuef = data_packet_extract_float(pktdata);
+        errCode = MAIN_SetVar(1, valuef);
+        break;
     case CONFIG_FOC_KD:
-      valuef = data_packet_extract_float(pktdata);
-      errCode = MAIN_SetVar(2, valuef);
-      break;
+        valuef = data_packet_extract_float(pktdata);
+        errCode = MAIN_SetVar(2, valuef);
+        break;
     case CONFIG_FOC_KC:
-      valuef = data_packet_extract_float(pktdata);
-      errCode = MAIN_SetVar(3, valuef);
-      break;
+        valuef = data_packet_extract_float(pktdata);
+        errCode = MAIN_SetVar(3, valuef);
+        break;
     case CONFIG_FOC_DT:
-      value32b = data_packet_extract_32b(pktdata);
-      errCode = MAIN_SetDeadTime(value32b);
-      break;
-    // case CONFIG_FOC_FREQ:
+        value32b = data_packet_extract_32b(pktdata);
+        errCode = MAIN_SetDeadTime(value32b);
+        break;
+        // case CONFIG_FOC_FREQ:
         // break;
 //    case CONFIG_MOTOR_PP:
 //        break;
-    // case CONFIG_MOTOR_RS:
+        // case CONFIG_MOTOR_RS:
         // break;
-    // case CONFIG_MOTOR_LS:
+        // case CONFIG_MOTOR_LS:
         // break;
-    // case CONFIG_MOTOR_FLUX:
+        // case CONFIG_MOTOR_FLUX:
         // break;
     case CONFIG_MOTOR_HALL1:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[1] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[1] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_MOTOR_HALL2:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[2] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[2] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_MOTOR_HALL3:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[3] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[3] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_MOTOR_HALL4:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[4] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[4] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_MOTOR_HALL5:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[5] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[5] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_MOTOR_HALL6:
-      fhalltableptr = HallSensor_GetAngleTable();
-      memcpy(ftemphalltable, fhalltableptr, 8*sizeof(float));
-      valuef = data_packet_extract_float(pktdata);
-      ftemphalltable[6] = valuef;
-      errCode = HallSensor_SetAngleTable(ftemphalltable);
-      break;
+        fhalltableptr = HallSensor_GetAngleTable();
+        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
+        valuef = data_packet_extract_float(pktdata);
+        ftemphalltable[6] = valuef;
+        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        break;
     case CONFIG_THR_TYPE1:
-      break;
+        break;
     case CONFIG_THR_MIN1:
-      break;
+        break;
     case CONFIG_THR_MAX1:
-      break;
+        break;
     case CONFIG_THR_HYST1:
-      break;
+        break;
     case CONFIG_THR_FILT1:
-      break;
+        break;
     case CONFIG_THR_RISE1:
-      break;
+        break;
     case CONFIG_THR_TYPE2:
-      break;
+        break;
     case CONFIG_THR_MIN2:
-      break;
+        break;
     case CONFIG_THR_MAX2:
-      break;
+        break;
     case CONFIG_THR_HYST2:
-      break;
+        break;
     case CONFIG_THR_FILT2:
-      break;
+        break;
     case CONFIG_THR_RISE2:
-      break;
+        break;
     }
     return errCode;
 }
 
 uint16_t command_get_eeprom(uint8_t* pktdata, uint8_t* retval) {
-	((void)pktdata);
-	((void)retval);
-	return DATA_COMMAND_FAIL;
+    ((void) pktdata);
+    ((void) retval);
+    return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_set_eeprom(uint8_t* pktdata) {
-	((void)pktdata);
-	return DATA_COMMAND_FAIL;
+    ((void) pktdata);
+    return DATA_COMMAND_FAIL;
 }
 
 uint16_t command_enable_feature(uint8_t* pktdata) {
-	((void)pktdata);
-	return DATA_COMMAND_FAIL;
+    // Data is two bytes for feature ID
+    uint16_t feature_ID = data_packet_extract_16b(pktdata);
+    uint16_t errCode = DATA_COMMAND_FAIL;
+
+    switch (feature_ID) {
+    case FEATURE_SERIAL_DATA:
+        MAIN_SetUSBDebugging(1);
+        errCode = DATA_COMMAND_SUCCESS;
+        break;
+    default:
+        errCode = DATA_COMMAND_FAIL;
+        break;
+    }
+    return errCode;
 }
 
 uint16_t command_disable_feature(uint8_t* pktdata) {
-	((void)pktdata);
-	return DATA_COMMAND_FAIL;
+    // Data is two bytes for feature ID
+    uint16_t feature_ID = data_packet_extract_16b(pktdata);
+    uint16_t errCode = DATA_COMMAND_FAIL;
+
+    switch (feature_ID) {
+    case FEATURE_SERIAL_DATA:
+        MAIN_SetUSBDebugging(0);
+        errCode = DATA_COMMAND_SUCCESS;
+        break;
+    default:
+        errCode = DATA_COMMAND_FAIL;
+        break;
+    }
+    return errCode;
 }
 
 uint16_t command_run_routine(uint8_t* pktdata) {
-	((void)pktdata);
-	return DATA_COMMAND_FAIL;
+    ((void) pktdata);
+    return DATA_COMMAND_FAIL;
 }

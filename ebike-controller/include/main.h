@@ -2,42 +2,41 @@
  * Filename: main.h
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
 
 // Used resources:
 // DAC
 // TIM12
-  
 
 #ifndef __MAIN_H
 #define __MAIN_H
 
 /* Constants */
 /*
-#define THROTTLE_MIN  (0.7f) // Less than 0.7V is zero throttle
-#define THROTTLE_MAX  (2.8f) // Above 2.8V is 100% throttle
-#define THROTTLE_SCALE  (0.47619f)
-#define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
-*/
+ #define THROTTLE_MIN  (0.7f) // Less than 0.7V is zero throttle
+ #define THROTTLE_MAX  (2.8f) // Above 2.8V is 100% throttle
+ #define THROTTLE_SCALE  (0.47619f)
+ #define THROTTLE_STARTUP_COUNT 1500 // Wait 1.5 sec for filter to stabilize
+ */
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx.h"
@@ -66,48 +65,31 @@ SOFTWARE.
 #include <string.h>
 #include <math.h>
 
-
 /* Exported types ------------------------------------------------------------*/
-typedef enum
-{
-  PB_RELEASED,
-  PB_PRESSED
-}PB_TypeDef;
+typedef enum {
+    PB_RELEASED, PB_PRESSED
+} PB_TypeDef;
 /* Exported constants --------------------------------------------------------*/
-#define MAXLEDCOUNT   1000
+#define MAXLEDCOUNT         1000
 #define DEBOUNCE_INTERVAL   10 // 10 milliseconds ==> 100Hz timer
-#define DEBOUNCE_MAX      5 // Must get integrator up to 5 to count as "pressed"
-
-#define RAMP_CALLFREQ   (20000)
-#define RAMP_CALLFREQF  (20000.0f)
-#define RAMP_DEFAULTSPEED (5)
-#define RAMP_DEFAULTSPEEDF (5.0f)
+#define DEBOUNCE_MAX        5 // Must get integrator up to 5 to count as "pressed"
 
 #define BOOTLOADER_RESET_FLAG 0xDEADBEEF
-
-//#define SERIAL_DATA_RATE      (10)
 
 #define SERIAL_DUMP_RATE        (1)
 #define TEMP_CONVERSION_RATE    (100)
 
-#define SPEED_COUNTS_TO_FOC     (1000)
-#define MIN_SPEED_TO_FOC        (10.0f)
-#define FOC_SWITCH_ANGLE_EPS    (0.00833333333f) // about 3 degrees
-
-#define MAIN_STARTUP_SPEED_MAX      (65536*10*MOTOR_POLEPAIRS/60) // 10 RPM in electrical Hz (Q16 format)
-#define MAIN_STARTUP_CUR_AVG_COUNT  (256)
-
-#define MAX_USB_VALS              19
-#define MAX_USB_OUTPUTS           10
-#define DEFAULT_USB_OUTPUTS       5
-#define DEFAULT_USB_ASSIGNMENTS   {1, 2, 3, 7, 11, 4, 5, 6, 9, 18}
-#define USB_PREFIX_LENGTH         4
-#define DEFAULT_USB_PREFIX        "DB05"
-#define MAX_USB_SPEED_CHOICES     6
-#define USB_SPEED_RELOAD_VALS     {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
-#define DEFAULT_SERIAL_DATA_RATE  (400) // (20kHz/400 = 50Hz)
-
 #define MAIN_ERR_HALL_STATE   (0x00000800)
+
+#define MAINFLAG_SERIALDATAPRINT    ((uint32_t)0x00000001)
+#define MAINFLAG_SERIALDATAON       ((uint32_t)0x00000002)
+#define MAINFLAG_DUMPRECORD         ((uint32_t)0x00000004)
+#define MAINFLAG_DUMPDATAPRINT      ((uint32_t)0x00000008)
+#define MAINFLAG_DUMPDATAON         ((uint32_t)0x00000010)
+#define MAINFLAG_CONVERTTEMPERATURE ((uint32_t)0x00000020)
+#define MAINFLAG_HALLDETECTFAIL     ((uint32_t)0x00000040)
+#define MAINFLAG_HALLDETECTPASS     ((uint32_t)0x00000080)
+#define MAINFLAG_LASTCOMMSERIAL     ((uint32_t)0x00000100)
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
@@ -136,7 +118,7 @@ uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards);
 uint8_t MAIN_SetVar(uint8_t var, float newval);
 float MAIN_GetVar(uint8_t var);
 float MAIN_GetVar_EEPROM(uint8_t var);
-uint8_t MAIN_SetFreq(int32_t newfreq) ;
+uint8_t MAIN_SetFreq(int32_t newfreq);
 int32_t MAIN_GetFreq(void);
 uint8_t MAIN_SetDeadTime(int32_t newDT);
 int32_t MAIN_GetDeadTime(void);

@@ -2,27 +2,26 @@
  * Filename: usb_cdc.h
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
-
 
 #ifndef USB_CDC_H_
 #define USB_CDC_H_
@@ -64,39 +63,36 @@ SOFTWARE.
 #define CDC_SET_CONTROL_LINE_STATE                  0x22
 #define CDC_SEND_BREAK                              0x23
 
-typedef struct
-{
-  uint32_t data[CDC_CMD_PACKET_SIZE*2];      // Buffer for control transfers
-  uint8_t  CmdOpCode;
-  uint8_t  CmdLength;
-  uint8_t  *RxBuffer;
-  uint8_t  *TxBuffer;
-  uint32_t RxLength;
-  uint32_t TxLength;
+typedef struct {
+    uint32_t data[CDC_CMD_PACKET_SIZE * 2];      // Buffer for control transfers
+    uint8_t CmdOpCode;
+    uint8_t CmdLength;
+    uint8_t *RxBuffer;
+    uint8_t *TxBuffer;
+    uint32_t RxLength;
+    uint32_t TxLength;
 
-  __IO uint32_t TxState;
-  __IO uint32_t RxState;
+    __IO
+    uint32_t TxState;__IO
+    uint32_t RxState;
 
-  void(*App_TxCompleteCallback)(void);
-}
-USBD_CDC_HandleTypeDef;
+    void (*App_TxCompleteCallback)(void);
+} USBD_CDC_HandleTypeDef;
 
-typedef struct
-{
-  uint32_t bitrate;
-  uint8_t  format;
-  uint8_t  paritytype;
-  uint8_t  datatype;
-}USBD_CDC_LineCodingTypeDef;
+typedef struct {
+    uint32_t bitrate;
+    uint8_t format;
+    uint8_t paritytype;
+    uint8_t datatype;
+} USBD_CDC_LineCodingTypeDef;
 
-typedef struct
-{
+typedef struct {
     uint8_t Buffer[DATA_ENDPOINT_FIFO_SIZE];
     int Position, Size;
     char ReadDone;
 } USB_CDC_RxBufferTypedef;
 
-extern USB_ClassDescTypedef  USB_CDC_ClassDesc;
+extern USB_ClassDescTypedef USB_CDC_ClassDesc;
 extern USB_ClassCallbackTypedef USB_CDC_ClassCallbacks;
 
 uint8_t* CDC_DeviceDescriptor(uint16_t* len);
@@ -118,11 +114,10 @@ void CDC_EP0_RxReady(void);
 void CDC_DataIn(uint8_t epnum);
 void CDC_DataOut(uint8_t epnum);
 void CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length);
-void CDC_SetTxCompleteCallback(void(*Callback)(void));
+void CDC_SetTxCompleteCallback(void (*Callback)(void));
 
 int32_t VCP_InWaiting(void);
 int32_t VCP_Read(void* data, int32_t len);
 int32_t VCP_Write(const void* data, int32_t len);
-
 
 #endif /* USB_CDC_H_ */

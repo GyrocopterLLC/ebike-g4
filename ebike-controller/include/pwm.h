@@ -2,31 +2,29 @@
  * Filename: pwm.h
  ******************************************************************************
 
-Copyright (c) 2019 David Miller
+ Copyright (c) 2019 David Miller
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
  */
-
 
 // Used resources:
 // TIM1
-
 #ifndef PWM_H_
 #define PWM_H_
 
@@ -34,13 +32,11 @@ SOFTWARE.
 #include "pinconfig.h"
 #include "periphconfig.h"
 
-
 /********** Timer defines ***********/
 
 #define PWM_TIMER_FREQ      (168000000L)
 #define PWM_PERIOD					(4199) // 168MHz / (4199+1) = 40kHz -> 20kHz due to up/down counting
 #define PWM_PERIOD_F				(4199.0f)
-
 
 /** Deadtime register settings **
  * DTG[7:5]=0xx => DT=DTG[7:0]x tdtg with tdtg=tDTS.
@@ -67,15 +63,15 @@ SOFTWARE.
 
 void PWM_Init(void);
 /*
-inline void PWM_MotorOFF(void)
-{
-	PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE);
-}
-inline void PWM_MotorON(void)
-{
-	PWM_TIMER->BDTR |= (TIM_BDTR_MOE);
-}
-*/
+ inline void PWM_MotorOFF(void)
+ {
+ PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE);
+ }
+ inline void PWM_MotorON(void)
+ {
+ PWM_TIMER->BDTR |= (TIM_BDTR_MOE);
+ }
+ */
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
 uint8_t PWM_SetDeadTime(int32_t newDT);
