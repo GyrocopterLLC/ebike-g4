@@ -37,6 +37,9 @@
 #define SQRT3_OVER_2	(0.8660254f)
 #define INV_SQRT3		(0.5773503f)
 //#define PI				(3.141592654898f)
+#define PI_OVER_2       (1.570796326795f)
+#define PI_OVER_4       (0.7853981633974f)
+#define FOUR_OVER_PI    (1.273239544735f)
 
 #define Q_FACTOR		(22)	// Max value: (2^31-1)/2^22 = 511.9999997615814208984375
 // Smallest positive: 1/2^22 = 0.0000002384185791015625
@@ -82,6 +85,8 @@ typedef struct {
     float Y;  // Output: filtered result
 } Biquad_Float_Type;
 
+float dfsl_sinf(float theta);
+float dfsl_cosf(float theta);
 void dfsl_rampgen(uint16_t* rampAngle, int16_t rampInc);
 int16_t dfsl_rampctrl(uint32_t callingFreq, uint32_t rampFreq);
 void dfsl_rampgenf(float* rampAngle, float rampInc);

@@ -59,6 +59,106 @@
 #define Q_mpy(A, B)     (int32_t)((((int64_t)(A)) * ((int64_t)(B))) >> Q_FACTOR)
 /** Function Definitions **/
 
+
+/**
+ * Chebyshev 5th order approximation for sine
+ * Input is clipped to between +pi and -pi
+ * The approximation is actually only valid between 0 and pi/2
+ * But since sine is so wonderfully periodic, we can make adjustments
+ * input between 0 and pi/2 -> use approximation
+ * input between pi/2 and pi -> approximation of {pi/2 - (input - pi/2)} = pi - input
+ * input less than 0: use positive input value, use the above two sections, and negate the output
+ */
+static float _dfsl_sinf_chebyshev(float theta) {
+    // Reference: https://www.embeddedrelated.com/showarticle/152.php
+    // Limits:
+    // thetamin = 0, thetamax = 1.570796 (Pi/2)
+    // Coefficients:
+    // c0 = 0.6021947012555071,
+    // c1 = 0.5136251666803038,
+    // c2 = -0.10354634422944732,
+    // c3 = -0.013732035086651804,
+    // c4 = 0.0013586503384922695,
+    // c5 = 0.00010765948465639574
+    //
+    float coeffs[6] = {0.6021947012555071f,
+            0.5136251666803038f,
+            -0.10354634422944732f,
+            -0.013732035086651804f,
+            0.0013586503384922695f,
+            0.00010765948465639574f
+    };
+    // U = (2*theta - min - max) / (max - min)
+    // U = (2*theta - PI/2) / (PI/2)
+    // U = (theta - pi/4) / (pi/4)
+    float u = (theta - PI_OVER_4) * FOUR_OVER_PI;
+    float Tprev = 1;
+    float T1 = u;
+    float Tnext;
+    float Y = coeffs[0];
+    for(uint8_t i = 1; i <= 5; i++) {
+        Y += T1*coeffs[i];
+        Tnext = (2.0f)*u*T1-Tprev;
+        Tprev = T1;
+        T1 = Tnext;
+    }
+    return Y;
+}
+
+float dfsl_sinf(float theta) {
+    float sinval = 0.0f;
+    // Clip to [-pi, +pi]
+    while(theta > PI) {
+        theta -= PI;
+    }
+    while (theta < -PI) {
+        theta += PI;
+    }
+
+    // Map the entire -pi to +pi to between 0 and pi/2
+    if(theta >= 0) {
+        if(theta < PI_OVER_2) {
+            sinval = _dfsl_sinf_chebyshev(theta);
+        } else {
+            sinval = _dfsl_sinf_chebyshev(PI - theta);
+        }
+    } else {
+        theta = -theta;
+        if(theta < PI_OVER_2) {
+            sinval = -_dfsl_sinf_chebyshev(theta);
+        } else {
+            sinval = -_dfsl_sinf_chebyshev(PI - theta);
+        }
+    }
+    return sinval;
+}
+
+float dfsl_cosf(float theta) {
+    float cosval = 0.0f;
+    // clip to [-pi, +pi]
+    while(theta > PI) {
+        theta -= PI;
+    }
+    while(theta < -PI) {
+        theta += PI;
+    }
+
+    // Move things around so we can use sin instead
+    if(theta < -PI_OVER_2) {
+        cosval = -_dfsl_sinf_chebyshev(-theta - PI_OVER_2);
+    }
+    if((theta >= -PI_OVER_2) && (theta < 0.0f)) {
+        cosval = _dfsl_sinf_chebyshev(theta + PI_OVER_2);
+    }
+    if((theta >= 0.0f) && (theta < PI_OVER_2)) {
+        cosval = _dfsl_sinf_chebyshev(-theta + PI_OVER_2);
+    }
+    if(theta >= PI_OVER_2) {
+        cosval = -_dfsl_sinf_chebyshev(theta - PI_OVER_2);
+    }
+    return cosval;
+}
+
 void dfsl_rampgen(uint16_t* rampAngle, int16_t rampInc) {
     *rampAngle += rampInc;
 }
