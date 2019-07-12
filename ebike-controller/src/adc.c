@@ -243,12 +243,29 @@ void adcSetNull(uint8_t which_cur, uint16_t nullVal) {
 }
 
 float adcGetTempDegC(void) {
+    
+    // Step 1: Calculate thermistor resistance right now
+    // Fixed resistor is at the bottom of the voltage divider,
+    // thermistor is on top.
+    // (Vout/Vin) = Rf / (Rt + Rf)
+    // ADC / 4095 = Vout/Vin = Rf / (Rt + Rf)
+    // let's call ADC/4095 = "adc"
+    // adc = Rf/(Rt+Rf)
+    // Rt*adc + Rf*adc = Rf
+    // Rt*adc = Rf - Rf*adc
+    // Rt = Rf*(1-adc)/adc, which simplifies to Rf*(1/adc - 1)
+    
     // Convert 12-bit to float
     float temp = ((float) adc_conv[ADC_TEMP]) / MAXCOUNTF;
     // Calculate resistance
-    temp = TEMP_FIXED_RESISTOR / (temp) - TEMP_FIXED_RESISTOR;
-    // Convert to Kelvins using thermistor equation
-    temp = (1.0f / 298.15f) + log(temp / THERM_R25) / THERM_B_VALUE;
+    temp = TEMP_FIXED_RESISTOR * (1.0f/temp - 1.0f);
+    // Step 2: Convert to Kelvins using thermistor equation
+    // beta = log(Rt1/Rt2) / (1/T1 - 1/T2)
+    // 1/T1 - 1/T2 = log(Rt1 / Rt2) / beta
+    // 1/T1 - log(Rt1 / Rt2)/beta = 1/T2
+    // T2 = 1/(1/T1 - log(Rt1 / Rt2)/beta
+    // Where T1 = 25degC = 298.15K, Rt1 = THERM_R25, and beta = THERM_B_VALUE
+    temp = (1.0f / 298.15f) - logf(THERM_R25 / temp) / THERM_B_VALUE;
     temp = 1.0f / temp;
     temp -= 273.15f; // Convert from K to degC
 

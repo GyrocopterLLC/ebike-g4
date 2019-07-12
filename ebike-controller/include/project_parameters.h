@@ -106,8 +106,8 @@
 #define VBUS_RESISTOR_RATIO     (33.36246f) // Inverse of resistor gain (3.09 / 103.09)
 
 #define TEMP_FIXED_RESISTOR     (10000.0f) // Fixed resistance of the thermistor voltage divider
-#define THERM_R25               (10000.0f) // Thermistor resistance at 25 degC
-#define THERM_B_VALUE           (3435.0f)  // Beta value of thermistor
+#define THERM_R25               (10000.0f) // Thermistor resistance at 25 degC (NTCALUG02A103G)
+#define THERM_B_VALUE           (3984.0f)  // Beta value of thermistor (NTCALUG02A103G)
 
 /***  FOC Library Defaults ***/
 #define FOC_KP                  (419430) // 0.1
@@ -255,10 +255,10 @@
 // This table equates the 6 valid Hall states (1 - 6) with
 // motor rotation angles. The Hall state is assumed to be
 // equivalent to the angle that is halfway between state
-// changes. Since the state changes are spaced every 60°
+// changes. Since the state changes are spaced every 60ï¿½
 // around the motor, and the transitions start at zero,
-// the halfway points are at 30°, 90°, 150°, 210°, 270°,
-// and 330°.
+// the halfway points are at 30ï¿½, 90ï¿½, 150ï¿½, 210ï¿½, 270ï¿½,
+// and 330ï¿½.
 // Angle associations per state are...
 //			330->030: State 1
 //			030->090: State 5

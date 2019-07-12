@@ -29,8 +29,8 @@
 
 #include "stm32f4xx.h"
 
-#define MAXCOUNT		(4096)
-#define MAXCOUNTF		(4096.0f)
+#define MAXCOUNT		(4095)
+#define MAXCOUNTF		(4095.0f)
 
 #define NUM_ADC_CH		8
 #define NUM_CUR_CH		3
