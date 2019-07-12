@@ -29,6 +29,8 @@
 #if 0
 
 /***  ADC Configuration Variable IDs ***/
+#define CONFIG_ADC_PREFIX           (0x0000)
+#define CONFIG_ADC_NUMVARS          (5)
 #define CONFIG_ADC_INV_TIA_GAIN     (0x0001)
 #define CONFIG_ADC_VBUS_RATIO       (0x0002)
 #define CONFIG_ADC_THERM_FIXED_R    (0x0003)
@@ -41,6 +43,8 @@
 #define DFLT_ADC_THERM_R25          (10000.0f) // Thermistor is 10k at 25degC
 #define DFLT_ADC_THERM_B            (3984.0f) // Thermistor Beta value (NTCALUG02A103G)
 /*** FOC Variable IDs ***/
+#define CONFIG_FOC_PREFIX           (0x0100)
+#define CONFIG_FOC_NUMVARS          (6)
 #define CONFIG_FOC_KP               (0x0101)
 #define CONFIG_FOC_KI               (0x0102)
 #define CONFIG_FOC_KD               (0x0103)
@@ -55,6 +59,8 @@
 #define DFLT_FOC_OUTMIN             (-0.95f)
 #define DFLT_FOC_OUTMAX             (0.95f)
 /*** Main Variable IDs ***/
+#define CONFIG_MAIN_PREFIX          (0x0200)
+#define CONFIG_MAIN_NUMVARS         (17)
 #define CONFIG_MAIN_PWM_FREQ        (0x0201)
 #define CONFIG_MAIN_RAMP_SPEED      (0x0202)
 #define CONFIG_MAIN_COUNTS_TO_FOC   (0x0203)
@@ -90,10 +96,54 @@
 #define DFLT_MAIN_USB_CHOICE_8      (6) // Tc
 #define DFLT_MAIN_USB_CHOICE_9      (9) // HallAngle
 #define DFLT_MAIN_USB_CHOICE_10     (18)// HallState
+/*** Throttle Variable IDs ***/
+#define CONFIG_THRT_PREFIX          (0x0300)
+#define CONFIG_THRT_NUMVARS         (12)
+#define CONFIG_THRT_TYPE1           (0x0301)
+#define CONFIG_THRT_MIN1            (0x0302)
+#define CONFIG_THRT_MAX1            (0x0303)
+#define CONFIG_THRT_HYST1           (0x0304)
+#define CONFIG_THRT_FILT1           (0x0305)
+#define CONFIG_THRT_RISE1           (0x0306)
+#define CONFIG_THRT_TYPE2           (0x0307)
+#define CONFIG_THRT_MIN2            (0x0308)
+#define CONFIG_THRT_MAX2            (0x0309)
+#define CONFIG_THRT_HYST2           (0x030A)
+#define CONFIG_THRT_FILT2           (0x030B)
+#define CONFIG_THRT_RISE2           (0x030C)
 /*** Throttle Default Values ***/
-#define DFLT_THROTTLE_MAX_SCALE   (5.0f) // 5 amps
-#define DFLT_THROTTLE_
-
+#define DFLT_THRT_TYPE1             (0) // Analog ADC type
+#define DFLT_THRT_MIN1              (0.85f)
+#define DFLT_THRT_MAX1              (2.20f)
+#define DFLT_THRT_HYST1             (0.025f)
+#define DFLT_THRT_FILT1             (2.0f)
+#define DFLT_THRT_RISE1             (0.0005f)
+#define DFLT_THRT_TYPE2             (2) // None
+#define DFLT_THRT_MIN2              (0.85f)
+#define DFLT_THRT_MAX2              (2.20f)
+#define DFLT_THRT_HYST2             (0.025f)
+#define DFLT_THRT_FILT2             (2.0f)
+#define DFLT_THRT_RISE2             (0.0005f)
+/*** Limit Variable IDs ***/
+#define CONFIG_LMT_PREFIX           (0x0400)
+#define CONFIG_LMT_NUMVARS          (8)
+#define CONFIG_LMT_VOLT_MIN         (0x0401)
+#define CONFIG_LMT_VOLT_MAX         (0x0402)
+#define CONFIG_LMT_PHASE_I_MAX      (0x0403)
+#define CONFIG_LMT_PHASE_REGEN_MAX  (0x0404)
+#define CONFIG_LMT_BATT_I_MAX       (0x0405)
+#define CONFIG_LMT_BATT_REGEN_MAX   (0x0406)
+#define CONFIG_LMT_FET_TEMP_MAX     (0x0407)
+#define CONFIG_LMT_MOTOR_TEMP_MAX   (0x0408)
+/*** Limit Default Values ***/
+#define DFLT_LMT_VOLT_MIN           (48.0f) // 3.0V x 16 cells
+#define DFLT_LMT_VOLT_MAX           (67.2f) // 4.2V x 16 cells
+#define DFLT_LMT_PHASE_I_MAX        (25.0f)
+#define DFLT_LMT_PHASE_REGEN_MAX    (10.0f)
+#define DFLT_LMT_BATT_I_MAX         (25.0f)
+#define DFLT_LMT_BATT_REGEN_MAX     (10.0f)
+#define DFLT_LMT_FET_TEMP_MAX       (90.0f)
+#define DFLT_LMT_MOTOR_TEMP_MAX     (90.0f)
 #endif
 
 
