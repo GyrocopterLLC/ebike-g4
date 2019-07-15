@@ -51,6 +51,15 @@
 #define ADC_STARTUP_DELAY_MS    (50) // Wait this long for any startup spikes in analog values to die down
 #define ADC_NUM_NULLING_SAMPLES (128) // Number of samples to integrate when nulling current sensors at startup
 
+typedef struct _config_adc {
+    float Inverse_TIA_Gain;
+    float Vbus_Ratio;
+    float Thermistor_Fixed_R;
+    float Thermistor_R25;
+    float Thermistor_Beta;
+    float Inverse_Therm_Beta;
+} Config_ADC;
+
 typedef enum {
     ADC_IA = 0,
     ADC_IB = 1,

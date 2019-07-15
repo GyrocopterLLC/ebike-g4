@@ -57,7 +57,7 @@
 #define HALL_ROT_FORWARD				1
 #define HALL_ROT_REVERSE				2
 
-typedef struct {
+typedef struct _hallsensor{
 #if defined(USE_FLOATING_POINT)
     float Speed;
     uint32_t CallingFrequency;
@@ -110,8 +110,10 @@ float HallSensor2_Get_Speedf(void);
 uint8_t HallSensor2_Get_Direction(void);
 #endif
 
+uint8_t HallSensor_SetAngle(uint8_t state, float newAngle);
 uint8_t HallSensor_SetAngleTable(float* angleTab);
 float* HallSensor_GetAngleTable(void);
+float HallSensor_GetStateMidpoint(uint8_t state);
 //void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
 void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength);

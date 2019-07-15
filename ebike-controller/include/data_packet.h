@@ -28,7 +28,7 @@
 
 #include <string.h>
 
-typedef struct {
+typedef struct _data_packet {
     uint16_t DataLength;
     uint16_t StartPosition;
     uint8_t PacketType;

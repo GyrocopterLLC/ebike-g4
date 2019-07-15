@@ -206,12 +206,12 @@ void dfsl_pid_reset(PID_Type* pid) {
 void dfsl_pid_defaultsf(PID_Float_Type* pid) {
     pid->Err = 0.0f;
     pid->Ui = 0.0f;
-    pid->Kp = FOC_KP_F;
-    pid->Ki = FOC_KI_F;
-    pid->Kd = FOC_KD_F;
-    pid->Kc = FOC_KC_F;
-    pid->OutMin = FOC_OUTMIN_F;
-    pid->OutMax = FOC_OUTMAX_F;
+    pid->Kp = DFLT_FOC_KP;
+    pid->Ki = DFLT_FOC_KI;
+    pid->Kd = DFLT_FOC_KD;
+    pid->Kc = DFLT_FOC_KC;
+    pid->OutMin = DFLT_FOC_OUTMIN;
+    pid->OutMax = DFLT_FOC_OUTMAX;
     pid->SatErr = 0.0f;
     pid->Out = 0.0f;
     pid->Up1 = 0.0f;

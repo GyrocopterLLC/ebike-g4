@@ -65,10 +65,25 @@
 #include <string.h>
 #include <math.h>
 
-/* Exported types ------------------------------------------------------------*/
+#define MAX_USB_VALS                (19)
+#define MAX_USB_OUTPUTS             (10)
+#define MAX_USB_SPEED_CHOICES       (6)
+#define USB_SPEED_RELOAD_VALS       {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
+
 typedef enum {
     PB_RELEASED, PB_PRESSED
 } PB_TypeDef;
+
+typedef struct _main_config {
+    float RampSpeed;
+    uint32_t CountsToFOC;
+    float SpeedToFOC;
+    float SwitchEpsilon;
+    uint32_t Num_USB_Outputs;
+    uint32_t USB_Speed;
+    uint32_t USB_Choices[MAX_USB_OUTPUTS];
+} Config_Main;
+
 /* Exported constants --------------------------------------------------------*/
 #define MAXLEDCOUNT         1000
 #define DEBOUNCE_INTERVAL   10 // 10 milliseconds ==> 100Hz timer

@@ -63,7 +63,7 @@
 #define CDC_SET_CONTROL_LINE_STATE                  0x22
 #define CDC_SEND_BREAK                              0x23
 
-typedef struct {
+typedef struct _usbd_cdc_handle {
     uint32_t data[CDC_CMD_PACKET_SIZE * 2];      // Buffer for control transfers
     uint8_t CmdOpCode;
     uint8_t CmdLength;
@@ -79,14 +79,14 @@ typedef struct {
     void (*App_TxCompleteCallback)(void);
 } USBD_CDC_HandleTypeDef;
 
-typedef struct {
+typedef struct _usbd_cdc_linecoding {
     uint32_t bitrate;
     uint8_t format;
     uint8_t paritytype;
     uint8_t datatype;
 } USBD_CDC_LineCodingTypeDef;
 
-typedef struct {
+typedef struct _usbd_cdc_rxbuffer {
     uint8_t Buffer[DATA_ENDPOINT_FIFO_SIZE];
     int Position, Size;
     char ReadDone;

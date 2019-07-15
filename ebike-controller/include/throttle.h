@@ -37,11 +37,11 @@
 #define PAS_TIM_ARR               9999 // Reset at 1 second (0->9999)
 #define PAS_CLK                   10000
 
-#define THROTTLE_TYPE_ANALOG      0
-#define THROTTLE_TYPE_PAS         1
-#define THROTTLE_TYPE_NONE        2
+#define THROTTLE_TYPE_NONE        0
+#define THROTTLE_TYPE_ANALOG      1
+#define THROTTLE_TYPE_PAS         2
 
-typedef struct {
+typedef struct _throttle_type {
     uint8_t throttle_type;
     uint8_t state;
     float throttle_command;
@@ -51,14 +51,14 @@ typedef struct {
     float rise;
 } Throttle_Type;
 
-typedef struct {
+typedef struct _throttle_analog {
     uint32_t startup_count;
     float min;
     float max;
     float scale_factor;
 } Throttle_Analog_Type;
 
-typedef struct {
+typedef struct _throttle_pas {
     float filtered_speed;
     float scale_factor;
 } Throttle_PAS_Type;

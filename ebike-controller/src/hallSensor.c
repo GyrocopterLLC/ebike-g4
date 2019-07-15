@@ -46,12 +46,13 @@ HallSensor_HandleTypeDef HallSensor_2x;
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 #endif
 
-float HallStateAnglesFwdFloat[8] = HALL_ANGLES_FORWARD_FLOAT;
-float HallStateAnglesRevFloat[8] = HALL_ANGLES_REVERSE_FLOAT;
+float HallStateAnglesFwdFloat[8];
+float HallStateAnglesRevFloat[8];
+float HallStateAnglesMidFloat[8];
 
 // Motor rotation order -> 5, 1, 3, 2 ,6, 4...
-uint8_t HallStateForwardOrder[8] = FORWARD_HALL_INVTABLE;
-uint8_t HallStateReverseOrder[8] = REVERSE_HALL_INVTABLE;
+uint8_t HallStateForwardOrder[8];
+uint8_t HallStateReverseOrder[8];
 
 uint32_t HallSampleBuffer[HALL_NUM_SAMPLES];
 
@@ -417,6 +418,34 @@ uint8_t HallSensor2_Get_Direction(void) {
 }
 #endif
 
+uint8_t HallSensor_SetAngle(uint8_t state, float newAngle) {
+    if(state < 1 || state > 6) {
+        // Out of range, only valid for states 1 to 6
+        return UI_ERROR;
+    }
+    if((newAngle < 0.0f) || (newAngle > 1.0f)) {
+        // Out of range, only angles zero to one allowed
+        return UI_ERROR;
+    }
+    // Copy the angle
+    HallStateAnglesFwdFloat[state] = newAngle;
+    // Update forward and reverse lookup tables
+    HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat, HallStateForwardOrder);
+    HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat, HallStateReverseOrder);
+    // Generate the reverse angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
+                HallStateAnglesFwdFloat[i];
+
+    }
+    // Generate the midpoint angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+    }
+
+    return UI_OK;
+}
+
 uint8_t HallSensor_SetAngleTable(float* angleTab) {
     // Check that angles are okay
     uint8_t i;
@@ -440,11 +469,22 @@ uint8_t HallSensor_SetAngleTable(float* angleTab) {
         HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
                 HallStateAnglesFwdFloat[i];
     }
+    // Generate the midpoint angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+    }
     return UI_OK;
 }
 
 float* HallSensor_GetAngleTable(void) {
     return HallStateAnglesFwdFloat;
+}
+
+float HallSensor_GetStateMidpoint(uint8_t state) {
+    if((state < 1) || (state > 6)) {
+        return 0.0f;
+    }
+    return HallStateAnglesMidFloat[state];
 }
 
 /** HallSensor_Init
@@ -567,6 +607,32 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
     HallSensor_2x.CurrentState +=
             (HALL_PORT->IDR & (1 << HALL_PIN_C)) != 0 ? 4 : 0;
 #endif
+
+    // Load default values from eeprom
+    HallStateAnglesFwdFloat[0] = F32_0_DEG;
+    HallStateAnglesFwdFloat[7] = F32_0_DEG;
+    HallStateAnglesFwdFloat[1] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL1, DFLT_MOTOR_HALL1);
+    HallStateAnglesFwdFloat[2] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL2, DFLT_MOTOR_HALL2);
+    HallStateAnglesFwdFloat[3] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL3, DFLT_MOTOR_HALL3);
+    HallStateAnglesFwdFloat[4] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL4, DFLT_MOTOR_HALL4);
+    HallStateAnglesFwdFloat[5] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL5, DFLT_MOTOR_HALL5);
+    HallStateAnglesFwdFloat[6] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL6, DFLT_MOTOR_HALL6);
+
+    // Update the forward and reverse lookup tables
+    HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat,
+            HallStateForwardOrder);
+    HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat,
+            HallStateReverseOrder);
+    // Generate the reverse angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
+                HallStateAnglesFwdFloat[i];
+    }
+    // Generate the midpoint angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+    }
+
 }
 
 /** HallSensor_CalcSpeed

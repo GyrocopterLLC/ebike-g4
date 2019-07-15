@@ -26,7 +26,7 @@
 #ifndef PROJECT_PARAMETERS_H_
 #define PROJECT_PARAMETERS_H_
 
-#if 0
+#if 1
 
 /***  ADC Configuration Variable IDs ***/
 #define CONFIG_ADC_PREFIX           (0x0000)
@@ -38,19 +38,22 @@
 #define CONFIG_ADC_THERM_B          (0x0005)
 /*** ADC Default Values ***/
 #define DFLT_ADC_INV_TIA_GAIN       (20.0f) // 0.001 Ohms, 50x INA213 gain, 1/(50*.001) = 20
-#define DFLT_ADC_VBUS_RATIO         (33.36246f) // 3.09kOhm / (100 + 3.09kOhm) = 33.36246
+#define DFLT_ADC_VBUS_RATIO         (33.36246f) // 1 / (3.09kOhm / (100 + 3.09kOhm)) = 33.36246
 #define DFLT_ADC_THERM_FIXED_R      (10000.0f) // 10k resistor
 #define DFLT_ADC_THERM_R25          (10000.0f) // Thermistor is 10k at 25degC
 #define DFLT_ADC_THERM_B            (3984.0f) // Thermistor Beta value (NTCALUG02A103G)
+
 /*** FOC Variable IDs ***/
 #define CONFIG_FOC_PREFIX           (0x0100)
-#define CONFIG_FOC_NUMVARS          (6)
+#define CONFIG_FOC_NUMVARS          (8)
 #define CONFIG_FOC_KP               (0x0101)
 #define CONFIG_FOC_KI               (0x0102)
 #define CONFIG_FOC_KD               (0x0103)
 #define CONFIG_FOC_KC               (0x0104)
 #define CONFIG_FOC_OUTMIN           (0x0105)
 #define CONFIG_FOC_OUTMAX           (0x0106)
+#define CONFIG_FOC_PWM_FREQ         (0x0107)
+#define CONFIG_FOC_PWM_DEADTIME     (0x0108)
 /*** FOC Default Values ***/
 #define DFLT_FOC_KP                 (0.1f)
 #define DFLT_FOC_KI                 (0.001f)
@@ -58,28 +61,29 @@
 #define DFLT_FOC_KC                 (0.05f)
 #define DFLT_FOC_OUTMIN             (-0.95f)
 #define DFLT_FOC_OUTMAX             (0.95f)
+#define DFLT_FOC_PWM_FREQ           (20000)
+#define DFLT_FOC_PWM_DEADTIME       (500)
+
 /*** Main Variable IDs ***/
 #define CONFIG_MAIN_PREFIX          (0x0200)
-#define CONFIG_MAIN_NUMVARS         (17)
-#define CONFIG_MAIN_PWM_FREQ        (0x0201)
-#define CONFIG_MAIN_RAMP_SPEED      (0x0202)
-#define CONFIG_MAIN_COUNTS_TO_FOC   (0x0203)
-#define CONFIG_MAIN_SPEED_TO_FOC    (0x0204)
-#define CONFIG_MAIN_SWITCH_EPS      (0x0205)
-#define CONFIG_MAIN_NUM_USB_OUTPUTS (0x0206)
-#define CONFIG_MAIN_USB_SPEED       (0x0207)
-#define CONFIG_MAIN_USB_CHOICE_1    (0x0208)
-#define CONFIG_MAIN_USB_CHOICE_2    (0x0209)
-#define CONFIG_MAIN_USB_CHOICE_3    (0x020A)
-#define CONFIG_MAIN_USB_CHOICE_4    (0x020B)
-#define CONFIG_MAIN_USB_CHOICE_5    (0x020C)
-#define CONFIG_MAIN_USB_CHOICE_6    (0x020D)
-#define CONFIG_MAIN_USB_CHOICE_7    (0x020E)
-#define CONFIG_MAIN_USB_CHOICE_8    (0x020F)
-#define CONFIG_MAIN_USB_CHOICE_9    (0x0210)
-#define CONFIG_MAIN_USB_CHOICE_10   (0x0211)
+#define CONFIG_MAIN_NUMVARS         (16)
+#define CONFIG_MAIN_RAMP_SPEED      (0x0201)
+#define CONFIG_MAIN_COUNTS_TO_FOC   (0x0202)
+#define CONFIG_MAIN_SPEED_TO_FOC    (0x0203)
+#define CONFIG_MAIN_SWITCH_EPS      (0x0204)
+#define CONFIG_MAIN_NUM_USB_OUTPUTS (0x0205)
+#define CONFIG_MAIN_USB_SPEED       (0x0206)
+#define CONFIG_MAIN_USB_CHOICE_1    (0x0207)
+#define CONFIG_MAIN_USB_CHOICE_2    (0x0208)
+#define CONFIG_MAIN_USB_CHOICE_3    (0x0209)
+#define CONFIG_MAIN_USB_CHOICE_4    (0x020A)
+#define CONFIG_MAIN_USB_CHOICE_5    (0x020B)
+#define CONFIG_MAIN_USB_CHOICE_6    (0x020C)
+#define CONFIG_MAIN_USB_CHOICE_7    (0x020D)
+#define CONFIG_MAIN_USB_CHOICE_8    (0x020E)
+#define CONFIG_MAIN_USB_CHOICE_9    (0x021F)
+#define CONFIG_MAIN_USB_CHOICE_10   (0x0210)
 /*** Main Default Values ***/
-#define DFLT_MAIN_PWM_FREQ          (20000)
 #define DFLT_MAIN_RAMP_SPEED        (5.0f)
 #define DFLT_MAIN_COUNTS_TO_FOC     (1000)
 #define DFLT_MAIN_SPEED_TO_FOC      (10.0f)
@@ -96,6 +100,7 @@
 #define DFLT_MAIN_USB_CHOICE_8      (6) // Tc
 #define DFLT_MAIN_USB_CHOICE_9      (9) // HallAngle
 #define DFLT_MAIN_USB_CHOICE_10     (18)// HallState
+
 /*** Throttle Variable IDs ***/
 #define CONFIG_THRT_PREFIX          (0x0300)
 #define CONFIG_THRT_NUMVARS         (12)
@@ -124,6 +129,7 @@
 #define DFLT_THRT_HYST2             (0.025f)
 #define DFLT_THRT_FILT2             (2.0f)
 #define DFLT_THRT_RISE2             (0.0005f)
+
 /*** Limit Variable IDs ***/
 #define CONFIG_LMT_PREFIX           (0x0400)
 #define CONFIG_LMT_NUMVARS          (8)
@@ -144,9 +150,30 @@
 #define DFLT_LMT_BATT_REGEN_MAX     (10.0f)
 #define DFLT_LMT_FET_TEMP_MAX       (90.0f)
 #define DFLT_LMT_MOTOR_TEMP_MAX     (90.0f)
+
+/*** Motor Configuration Variable IDs ***/
+#define CONFIG_MOTOR_PREFIX         (0x0500)
+#define CONFIG_MOTOR_NUMVARS        (7)
+#define CONFIG_MOTOR_HALL1          (0x0501)
+#define CONFIG_MOTOR_HALL2          (0x0502)
+#define CONFIG_MOTOR_HALL3          (0x0503)
+#define CONFIG_MOTOR_HALL4          (0x0504)
+#define CONFIG_MOTOR_HALL5          (0x0505)
+#define CONFIG_MOTOR_HALL6          (0x0506)
+#define CONFIG_MOTOR_POLEPAIRS      (0x0507)
+/*** Motor Default Values ***/
+// For Ebikeling 700C front 1200W motor
+#define DFLT_MOTOR_HALL1            (0.743786f)
+#define DFLT_MOTOR_HALL2            (0.089677f)
+#define DFLT_MOTOR_HALL3            (0.905861f)
+#define DFLT_MOTOR_HALL4            (0.412525f)
+#define DFLT_MOTOR_HALL5            (0.593083f)
+#define DFLT_MOTOR_HALL6            (0.240492f)
+#define DFLT_MOTOR_POLEPAIRS        (23)
+
 #endif
 
-
+#if 0
 /*** ADC Defaults ***/
 #define RSHUNT_INV              (1000.0f) // Inverse of 0.001 Ohms
 #define INAGAIN_INV             (0.02f) // Inverse of 50x gain (INA213 current amplifier)
@@ -189,15 +216,13 @@
 #define MIN_SPEED_TO_FOC        (10.0f)
 #define FOC_SWITCH_ANGLE_EPS    (0.00833333333f) // about 3 degrees
 
-#define MAX_USB_VALS                (19)
-#define MAX_USB_OUTPUTS             (10)
+
 #define DEFAULT_USB_OUTPUTS         (5)
 #define DEFAULT_USB_ASSIGNMENTS     {1, 2, 3, 7, 11, 4, 5, 6, 9, 18}
 #define USB_PREFIX_LENGTH           (4)
 #define DEFAULT_USB_PREFIX          "DB05"
-#define MAX_USB_SPEED_CHOICES       (6)
-#define USB_SPEED_RELOAD_VALS       {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
 #define DEFAULT_SERIAL_DATA_RATE    (400) // (20kHz/400 = 50Hz)
+#endif
 
 // Throttle setting
 #define FULLSCALE_THROTTLE      (5.0f) // Amps
@@ -234,6 +259,7 @@
 
 #define THROTTLE_OUTPUT_MIN         (0.00f)
 #define THROTTLE_OUTPUT_MAX         (0.99f)
+
 
 // Angle definitions - integer
 // This set of defines are the integer values of angles
@@ -282,6 +308,8 @@
 #define PRIO_PAS        (5)
 #define PRIO_USB        (6)
 
+
+#if 0
 // Hall state change table
 // This state table corresponds to a forward rotating motor,
 // with cable connections as follows:
@@ -400,5 +428,6 @@
                                             (0.668435f),\
                                             (0.326508f),\
                                             F32_0_DEG }
+#endif
 
 #endif /* PROJECT_PARAMETERS_H_ */

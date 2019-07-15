@@ -30,10 +30,12 @@
 #include "motor_loop.h"
 #include "project_parameters.h"
 
+extern Config_Main config_main;
+
 uint8_t lastHallState = 0;
 Motor_RunState lastRunState = Motor_Off;
 
-float HallStateToDriveFloat[8] = HALL_ANGLES_TO_DRIVE_FLOAT;
+//float HallStateToDriveFloat[8] = HALL_ANGLES_TO_DRIVE_FLOAT;
 
 static void MLoop_Turn_Off_Check(Motor_Controls* cntl) {
     if (cntl->ThrottleCommand <= 0.0f) {
@@ -177,6 +179,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
     case Motor_Startup:
         // During this startup routine, the FOC is active but the angle
         // of the motor is discontinuous (similar to 6-step)
+        // Driven angle is 90deg ahead of the midpoint of the Hall state
         if (lastRunState != Motor_Startup) {
             PHASE_A_PWM()
             ;
@@ -199,7 +202,8 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
                 &(foc->Clarke_Beta));
         dfsl_parkf(foc->Clarke_Alpha, foc->Clarke_Beta,
-                HallStateToDriveFloat[obv->HallState], &(foc->Park_D),
+//                HallStateToDriveFloat[obv->HallState], &(foc->Park_D),
+                HallSensor_GetStateMidpoint(obv->HallState), &(foc->Park_D),
                 &(foc->Park_Q));
         // Pass filtered current to the PI(D)s
         foc->Id_PID->Err = 0.0f - foc->Park_D;
@@ -216,7 +220,8 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // **************** FORWARD PATH *****************
         // Feed to inverse Park
         dfsl_iparkf(foc->Id_PID->Out, foc->Iq_PID->Out,
-                HallStateToDriveFloat[obv->HallState], &ipark_a, &ipark_b);
+//                HallStateToDriveFloat[obv->HallState], &ipark_a, &ipark_b);
+                HallSensor_GetStateMidpoint(obv->HallState), &ipark_a, &ipark_b);
         // Saturate inputs to unit-length vector
         // Is magnitude of ipark greater than 1?
         if (((ipark_a * ipark_a) + (ipark_b * ipark_b)) > 1.0f) {
@@ -229,19 +234,20 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         dfsl_svmf(ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
 
         // Check if we're ready for regular run mode
-        if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC) {
+//        if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC) {
+        if(HallSensor_Get_Speedf() > config_main.SpeedToFOC) {
             cntl->speed_cycle_integrator = cntl->speed_cycle_integrator + 1;
         } else {
             if (cntl->speed_cycle_integrator > 0) {
                 cntl->speed_cycle_integrator = cntl->speed_cycle_integrator - 1;
             }
         }
-        if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
+//        if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
+        if(cntl->speed_cycle_integrator > config_main.CountsToFOC) {
             // Hold off on changing to FOC until the angle is pretty darn close
             // to lining up.
-            if (fabsf(
-                    HallStateToDriveFloat[obv->HallState]
-                            - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
+            if (fabsf(HallSensor_GetStateMidpoint(obv->HallState) - obv->RotorAngle) < config_main.SwitchEpsilon)
+//          if (fabsf(HallStateToDriveFloat[obv->HallState] - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
                 cntl->state = Motor_AtSpeed;
         }
         break;

@@ -137,7 +137,7 @@
 #define USB_EP_TYPE_BULK                                 2
 #define USB_EP_TYPE_INTR                                 3
 
-typedef struct {
+typedef struct _usb_endpoint {
     uint16_t xfer_len;
     uint16_t xfer_done_count;
     uint16_t total_xfer_len;
@@ -146,14 +146,14 @@ typedef struct {
     uint8_t* xfer_buffer;
 } USB_EndpointType;
 
-typedef struct {
+typedef struct _usb_fifostatus {
     uint8_t chnum;
     uint16_t bcnt;
     uint8_t dpid;
     uint8_t pktsts;
 } USB_FIFOStatusTypedef;
 
-typedef struct {
+typedef struct _usb_setupreq{
     uint8_t bmRequest;
     uint8_t bRequest;
     uint16_t wValue;
@@ -161,7 +161,7 @@ typedef struct {
     uint16_t wLength;
 } USB_SetupReqTypedef;
 
-typedef struct {
+typedef struct _usb_classdesc {
     uint8_t* (*GetDeviceDescriptor)(uint16_t* len);
     uint8_t* (*GetConfigDescriptor)(uint16_t* len);
     uint8_t* (*GetLangIDStrDescriptor)(uint16_t* len);
@@ -173,7 +173,7 @@ typedef struct {
 
 } USB_ClassDescTypedef;
 
-typedef struct {
+typedef struct _usb_classcallback{
     void (*Connect)(void);
     void (*Disconnect)(void);
     void (*Reset)(void);

@@ -44,7 +44,7 @@
 #define Q_FACTOR		(22)	// Max value: (2^31-1)/2^22 = 511.9999997615814208984375
 // Smallest positive: 1/2^22 = 0.0000002384185791015625
 
-typedef struct {
+typedef struct _pid {
     int32_t Err; // Input: Error term (Reference - feedback)
     int32_t Ui;  // Output: Integral output
     int32_t Kp;  // Param: Proportional gain
@@ -58,7 +58,7 @@ typedef struct {
     int32_t Up1;  // Previous proportional output
 } PID_Type;
 
-typedef struct {
+typedef struct _pid_float {
     float Err; // Input: Error term (Reference - feedback)
     float Ui;  // Output: Integral output
     float Kp;  // Param: Proportional gain
@@ -73,7 +73,7 @@ typedef struct {
 
 } PID_Float_Type;
 
-typedef struct {
+typedef struct _biquad_float {
     float A1; // Param: A1 gain (output at one delay)
     float A2; // Param: A2 gain (output at two delays)
     float B0; // Param: B0 gain (input, no delay)
@@ -84,6 +84,14 @@ typedef struct {
     float X;  // Input: variable to be filtered
     float Y;  // Output: filtered result
 } Biquad_Float_Type;
+
+// Integer version defaults
+#define FOC_KP                  (419430) // 0.1
+#define FOC_KI                  (4194) // 0.001
+#define FOC_KD                  (0)
+#define FOC_KC                  (209715) // 0.05
+#define FOC_OUTMIN              (-65536) // -1
+#define FOC_OUTMAX              (65536) // +1
 
 float dfsl_sinf(float theta);
 float dfsl_cosf(float theta);

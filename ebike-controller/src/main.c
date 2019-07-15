@@ -99,23 +99,18 @@ HallDetectHelperStruct hdhs;
  *
  */
 
-uint8_t usb_num_output_vars = DEFAULT_USB_OUTPUTS;
+Config_Main config_main;
 
-uint8_t usb_speed_choice = 0;
 uint32_t usb_speed_choices[MAX_USB_SPEED_CHOICES] = USB_SPEED_RELOAD_VALS;
-uint8_t usb_debug_buffer[4*CDC_DATA_FS_MAX_PACKET_SIZE];
+uint8_t usb_debug_buffer[PACKET_MAX_LENGTH];
 
 Data_Packet_Type usb_debug_packet;
 uint8_t usb_debug_data_buffer[PACKET_MAX_DATA_LENGTH];
 __IO uint32_t usb_debug_buffer_pos = 0;
-__IO uint32_t usb_debug_countdown_timer = DEFAULT_SERIAL_DATA_RATE;
-uint32_t usb_debug_countdown_reload = DEFAULT_SERIAL_DATA_RATE;
-uint8_t usb_debug_prefix[USB_PREFIX_LENGTH] = DEFAULT_USB_PREFIX;
+__IO uint32_t usb_debug_countdown_timer;
+uint32_t usb_debug_countdown_reload;
 
 float usbdacvals[MAX_USB_VALS];
-
-/* Default USB debugging outputs: Ia, Ib, Ic, Throttle, Vbus */
-uint8_t usbdacassignments[MAX_USB_OUTPUTS] = DEFAULT_USB_ASSIGNMENTS;
 
 char vcp_buffer[UI_MAX_BUFFER_LENGTH];
 char uart_buffer[UI_MAX_BUFFER_LENGTH];
@@ -276,7 +271,8 @@ int main(void) {
     User_DAC_Init();
     User_BasicTim_Init();
     PWM_Init();
-    HallSensor_Init_NoHal(DEFAULT_PWM_FREQ);
+    int32_t tempfreq = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_FREQ, DFLT_FOC_PWM_FREQ);
+    HallSensor_Init_NoHal(tempfreq);
     HBD_Init();
 
     // USB init
@@ -284,22 +280,45 @@ int main(void) {
     USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
     USB_Start();
 
-    /* Initialize ramp angle increment at 5 Hz*/
-    // Going forward at start. rampInc is positive
-    g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQF, RAMP_DEFAULTSPEEDF);
+    g_rampInc = dfsl_rampctrlf((float)tempfreq,
+            EE_ReadFloatWithDefault(CONFIG_MAIN_RAMP_SPEED,DFLT_MAIN_RAMP_SPEED));
 
     /* Initialize PID controllers */
     dfsl_pid_defaultsf(&Id_control);
     dfsl_pid_defaultsf(&Iq_control);
     /* Load saved EEPROM variables */
-    Id_control.Kp = EE_ReadFloatWithDefault(EE_ADR_KP, Id_control.Kp);
-    Id_control.Ki = EE_ReadFloatWithDefault(EE_ADR_KI, Id_control.Ki);
-    Id_control.Kd = EE_ReadFloatWithDefault(EE_ADR_KD, Id_control.Kd);
-    Id_control.Kc = EE_ReadFloatWithDefault(EE_ADR_KC, Id_control.Kc);
-    Iq_control.Kp = EE_ReadFloatWithDefault(EE_ADR_KP, Iq_control.Kp);
-    Iq_control.Ki = EE_ReadFloatWithDefault(EE_ADR_KI, Iq_control.Ki);
-    Iq_control.Kd = EE_ReadFloatWithDefault(EE_ADR_KD, Iq_control.Kd);
-    Iq_control.Kc = EE_ReadFloatWithDefault(EE_ADR_KC, Iq_control.Kc);
+    Id_control.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, Id_control.Kp);
+    Id_control.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, Id_control.Ki);
+    Id_control.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, Id_control.Kd);
+    Id_control.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, Id_control.Kc);
+    Id_control.OutMin = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMIN, Id_control.OutMin);
+    Id_control.OutMax = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMAX, Id_control.OutMax);
+    Iq_control.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, Iq_control.Kp);
+    Iq_control.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, Iq_control.Ki);
+    Iq_control.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, Iq_control.Kd);
+    Iq_control.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, Iq_control.Kc);
+    Iq_control.OutMin = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMIN, Iq_control.OutMin);
+    Iq_control.OutMax = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMAX, Iq_control.OutMax);
+
+    config_main.RampSpeed = EE_ReadFloatWithDefault(CONFIG_MAIN_RAMP_SPEED, DFLT_MAIN_RAMP_SPEED);
+    config_main.CountsToFOC = EE_ReadInt32WithDefault(CONFIG_MAIN_COUNTS_TO_FOC, DFLT_MAIN_COUNTS_TO_FOC);
+    config_main.SpeedToFOC = EE_ReadFloatWithDefault(CONFIG_MAIN_SPEED_TO_FOC, DFLT_MAIN_SPEED_TO_FOC);
+    config_main.SwitchEpsilon = EE_ReadFloatWithDefault(CONFIG_MAIN_SWITCH_EPS, DFLT_MAIN_SWITCH_EPS);
+    config_main.Num_USB_Outputs = EE_ReadInt32WithDefault(CONFIG_MAIN_NUM_USB_OUTPUTS, DFLT_MAIN_NUM_USB_OUTPUTS);
+    config_main.USB_Speed = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_SPEED, DFLT_MAIN_USB_SPEED);
+    config_main.USB_Choices[0] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_1, DFLT_MAIN_USB_CHOICE_1);
+    config_main.USB_Choices[1] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_2, DFLT_MAIN_USB_CHOICE_2);
+    config_main.USB_Choices[2] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_3, DFLT_MAIN_USB_CHOICE_3);
+    config_main.USB_Choices[3] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_4, DFLT_MAIN_USB_CHOICE_4);
+    config_main.USB_Choices[4] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_5, DFLT_MAIN_USB_CHOICE_5);
+    config_main.USB_Choices[5] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_6, DFLT_MAIN_USB_CHOICE_6);
+    config_main.USB_Choices[6] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_7, DFLT_MAIN_USB_CHOICE_7);
+    config_main.USB_Choices[7] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_8, DFLT_MAIN_USB_CHOICE_8);
+    config_main.USB_Choices[8] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_9, DFLT_MAIN_USB_CHOICE_9);
+    config_main.USB_Choices[9] = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_CHOICE_10, DFLT_MAIN_USB_CHOICE_10);
+
+    usb_debug_countdown_timer = usb_speed_choices[config_main.USB_Speed];
+    usb_debug_countdown_reload = usb_speed_choices[config_main.USB_Speed];
 
 #ifdef DEBUG_DUMP_USED
     DumpReset();
@@ -674,38 +693,21 @@ void User_PWMTIM_IRQ(void) {
     // Load up the output buffer
     if (g_MainFlags & MAINFLAG_SERIALDATAON) {
         if ((--usb_debug_countdown_timer) == 0) {
-            for (uint8_t i = 0; i < usb_num_output_vars; i++) {
+            for (uint8_t i = 0; i < config_main.Num_USB_Outputs; i++) {
                 data_packet_pack_float(
                         &(usb_debug_data_buffer[i * sizeof(float)]),
-                        usbdacvals[usbdacassignments[i] - 1]);
+                        usbdacvals[config_main.USB_Choices[i] - 1]);
             }
             usb_debug_packet.TxBuffer = usb_debug_buffer;
             if (data_packet_create(&usb_debug_packet,
             CONTROLLER_STREAM_DATA, usb_debug_data_buffer,
-                    usb_num_output_vars * sizeof(float))) {
+                    config_main.Num_USB_Outputs * sizeof(float))) {
                 usb_debug_buffer_pos = usb_debug_packet.TxLength;
             } else {
                 usb_debug_buffer_pos = 0;
             }
 
             usb_debug_countdown_timer = usb_debug_countdown_reload;
-/*
-            if ((usb_debug_buffer_pos + 4 + 4 * MAX_USB_OUTPUTS)
-                    < (4 * CDC_DATA_FS_MAX_PACKET_SIZE)) {
-                memcpy(&(usb_debug_buffer[usb_debug_buffer_pos]),
-                        usb_debug_prefix, 4);
-                usb_debug_buffer_pos += 4;
-                for (uint8_t i = 0; i < usb_num_output_vars; i++) {
-                    if (usbdacassignments[i] == 0)
-                        memset(&(usb_debug_buffer[usb_debug_buffer_pos]), 0, 4);
-                    else
-                        memcpy(&(usb_debug_buffer[usb_debug_buffer_pos]),
-                                &(usbdacvals[usbdacassignments[i] - 1]), 4);
-                    usb_debug_buffer_pos += 4;
-
-                }
-            }
-*/
         }
     }
 
@@ -886,36 +888,30 @@ uint8_t MAIN_SetUSBDebugOutput(uint8_t outputnum, uint8_t valuenum) {
     // Set the new output
     if ((outputnum >= MAX_USB_OUTPUTS) || (valuenum > MAX_USB_VALS))
         return UI_ERROR;
-    usbdacassignments[outputnum] = valuenum;
+    config_main.USB_Choices[outputnum] = valuenum;
     return UI_OK;
 }
 
 uint8_t MAIN_GetUSBDebugOutput(uint8_t outputnum) {
-    return usbdacassignments[outputnum];
+    return config_main.USB_Choices[outputnum];
 }
 
 uint8_t MAIN_SetNumUSBDebugOutputs(uint8_t numOutputs) {
     if (numOutputs <= MAX_USB_OUTPUTS) {
-        usb_num_output_vars = numOutputs;
-        usb_debug_prefix[0] = 'D';
-        usb_debug_prefix[1] = 'B';
-        if (usb_num_output_vars >= 10) {
-            usb_debug_prefix[2] = (usb_num_output_vars / 10) + '0';
-        }
-        usb_debug_prefix[3] = (usb_num_output_vars % 10) + '0';
+        config_main.Num_USB_Outputs = numOutputs;
         return UI_OK;
     }
     return UI_ERROR;
 }
 
 uint8_t MAIN_GetNumUSBDebugOutputs(void) {
-    return usb_num_output_vars;
+    return config_main.Num_USB_Outputs;
 }
 
 uint8_t MAIN_SetUSBDebugSpeed(uint8_t speedChoice) {
     if (speedChoice < MAX_USB_SPEED_CHOICES) {
-        usb_speed_choice = speedChoice;
-        usb_debug_countdown_reload = usb_speed_choices[usb_speed_choice];
+        config_main.USB_Speed = speedChoice;
+        usb_debug_countdown_reload = usb_speed_choices[config_main.USB_Speed];
         usb_debug_countdown_timer = usb_debug_countdown_reload;
         return UI_OK;
     }
@@ -923,7 +919,7 @@ uint8_t MAIN_SetUSBDebugSpeed(uint8_t speedChoice) {
 }
 
 uint8_t MAIN_GetUSBDebugSpeed(void) {
-    return usb_speed_choice;
+    return config_main.USB_Speed;
 }
 
 uint8_t MAIN_SetUSBDebugging(uint8_t on_or_off) {
@@ -942,7 +938,8 @@ uint8_t MAIN_GetUSBDebugging(void) {
 }
 
 uint8_t MAIN_SetRampSpeed(uint32_t newspeed) {
-    g_rampInc = dfsl_rampctrlf(RAMP_CALLFREQF, (float) newspeed);
+    int32_t tempfreq = PWM_GetFreq();
+    g_rampInc = dfsl_rampctrlf((float)tempfreq, (float) newspeed);
     return UI_OK;
 }
 
@@ -1037,22 +1034,27 @@ float MAIN_GetVar_EEPROM(uint8_t var) {
 }
 
 uint8_t MAIN_SetFreq(int32_t newfreq) {
-    ((void) newfreq);
-    // Not yet implemented
+    // Save the previous hall table - this can reset it to eeprom values
+    float hallTable[8];
+    if(PWM_SetFreq(newfreq) == UI_OK) {
+        memcpy(hallTable, HallSensor_GetAngleTable(), 8*sizeof(float));
+        HallSensor_Init_NoHal(newfreq);
+        // Load back in the previous table.
+        HallSensor_SetAngleTable(hallTable);
+        return UI_OK;
+    }
     return UI_ERROR;
 }
 
 int32_t MAIN_GetFreq(void) {
-    return 20000; // Hz
+    return PWM_GetFreq(); // Hz
 }
 
 uint8_t MAIN_SetDeadTime(int32_t newDT) {
-    ((void) newDT);
-    // Not yet implemented
-    return UI_ERROR;
+    return PWM_SetDeadTime(newDT);
 }
 int32_t MAIN_GetDeadTime(void) {
-    return 500; // nanosec
+    return PWM_GetDeadTime(); // nanosec
 }
 
 void MAIN_SetError(uint32_t errorCode) {

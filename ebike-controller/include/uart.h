@@ -43,7 +43,7 @@
 #define HBD_BUFFER_LENGTH		64
 #define HBD_TXMT_TIMEOUT		3 // ms
 
-typedef struct {
+typedef struct _hbd_buffer{
     uint8_t Buffer[HBD_BUFFER_LENGTH];
     uint8_t RdPos, WrPos;
     uint8_t Done;

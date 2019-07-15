@@ -153,8 +153,21 @@ int32_t PWM_GetDeadTime_EEPROM(void) {
 }
 
 uint8_t PWM_SetFreq(int32_t newFreq) {
-    ((void) newFreq);
-    return UI_OK;
+    int32_t temp = PWM_TIMER_FREQ;
+    if((newFreq >= PWM_MIN_FREQ) && (newFreq <= PWM_MAX_FREQ)) {
+        temp = temp / newFreq;
+        temp = temp / 2;
+        temp = temp - 1;
+        PWM_MotorOFF();
+        PWM_TIMER->CR1 &= ~TIM_CR1_CEN; // Stop the timer
+        PWM_TIMER->ARR = temp;
+        PWM_TIMER->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
+        PWM_TIMER->CR1 |= TIM_CR1_CEN; // Restart the timer
+
+        return UI_OK;
+    }
+
+    return UI_ERROR;
 }
 
 int32_t PWM_GetFreq(void) {

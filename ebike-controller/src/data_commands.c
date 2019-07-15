@@ -178,62 +178,62 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     float* fhalltableptr;
 
     switch (value_ID) {
-    case CONFIG_DATA_SPEED:
+    case CONFIG_MAIN_USB_SPEED:
         retval8b = MAIN_GetUSBDebugSpeed();
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_NUMVARS:
+    case CONFIG_MAIN_NUM_USB_OUTPUTS:
         retval8b = MAIN_GetNumUSBDebugOutputs();
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR1:
+    case CONFIG_MAIN_USB_CHOICE_1:
         retval8b = MAIN_GetUSBDebugOutput(0);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR2:
+    case CONFIG_MAIN_USB_CHOICE_2:
         retval8b = MAIN_GetUSBDebugOutput(1);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR3:
+    case CONFIG_MAIN_USB_CHOICE_3:
         retval8b = MAIN_GetUSBDebugOutput(2);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR4:
+    case CONFIG_MAIN_USB_CHOICE_4:
         retval8b = MAIN_GetUSBDebugOutput(3);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR5:
+    case CONFIG_MAIN_USB_CHOICE_5:
         retval8b = MAIN_GetUSBDebugOutput(44);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR6:
+    case CONFIG_MAIN_USB_CHOICE_6:
         retval8b = MAIN_GetUSBDebugOutput(5);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR7:
+    case CONFIG_MAIN_USB_CHOICE_7:
         retval8b = MAIN_GetUSBDebugOutput(6);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR8:
+    case CONFIG_MAIN_USB_CHOICE_8:
         retval8b = MAIN_GetUSBDebugOutput(7);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR9:
+    case CONFIG_MAIN_USB_CHOICE_9:
         retval8b = MAIN_GetUSBDebugOutput(8);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_DATA_VAR10:
+    case CONFIG_MAIN_USB_CHOICE_10:
         retval8b = MAIN_GetUSBDebugOutput(9);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
@@ -258,13 +258,16 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_FOC_DT:
+    case CONFIG_FOC_PWM_FREQ:
+        retval32b = PWM_GetFreq();
+        data_packet_pack_32b(retval, retval32b);
+        errCode = RESULT_IS_32B;
+        break;
+    case CONFIG_FOC_PWM_DEADTIME:
         retval32b = PWM_GetDeadTime();
         data_packet_pack_32b(retval, retval32b);
         errCode = RESULT_IS_32B;
         break;
-        // case CONFIG_FOC_FREQ:
-        // break;
         // case CONFIG_MOTOR_PP:
         // break;
         // case CONFIG_MOTOR_RS:
@@ -309,62 +312,62 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_TYPE1:
+    case CONFIG_THRT_TYPE1:
         retval8b = throttle_get_type(1);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_THR_MIN1:
+    case CONFIG_THRT_MIN1:
         retvalf = throttle_get_min(1);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_MAX1:
+    case CONFIG_THRT_MAX1:
         retvalf = throttle_get_min(1);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_HYST1:
+    case CONFIG_THRT_HYST1:
         retvalf = throttle_get_hyst(1);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_FILT1:
+    case CONFIG_THRT_FILT1:
         retvalf = throttle_get_filt(1);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_RISE1:
+    case CONFIG_THRT_RISE1:
         retvalf = throttle_get_rise(1);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_TYPE2:
+    case CONFIG_THRT_TYPE2:
         retval8b = throttle_get_type(2);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
-    case CONFIG_THR_MIN2:
+    case CONFIG_THRT_MIN2:
         retvalf = throttle_get_min(2);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_MAX2:
+    case CONFIG_THRT_MAX2:
         retvalf = throttle_get_min(2);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_HYST2:
+    case CONFIG_THRT_HYST2:
         retvalf = throttle_get_hyst(2);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_FILT2:
+    case CONFIG_THRT_FILT2:
         retvalf = throttle_get_filt(2);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_THR_RISE2:
+    case CONFIG_THRT_RISE2:
         retvalf = throttle_get_rise(2);
         data_packet_pack_float(retval, retvalf);
         errCode = RESULT_IS_FLOAT;
@@ -379,8 +382,6 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     //uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     pktdata += 2;
     // Then one to four bytes for value, depending on command
-    float* fhalltableptr;
-    float ftemphalltable[8];
     float valuef;
     uint8_t value8b;
     uint16_t value16b;
@@ -390,51 +391,51 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     ((void) value16b);
 
     switch (value_ID) {
-    case CONFIG_DATA_SPEED:
+    case CONFIG_MAIN_USB_SPEED:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugSpeed(value8b);
         break;
-    case CONFIG_DATA_NUMVARS:
+    case CONFIG_MAIN_NUM_USB_OUTPUTS:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetNumUSBDebugOutputs(value8b);
         break;
-    case CONFIG_DATA_VAR1:
+    case CONFIG_MAIN_USB_CHOICE_1:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(0, value8b);
         break;
-    case CONFIG_DATA_VAR2:
+    case CONFIG_MAIN_USB_CHOICE_2:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(1, value8b);
         break;
-    case CONFIG_DATA_VAR3:
+    case CONFIG_MAIN_USB_CHOICE_3:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(2, value8b);
         break;
-    case CONFIG_DATA_VAR4:
+    case CONFIG_MAIN_USB_CHOICE_4:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(3, value8b);
         break;
-    case CONFIG_DATA_VAR5:
+    case CONFIG_MAIN_USB_CHOICE_5:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(4, value8b);
         break;
-    case CONFIG_DATA_VAR6:
+    case CONFIG_MAIN_USB_CHOICE_6:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(5, value8b);
         break;
-    case CONFIG_DATA_VAR7:
+    case CONFIG_MAIN_USB_CHOICE_7:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(6, value8b);
         break;
-    case CONFIG_DATA_VAR8:
+    case CONFIG_MAIN_USB_CHOICE_8:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(7, value8b);
         break;
-    case CONFIG_DATA_VAR9:
+    case CONFIG_MAIN_USB_CHOICE_9:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(8, value8b);
         break;
-    case CONFIG_DATA_VAR10:
+    case CONFIG_MAIN_USB_CHOICE_10:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugOutput(9, value8b);
         break;
@@ -454,12 +455,14 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         valuef = data_packet_extract_float(pktdata);
         errCode = MAIN_SetVar(3, valuef);
         break;
-    case CONFIG_FOC_DT:
+    case CONFIG_FOC_PWM_FREQ:
+        value32b = data_packet_extract_32b(pktdata);
+        errCode = MAIN_SetFreq(value32b);
+        break;
+    case CONFIG_FOC_PWM_DEADTIME:
         value32b = data_packet_extract_32b(pktdata);
         errCode = MAIN_SetDeadTime(value32b);
         break;
-        // case CONFIG_FOC_FREQ:
-        // break;
 //    case CONFIG_MOTOR_PP:
 //        break;
         // case CONFIG_MOTOR_RS:
@@ -469,70 +472,52 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         // case CONFIG_MOTOR_FLUX:
         // break;
     case CONFIG_MOTOR_HALL1:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[1] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(1, valuef);
         break;
     case CONFIG_MOTOR_HALL2:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[2] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(2, valuef);
         break;
     case CONFIG_MOTOR_HALL3:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[3] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(3, valuef);
         break;
     case CONFIG_MOTOR_HALL4:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[4] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(4, valuef);
         break;
     case CONFIG_MOTOR_HALL5:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[5] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(5, valuef);
         break;
     case CONFIG_MOTOR_HALL6:
-        fhalltableptr = HallSensor_GetAngleTable();
-        memcpy(ftemphalltable, fhalltableptr, 8 * sizeof(float));
         valuef = data_packet_extract_float(pktdata);
-        ftemphalltable[6] = valuef;
-        errCode = HallSensor_SetAngleTable(ftemphalltable);
+        errCode = HallSensor_SetAngle(6, valuef);
         break;
-    case CONFIG_THR_TYPE1:
+    case CONFIG_THRT_TYPE1:
         break;
-    case CONFIG_THR_MIN1:
+    case CONFIG_THRT_MIN1:
         break;
-    case CONFIG_THR_MAX1:
+    case CONFIG_THRT_MAX1:
         break;
-    case CONFIG_THR_HYST1:
+    case CONFIG_THRT_HYST1:
         break;
-    case CONFIG_THR_FILT1:
+    case CONFIG_THRT_FILT1:
         break;
-    case CONFIG_THR_RISE1:
+    case CONFIG_THRT_RISE1:
         break;
-    case CONFIG_THR_TYPE2:
+    case CONFIG_THRT_TYPE2:
         break;
-    case CONFIG_THR_MIN2:
+    case CONFIG_THRT_MIN2:
         break;
-    case CONFIG_THR_MAX2:
+    case CONFIG_THRT_MAX2:
         break;
-    case CONFIG_THR_HYST2:
+    case CONFIG_THRT_HYST2:
         break;
-    case CONFIG_THR_FILT2:
+    case CONFIG_THRT_FILT2:
         break;
-    case CONFIG_THR_RISE2:
+    case CONFIG_THRT_RISE2:
         break;
     }
     return errCode;
