@@ -81,7 +81,7 @@
 #define CONFIG_MAIN_USB_CHOICE_6    (0x020C)
 #define CONFIG_MAIN_USB_CHOICE_7    (0x020D)
 #define CONFIG_MAIN_USB_CHOICE_8    (0x020E)
-#define CONFIG_MAIN_USB_CHOICE_9    (0x021F)
+#define CONFIG_MAIN_USB_CHOICE_9    (0x020F)
 #define CONFIG_MAIN_USB_CHOICE_10   (0x0210)
 /*** Main Default Values ***/
 #define DFLT_MAIN_RAMP_SPEED        (5.0f)

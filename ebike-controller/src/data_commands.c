@@ -209,7 +209,7 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         errCode = RESULT_IS_8B;
         break;
     case CONFIG_MAIN_USB_CHOICE_5:
-        retval8b = MAIN_GetUSBDebugOutput(44);
+        retval8b = MAIN_GetUSBDebugOutput(4);
         data_packet_pack_8b(retval, retval8b);
         errCode = RESULT_IS_8B;
         break;
