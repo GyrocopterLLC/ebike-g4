@@ -630,7 +630,18 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
     }
     // Generate the midpoint angle table
     for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+        // Take care of the case where we are wrapping around 1.0
+        // If we didn't do this, the average angle would be close to 0.5 when it should instead
+        // be close to either 0.0 or 1.0
+        if( ((HallStateAnglesFwdFloat[i] > (5.0f/6.0f)) && (HallStateAnglesRevFloat[i] < (1.0f/6.0f))) ||
+            ((HallStateAnglesRevFloat[i] > (5.0f/6.0f)) && (HallStateAnglesFwdFloat[i] < (1.0f/6.0f)))) {
+            HallStateAnglesMidFloat[i] = (1.0f + HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+            if(HallStateAnglesMidFloat[i] > 1.0f) {
+                HallStateAnglesMidFloat[i] -= 1.0f;
+            }
+        } else {
+            HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+        }
     }
 
 }
