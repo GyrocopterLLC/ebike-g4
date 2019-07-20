@@ -34,6 +34,48 @@
 HBDBuffer_Type s_RxBuffer;
 HBDBuffer_Type s_TxBuffer;
 
+BMSBuffer_Type s_BmsRxBuffer;
+BMSBuffer_Type s_BmsTxBuffer;
+
+/*** UART_CalcBRR
+ * From ST reference manual RM0091:
+ * In case of oversampling by 16, the equation is:
+ *      Tx/Rx baud = (fck)/(USARTDIV)
+ * In case of oversampling by 8, the equation is:
+ *      Tx/Rx baud = (2*fck)/(USARTDIV)
+ * USARTDIV is an unsigned fixed point number that is coded
+ * on the USART_BRR register.
+ * When OVER8=0, BRR = USARTDIV
+ * When OVER8=1,
+ *  - BRR[2:0] = USARTDIV[3:0] shifted 1 to the right
+ *  - BRR[3] must be kept clear
+ *  - BRR[15:4] = USARTDIV[15:4]
+ *
+ *  Strangely, the STM32F4 manual (RM0090) has a different definition.
+ *  But this definition gives the same result as above!
+ *  Tx/Rx baud = (fck)/(8*(2-over8)*usartdiv)
+ *  Whole part of usartdiv is 12 bits, coded on USART_BRR[15:4]
+ *  when over8=0, fractional part of usartdiv is 4 bits, coded on USART_BRR[3:0]
+ *  when over8=1, fractional part of usartdiv is 3 bits, coded on USART_BRR[2:0], USART_BRR[3] = 0
+ */
+uint16_t UART_CalcBRR(uint32_t fck, uint32_t baud, uint8_t over8) {
+    uint16_t usartdiv, brr;
+    if(baud == 0) {
+        return 0;
+    }
+    if(baud > fck) {
+        return 0;
+    }
+    if(over8) {
+        usartdiv = (2*fck)/baud;
+        brr = (usartdiv&(0xFFF0)) + ((usartdiv&(0x000F)) >> 1);
+        return brr;
+    } else {
+        usartdiv = fck/baud;
+        return usartdiv;
+    }
+}
+
 void HBD_Init(void) {
     // Clock everything
     GPIO_Clk(HBD_UART_PORT);
@@ -59,6 +101,33 @@ void HBD_Init(void) {
     // Interrupt config
     NVIC_SetPriority(HBD_IRQn, PRIO_HBD_UART);
     NVIC_EnableIRQ(HBD_IRQn);
+}
+
+void BMS_Init(void) {
+    // Clock everything
+    GPIO_Clk(BMS_UART_PORT);
+    BMS_UART_CLK_ENABLE();
+
+    // Set up the GPIOs
+    GPIO_AF(BMS_UART_PORT, BMS_UART_TX_PIN, BMS_UART_AF);
+    GPIO_AF(BMS_UART_PORT, BMS_UART_RX_PIN, BMS_UART_AF);
+
+    // Initialize the peripheral
+    BMS_UART->CR1 = USART_CR1_RE | USART_CR1_RXNEIE | USART_CR1_TE;
+    BMS_UART->CR2 = 0;
+    BMS_UART->CR3 = 0;
+    BMS_UART->BRR = BMS_BRR;
+
+    s_RxBuffer.Done = 0;
+    s_RxBuffer.RdPos = 0;
+    s_RxBuffer.WrPos = 0;
+    s_TxBuffer.Done = 1;
+
+    BMS_UART->CR1 |= USART_CR1_UE;
+
+    // Interrupt config
+    NVIC_SetPriority(BMS_IRQn, PRIO_BMS_UART);
+    NVIC_EnableIRQ(BMS_IRQn);
 }
 
 int32_t HBD_Receive(void* buf, uint32_t count) {
@@ -91,6 +160,11 @@ int32_t HBD_Receive(void* buf, uint32_t count) {
 int32_t HBD_Transmit(void* buf, uint32_t count) {
     uint8_t* buf8b = buf;
     uint32_t place = 0;
+
+    if(count == 0) {
+        return 0;
+    }
+
     if (s_TxBuffer.Done) {
         // In the rare chance that the transmitter is just finishing,
         // wait for the shift register to empty
@@ -176,4 +250,19 @@ void HBD_IRQ(void) {
         // Trasmission complete, turn off the transmitter and the interrupt
         HBD_UART->CR1 &= ~(USART_CR1_TCIE);
     }
+}
+
+
+void BMS_IRQ(void) {
+
+}
+void BMS_RenewAddresses(void) {
+
+}
+int32_t BMS_Receive(void* buf, uint32_t count) {
+    return -1;
+
+}
+int32_t BMS_Transmit(void* buf, uint32_t count) {
+    return -1;
 }

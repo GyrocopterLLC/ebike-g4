@@ -40,8 +40,11 @@
 #define BMS_USARTDIV			(22.8125f)
 #define BMS_BRR					(22 << 4) + 13
 
-#define HBD_BUFFER_LENGTH		64
+#define HBD_BUFFER_LENGTH		128
 #define HBD_TXMT_TIMEOUT		3 // ms
+
+#define BMS_BUFFER_LENGTH       128
+#define BMS_TXMT_TIMEOUT        3 // ms
 
 typedef struct _hbd_buffer{
     uint8_t Buffer[HBD_BUFFER_LENGTH];
@@ -49,9 +52,23 @@ typedef struct _hbd_buffer{
     uint8_t Done;
 } HBDBuffer_Type;
 
+typedef struct _bms_buffer {
+    uint8_t Buffer[BMS_BUFFER_LENGTH];
+    uint8_t RdPos, WrPos;
+    uint8_t Done;
+} BMSBuffer_Type;
+
+uint16_t UART_CalcBRR(uint32_t fck, uint32_t baud, uint8_t over8);
+
 void HBD_Init(void);
 void HBD_IRQ(void);
 int32_t HBD_Receive(void* buf, uint32_t count);
 int32_t HBD_Transmit(void* buf, uint32_t count);
+
+void BMS_Init(void);
+void BMS_IRQ(void);
+void BMS_RenewAddresses(void);
+int32_t BMS_Receive(void* buf, uint32_t count);
+int32_t BMS_Transmit(void* buf, uint32_t count);
 
 #endif // UART_H_

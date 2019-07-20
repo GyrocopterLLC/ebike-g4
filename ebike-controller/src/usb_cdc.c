@@ -483,6 +483,9 @@ int32_t VCP_Write(const void* data, int32_t len) {
         // Fail if still sending last data
         return -1;
     }
+    if(len == 0) {
+        return 0;
+    }
     int32_t len_to_send = len;
     if (USB_GetDevState() != USB_STATE_CONFIGURED)
         return 0;
