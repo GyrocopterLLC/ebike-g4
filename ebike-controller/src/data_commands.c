@@ -178,6 +178,10 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     float* fhalltableptr;
 
     switch (value_ID) {
+    case CONFIG_MAIN_RAMP_SPEED:
+        retvalf = MAIN_GetRampSpeed();
+        data_packet_pack_float(retval, retvalf);
+        break;
     case CONFIG_MAIN_USB_SPEED:
         retval8b = MAIN_GetUSBDebugSpeed();
         data_packet_pack_8b(retval, retval8b);
@@ -391,6 +395,10 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     ((void) value16b);
 
     switch (value_ID) {
+    case CONFIG_MAIN_RAMP_SPEED:
+        valuef = data_packet_extract_float(pktdata);
+        errCode = MAIN_SetRampSpeed(valuef);
+        break;
     case CONFIG_MAIN_USB_SPEED:
         value8b = data_packet_extract_8b(pktdata);
         errCode = MAIN_SetUSBDebugSpeed(value8b);
@@ -569,6 +577,22 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
 }
 
 uint16_t command_run_routine(uint8_t* pktdata) {
+    // Routine ID is two bytes of packet data
+    uint16_t routine_ID = data_packet_extract_16b(pktdata);
+    pktdata += 2;
+    uint16_t errCode = DATA_COMMAND_FAIL;
+
+    float valuef;
+
+    switch(routine_ID) {
+    case ROUTINE_HALL_DETECT:
+        // Single variable float is applied current
+        valuef = data_packet_extract_float(pktdata);
+        MAIN_DetectHallPositions(valuef);
+        errCode = DATA_COMMAND_SUCCESS;
+        break;
+    }
+
     ((void) pktdata);
-    return DATA_COMMAND_FAIL;
+    return errCode;
 }

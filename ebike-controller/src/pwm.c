@@ -30,7 +30,8 @@
 #include "pwm.h"
 #include "gpio.h"
 #include "project_parameters.h"
-#include "ui.h"
+//#include "ui.h"
+#include "main.h"
 #include "eeprom_emulation.h"
 
 float pwm_timer_arr_f = PWM_PERIOD_F;
@@ -81,7 +82,7 @@ uint32_t PWM_DT_reg_to_ns(uint16_t dtreg) {
     return ((uint32_t) (temp));
 }
 
-void PWM_Init(void) {
+void PWM_Init(int32_t freq) {
     GPIO_Clk(PWM_HI_PORT);
     GPIO_Clk(PWM_LO_PORT);
 
@@ -101,7 +102,7 @@ void PWM_Init(void) {
 
     PWM_TIM_CLK_ENABLE();
 
-    PWM_TIMER->ARR = PWM_PERIOD; // 2*84MHz / 4200 / 2 = 20kHz
+    PWM_SetFreq(freq);
     PWM_TIMER->PSC = 0; // No prescaler
     PWM_TIMER->RCR = 1; // Update occurs every full cycle of the PWM timer
     PWM_TIMER->CR1 = TIM_CR1_CMS_0; // Center aligned 1 mode
@@ -140,43 +141,37 @@ uint8_t PWM_SetDeadTime(int32_t newDT) {
     uint32_t temp_bdtr = PWM_TIMER->BDTR & (0xFF00);
     temp_bdtr |= PWM_DT_ns_to_reg(newDT);
     PWM_TIMER->BDTR = temp_bdtr;
-    return UI_OK;
+    return DATA_PACKET_SUCCESS;
 }
 int32_t PWM_GetDeadTime(void) {
     uint32_t temp_bdtr = PWM_TIMER->BDTR & (0x00FF);
     return PWM_DT_reg_to_ns(temp_bdtr);
 }
 
-int32_t PWM_GetDeadTime_EEPROM(void) {
-    uint32_t temp_ns = EE_ReadInt32WithDefault(EE_ADR_DT, 0);
-    return temp_ns;
-}
-
 uint8_t PWM_SetFreq(int32_t newFreq) {
     int32_t temp = PWM_TIMER_FREQ;
+    int32_t tempcr1;
+    int32_t tempbdtr;
     if((newFreq >= PWM_MIN_FREQ) && (newFreq <= PWM_MAX_FREQ)) {
         temp = temp / newFreq;
         temp = temp / 2;
         temp = temp - 1;
+        tempbdtr = PWM_TIMER->BDTR;
         PWM_MotorOFF();
-        PWM_TIMER->CR1 &= ~TIM_CR1_CEN; // Stop the timer
+        tempcr1 = PWM_TIMER->CR1; // Save current CR1 value
+        PWM_TIMER->CR1 &= ~TIM_CR1_CEN; // Stop the timer if it's running
         PWM_TIMER->ARR = temp;
         PWM_TIMER->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
-        PWM_TIMER->CR1 |= TIM_CR1_CEN; // Restart the timer
+        PWM_TIMER->CR1 = tempcr1; // Restart the timer if it was running
+        PWM_TIMER->BDTR = tempbdtr; // Turn on outputs if they were on
 
-        return UI_OK;
+        return DATA_PACKET_SUCCESS;
     }
 
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 int32_t PWM_GetFreq(void) {
-    int32_t temp = PWM_TIMER_FREQ;
-    temp = temp / (PWM_PERIOD + 1);
-    return temp;
-}
-
-int32_t PWM_GetFreq_EEPROM(void) {
     int32_t temp = PWM_TIMER_FREQ;
     temp = temp / (PWM_PERIOD + 1);
     return temp;

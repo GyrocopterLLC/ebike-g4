@@ -25,11 +25,13 @@
  SOFTWARE.
  */
 
+#include "main.h"
 #include "throttle.h"
 #include "gpio.h"
 #include "adc.h"
-#include "ui.h"
+//#include "ui.h"
 #include "eeprom_emulation.h"
+
 
 Biquad_Float_Type Throttle_filt1 = THROTTLE_LPF_DEFAULTS;
 Biquad_Float_Type Throttle_filt2 = THROTTLE_LPF_DEFAULTS;
@@ -52,56 +54,56 @@ static void throttle_set_scale(Throttle_Analog_Type* thr);
 void throttle_init(void) {
     // Reads from EEPROM and initializes throttle settings
     // This function can also be used to refresh the RAM settings from the EEPROM
-    psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE1,
-            THROTTLE_TYPE_ANALOG);
+    psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE1,
+            DFLT_THRT_TYPE1);
     throttle_switch_type(1, psThrottles[0]->throttle_type);
-    psThrottles[0]->hyst = EE_ReadFloatWithDefault(EE_ADR_HYST1,
-            THROTTLE_HYST_DEFAULT);
-    psThrottles[0]->filt = EE_ReadFloatWithDefault(EE_ADR_FILT1,
-            THROTTLE_FILT_DEFAULT);
+    psThrottles[0]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST1,
+            DFLT_THRT_HYST1);
+    psThrottles[0]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT1,
+            DFLT_THRT_FILT1);
     dfsl_biquadcalc_lpf(pThrottle_filts[0], THROTTLE_SAMPLING_RATE,
             psThrottles[0]->filt,
             THROTTLE_FILT_Q_DEFAULT);
-    psThrottles[0]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE1,
-            THROTTLE_RISE_DEFAULT);
-    psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(EE_ADR_MIN1,
-            THROTTLE_MIN_DEFAULT);
-    psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(EE_ADR_MAX1,
-            THROTTLE_MAX_DEFAULT);
+    psThrottles[0]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE1,
+            DFLT_THRT_RISE1);
+    psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN1,
+            DFLT_THRT_MIN1);
+    psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX1,
+            DFLT_THRT_MAX1);
     throttle_set_scale(psAnalogThrottles[0]);
 
-    psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2,
-            THROTTLE_TYPE_ANALOG);
+    psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE2,
+            DFLT_THRT_TYPE2);
     throttle_switch_type(2, psThrottles[1]->throttle_type);
-    psThrottles[1]->hyst = EE_ReadFloatWithDefault(EE_ADR_HYST2,
-            THROTTLE_HYST_DEFAULT);
-    psThrottles[1]->filt = EE_ReadFloatWithDefault(EE_ADR_FILT2,
-            THROTTLE_FILT_DEFAULT);
+    psThrottles[1]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST2,
+            DFLT_THRT_HYST2);
+    psThrottles[1]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT2,
+            DFLT_THRT_FILT2);
     dfsl_biquadcalc_lpf(pThrottle_filts[1], THROTTLE_SAMPLING_RATE,
             psThrottles[1]->filt,
             THROTTLE_FILT_Q_DEFAULT);
-    psThrottles[1]->rise = EE_ReadFloatWithDefault(EE_ADR_RISE2,
-            THROTTLE_RISE_DEFAULT);
-    psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(EE_ADR_MIN2,
-            THROTTLE_MIN_DEFAULT);
-    psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(EE_ADR_MAX2,
-            THROTTLE_MAX_DEFAULT);
+    psThrottles[1]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE2,
+            DFLT_THRT_RISE2);
+    psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN2,
+            DFLT_THRT_MIN2);
+    psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX2,
+            DFLT_THRT_MAX2);
     throttle_set_scale(psAnalogThrottles[1]);
 }
 
 void throttle_save_to_eeprom(void) {
-    EE_SaveInt16(EE_ADR_TYPE1, psThrottles[0]->throttle_type);
-    EE_SaveInt16(EE_ADR_TYPE2, psThrottles[1]->throttle_type);
-    EE_SaveFloat(EE_ADR_MIN1, psAnalogThrottles[0]->min);
-    EE_SaveFloat(EE_ADR_MIN2, psAnalogThrottles[1]->min);
-    EE_SaveFloat(EE_ADR_MAX1, psAnalogThrottles[0]->max);
-    EE_SaveFloat(EE_ADR_MAX2, psAnalogThrottles[1]->max);
-    EE_SaveFloat(EE_ADR_HYST1, psThrottles[0]->hyst);
-    EE_SaveFloat(EE_ADR_HYST2, psThrottles[1]->hyst);
-    EE_SaveFloat(EE_ADR_RISE1, psThrottles[0]->rise);
-    EE_SaveFloat(EE_ADR_RISE2, psThrottles[1]->rise);
-    EE_SaveFloat(EE_ADR_FILT1, psThrottles[0]->filt);
-    EE_SaveFloat(EE_ADR_FILT2, psThrottles[1]->filt);
+    EE_SaveInt16(CONFIG_THRT_TYPE1, psThrottles[0]->throttle_type);
+    EE_SaveInt16(CONFIG_THRT_TYPE2, psThrottles[1]->throttle_type);
+    EE_SaveFloat(CONFIG_THRT_MIN1, psAnalogThrottles[0]->min);
+    EE_SaveFloat(CONFIG_THRT_MIN2, psAnalogThrottles[1]->min);
+    EE_SaveFloat(CONFIG_THRT_MAX1, psAnalogThrottles[0]->max);
+    EE_SaveFloat(CONFIG_THRT_MAX2, psAnalogThrottles[1]->max);
+    EE_SaveFloat(CONFIG_THRT_HYST1, psThrottles[0]->hyst);
+    EE_SaveFloat(CONFIG_THRT_HYST2, psThrottles[1]->hyst);
+    EE_SaveFloat(CONFIG_THRT_RISE1, psThrottles[0]->rise);
+    EE_SaveFloat(CONFIG_THRT_RISE2, psThrottles[1]->rise);
+    EE_SaveFloat(CONFIG_THRT_FILT1, psThrottles[0]->filt);
+    EE_SaveFloat(CONFIG_THRT_FILT2, psThrottles[1]->filt);
 }
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
@@ -416,10 +418,10 @@ uint8_t throttle_set_type(uint8_t thrnum, uint8_t thrtype) {
                 || (thrtype == THROTTLE_TYPE_ANALOG)) {
             psThrottles[thrnum - 1]->throttle_type = thrtype;
             throttle_switch_type(thrnum, thrtype);
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 uint8_t throttle_get_type(uint8_t thrnum) {
     if ((thrnum == 1) || (thrnum == 2)) {
@@ -429,28 +431,15 @@ uint8_t throttle_get_type(uint8_t thrnum) {
     }
 }
 
-uint8_t throttle_get_type_eeprom(uint8_t thrnum) {
-    uint8_t temp_type;
-    if (thrnum == 1) {
-        temp_type = EE_ReadInt16WithDefault(EE_ADR_TYPE1, THROTTLE_TYPE_NONE);
-    } else if (thrnum == 2) {
-        temp_type = EE_ReadInt16WithDefault(EE_ADR_TYPE2, THROTTLE_TYPE_NONE);
-    } else {
-        temp_type = THROTTLE_TYPE_NONE;
-    }
-    return temp_type;
-
-}
-
 uint8_t throttle_set_min(uint8_t thrnum, float thrmin) {
     if ((thrnum == 1) || (thrnum == 2)) {
         if (thrmin >= 0.0f) {
             psAnalogThrottles[thrnum - 1]->min = thrmin;
             throttle_set_scale(psAnalogThrottles[thrnum - 1]);
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 float throttle_get_min(uint8_t thrnum) {
@@ -460,25 +449,15 @@ float throttle_get_min(uint8_t thrnum) {
     return 0.0f;
 }
 
-float throttle_get_min_eeprom(uint8_t thrnum) {
-    float temp = 0.0f;
-    if (thrnum == 1) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_MIN1, 0.0f);
-    } else if (thrnum == 2) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_MIN2, 0.0f);
-    }
-    return temp;
-}
-
 uint8_t throttle_set_max(uint8_t thrnum, float thrmax) {
     if ((thrnum == 1) || (thrnum == 2)) {
         if (thrmax >= 0.0f) {
             psAnalogThrottles[thrnum - 1]->max = thrmax;
             throttle_set_scale(psAnalogThrottles[thrnum - 1]);
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 float throttle_get_max(uint8_t thrnum) {
@@ -488,24 +467,14 @@ float throttle_get_max(uint8_t thrnum) {
     return 0.0f;
 }
 
-float throttle_get_max_eeprom(uint8_t thrnum) {
-    float temp = 0.0f;
-    if (thrnum == 1) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_MAX1, 0.0f);
-    } else if (thrnum == 2) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_MAX2, 0.0f);
-    }
-    return temp;
-}
-
 uint8_t throttle_set_hyst(uint8_t thrnum, float thrhyst) {
     if ((thrnum == 1) || (thrnum == 2)) {
         if ((thrhyst >= THROTTLE_HYST_MIN) && (thrhyst < THROTTLE_HYST_MAX)) {
             psThrottles[thrnum - 1]->hyst = thrhyst;
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 float throttle_get_hyst(uint8_t thrnum) {
@@ -514,17 +483,6 @@ float throttle_get_hyst(uint8_t thrnum) {
     }
     return 0.0f;
 }
-
-float throttle_get_hyst_eeprom(uint8_t thrnum) {
-    float temp = 0.0f;
-    if (thrnum == 1) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_HYST1, 0.0f);
-    } else if (thrnum == 2) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_HYST2, 0.0f);
-    }
-    return temp;
-}
-
 uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt) {
     if ((thrnum == 1) || (thrnum == 2)) {
         if ((thrfilt >= THROTTLE_FILT_MIN) && (thrfilt < THROTTLE_FILT_MAX)) {
@@ -533,10 +491,10 @@ uint8_t throttle_set_filt(uint8_t thrnum, float thrfilt) {
             dfsl_biquadcalc_lpf(pThrottle_filts[thrnum - 1],
                     THROTTLE_SAMPLING_RATE, thrfilt,
                     THROTTLE_FILT_Q_DEFAULT);
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 float throttle_get_filt(uint8_t thrnum) {
@@ -546,24 +504,14 @@ float throttle_get_filt(uint8_t thrnum) {
     return 0.0f;
 }
 
-float throttle_get_filt_eeprom(uint8_t thrnum) {
-    float temp = 0.0f;
-    if (thrnum == 1) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_FILT1, 0.0f);
-    } else if (thrnum == 2) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_FILT2, 0.0f);
-    }
-    return temp;
-}
-
 uint8_t throttle_set_rise(uint8_t thrnum, float thrrise) {
     if ((thrnum == 1) || (thrnum == 2)) {
         if ((thrrise < THROTTLE_RISE_MAX) && (thrrise >= THROTTLE_RISE_MIN)) {
             psThrottles[thrnum - 1]->rise = thrrise;
-            return UI_OK;
+            return DATA_PACKET_SUCCESS;
         }
     }
-    return UI_ERROR;
+    return DATA_PACKET_FAIL;
 }
 
 float throttle_get_rise(uint8_t thrnum) {
@@ -571,14 +519,4 @@ float throttle_get_rise(uint8_t thrnum) {
         return psThrottles[thrnum - 1]->rise;
     }
     return 0.0f;
-}
-
-float throttle_get_rise_eeprom(uint8_t thrnum) {
-    float temp = 0.0f;
-    if (thrnum == 1) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_RISE1, 0.0f);
-    } else if (thrnum == 2) {
-        temp = EE_ReadFloatWithDefault(EE_ADR_RISE2, 0.0f);
-    }
-    return temp;
 }

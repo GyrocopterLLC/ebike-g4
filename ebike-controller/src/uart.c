@@ -260,9 +260,13 @@ void BMS_RenewAddresses(void) {
 
 }
 int32_t BMS_Receive(void* buf, uint32_t count) {
+    (void)buf;
+    (void)count;
     return -1;
 
 }
 int32_t BMS_Transmit(void* buf, uint32_t count) {
+    (void)buf;
+    (void)count;
     return -1;
 }

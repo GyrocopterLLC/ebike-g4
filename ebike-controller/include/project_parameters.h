@@ -26,16 +26,15 @@
 #ifndef PROJECT_PARAMETERS_H_
 #define PROJECT_PARAMETERS_H_
 
-#if 1
 
 /***  ADC Configuration Variable IDs ***/
 #define CONFIG_ADC_PREFIX           (0x0000)
 #define CONFIG_ADC_NUMVARS          (5)
-#define CONFIG_ADC_INV_TIA_GAIN     (0x0001)
-#define CONFIG_ADC_VBUS_RATIO       (0x0002)
-#define CONFIG_ADC_THERM_FIXED_R    (0x0003)
-#define CONFIG_ADC_THERM_R25        (0x0004)
-#define CONFIG_ADC_THERM_B          (0x0005)
+#define CONFIG_ADC_INV_TIA_GAIN     (0x0001) // 1 / (Shunt_resistance * amplifier_gain)
+#define CONFIG_ADC_VBUS_RATIO       (0x0002) // 1 / (R_bottom / (R_top + R_bottom))
+#define CONFIG_ADC_THERM_FIXED_R    (0x0003) // Temp sensor divisor resistor (on PCB)
+#define CONFIG_ADC_THERM_R25        (0x0004) // Temp sensor resistance at 25degC
+#define CONFIG_ADC_THERM_B          (0x0005) // Temp sensor beta value
 /*** ADC Default Values ***/
 #define DFLT_ADC_INV_TIA_GAIN       (20.0f) // 0.001 Ohms, 50x INA213 gain, 1/(50*.001) = 20
 #define DFLT_ADC_VBUS_RATIO         (33.36246f) // 1 / (3.09kOhm / (100 + 3.09kOhm)) = 33.36246
@@ -46,14 +45,14 @@
 /*** FOC Variable IDs ***/
 #define CONFIG_FOC_PREFIX           (0x0100)
 #define CONFIG_FOC_NUMVARS          (8)
-#define CONFIG_FOC_KP               (0x0101)
-#define CONFIG_FOC_KI               (0x0102)
-#define CONFIG_FOC_KD               (0x0103)
-#define CONFIG_FOC_KC               (0x0104)
-#define CONFIG_FOC_OUTMIN           (0x0105)
-#define CONFIG_FOC_OUTMAX           (0x0106)
-#define CONFIG_FOC_PWM_FREQ         (0x0107)
-#define CONFIG_FOC_PWM_DEADTIME     (0x0108)
+#define CONFIG_FOC_KP               (0x0101) // Current loop proportional gain
+#define CONFIG_FOC_KI               (0x0102) // Current loop integral gain
+#define CONFIG_FOC_KD               (0x0103) // Current loop derivative gain
+#define CONFIG_FOC_KC               (0x0104) // Current loop integral correction gain
+#define CONFIG_FOC_OUTMIN           (0x0105) // Minimum PID output
+#define CONFIG_FOC_OUTMAX           (0x0106) // Maximum PID output
+#define CONFIG_FOC_PWM_FREQ         (0x0107) // Switching frequency
+#define CONFIG_FOC_PWM_DEADTIME     (0x0108) // Switching deadtime
 /*** FOC Default Values ***/
 #define DFLT_FOC_KP                 (0.1f)
 #define DFLT_FOC_KI                 (0.001f)
@@ -104,12 +103,12 @@
 /*** Throttle Variable IDs ***/
 #define CONFIG_THRT_PREFIX          (0x0300)
 #define CONFIG_THRT_NUMVARS         (12)
-#define CONFIG_THRT_TYPE1           (0x0301)
-#define CONFIG_THRT_MIN1            (0x0302)
-#define CONFIG_THRT_MAX1            (0x0303)
-#define CONFIG_THRT_HYST1           (0x0304)
-#define CONFIG_THRT_FILT1           (0x0305)
-#define CONFIG_THRT_RISE1           (0x0306)
+#define CONFIG_THRT_TYPE1           (0x0301) // (0) None, (1) Analog, or (2) PAS
+#define CONFIG_THRT_MIN1            (0x0302) // Voltage at throttle minimum
+#define CONFIG_THRT_MAX1            (0x0303) // Voltage at throttle maximum
+#define CONFIG_THRT_HYST1           (0x0304) // Hysteresis switching off or on
+#define CONFIG_THRT_FILT1           (0x0305) // Low pass filter setting (Hz)
+#define CONFIG_THRT_RISE1           (0x0306) // Rise time from 0->100% in seconds
 #define CONFIG_THRT_TYPE2           (0x0307)
 #define CONFIG_THRT_MIN2            (0x0308)
 #define CONFIG_THRT_MAX2            (0x0309)
@@ -117,13 +116,13 @@
 #define CONFIG_THRT_FILT2           (0x030B)
 #define CONFIG_THRT_RISE2           (0x030C)
 /*** Throttle Default Values ***/
-#define DFLT_THRT_TYPE1             (0) // Analog ADC type
+#define DFLT_THRT_TYPE1             (1) // Analog ADC type
 #define DFLT_THRT_MIN1              (0.85f)
 #define DFLT_THRT_MAX1              (2.20f)
 #define DFLT_THRT_HYST1             (0.025f)
 #define DFLT_THRT_FILT1             (2.0f)
 #define DFLT_THRT_RISE1             (0.0005f)
-#define DFLT_THRT_TYPE2             (2) // None
+#define DFLT_THRT_TYPE2             (0) // None
 #define DFLT_THRT_MIN2              (0.85f)
 #define DFLT_THRT_MAX2              (2.20f)
 #define DFLT_THRT_HYST2             (0.025f)
@@ -132,35 +131,47 @@
 
 /*** Limit Variable IDs ***/
 #define CONFIG_LMT_PREFIX           (0x0400)
-#define CONFIG_LMT_NUMVARS          (8)
-#define CONFIG_LMT_VOLT_MIN         (0x0401)
-#define CONFIG_LMT_VOLT_MAX         (0x0402)
-#define CONFIG_LMT_PHASE_I_MAX      (0x0403)
-#define CONFIG_LMT_PHASE_REGEN_MAX  (0x0404)
-#define CONFIG_LMT_BATT_I_MAX       (0x0405)
-#define CONFIG_LMT_BATT_REGEN_MAX   (0x0406)
-#define CONFIG_LMT_FET_TEMP_MAX     (0x0407)
-#define CONFIG_LMT_MOTOR_TEMP_MAX   (0x0408)
+#define CONFIG_LMT_NUMVARS          (13)
+#define CONFIG_LMT_VOLT_FAULT_MIN   (0x0401) // Trip fault code when voltage below this
+#define CONFIG_LMT_VOLT_FAULT_MAX   (0x0402) // Fault when voltage above this
+#define CONFIG_LMT_CUR_FAULT_MAX    (0x0403) // Fault when current (any phase) above this
+#define CONFIG_LMT_VOLT_SOFTCAP     (0x0404) // Start reducing current limit ("limp mode")
+#define CONFIG_LMT_VOLT_HARDCAP     (0x0405) // No more current below this
+#define CONFIG_LMT_PHASE_CUR_MAX    (0x0406) // Maximum throttle = this current
+#define CONFIG_LMT_PHASE_REGEN_MAX  (0x0407) // Maximum demand regen = this current
+#define CONFIG_LMT_BATT_CUR_MAX     (0x0408) // Clip demanded throttle when battery current at this
+#define CONFIG_LMT_BATT_REGEN_MAX   (0x0409) // Clip demanded regen when battery charge current here
+#define CONFIG_LMT_FET_TEMP_SOFTCAP (0x040A) // Soften current when FET temps here
+#define CONFIG_LMT_FET_TEMP_HARDCAP (0x040B) // No more current when FET temps here
+#define CONFIG_LMT_MOTOR_TEMP_SOFTCAP   (0x040C) // Soften current when motor temp here
+#define CONFIG_LMT_MOTOR_TEMP_HARDCAP   (0x040D) // No more current when motor temp here
 /*** Limit Default Values ***/
-#define DFLT_LMT_VOLT_MIN           (48.0f) // 3.0V x 16 cells
-#define DFLT_LMT_VOLT_MAX           (67.2f) // 4.2V x 16 cells
-#define DFLT_LMT_PHASE_I_MAX        (25.0f)
-#define DFLT_LMT_PHASE_REGEN_MAX    (10.0f)
-#define DFLT_LMT_BATT_I_MAX         (25.0f)
-#define DFLT_LMT_BATT_REGEN_MAX     (10.0f)
-#define DFLT_LMT_FET_TEMP_MAX       (90.0f)
-#define DFLT_LMT_MOTOR_TEMP_MAX     (90.0f)
+#define DFLT_LMT_VOLT_FAULT_MIN     (44.8f) // 2.8 x 16 cells
+#define DFLT_LMT_VOLT_FAULT_MAX     (70.4f) // 4.4 x 16 cells
+#define DFLT_LMT_CUR_FAULT_MAX      (24.0f) // Just below max sensing level
+#define DFLT_LMT_VOLT_SOFTCAP       (52.8f) // 3.3 x 16 cells
+#define DFLT_LMT_VOLT_HARDCAP       (48.0f) // 3.0 x 16 cells
+#define DFLT_LMT_PHASE_CUR_MAX      (20.0f)
+#define DFLT_LMT_PHASE_REGEN_MAX    (5.0f)
+#define DFLT_LMT_BATT_CUR_MAX       (20.0f)
+#define DFLT_LMT_BATT_REGEN_MAX     (5.0f)
+#define DFLT_LMT_FET_TEMP_SOFTCAP   (75.0f)
+#define DFLT_LMT_FET_TEMP_HARDCAP   (90.0f)
+#define DFLT_LMT_MOTOR_TEMP_SOFTCAP (75.0f)
+#define DFLT_LMT_MOTOR_TEMP_HARDCAP (90.0f)
 
 /*** Motor Configuration Variable IDs ***/
 #define CONFIG_MOTOR_PREFIX         (0x0500)
-#define CONFIG_MOTOR_NUMVARS        (7)
-#define CONFIG_MOTOR_HALL1          (0x0501)
-#define CONFIG_MOTOR_HALL2          (0x0502)
-#define CONFIG_MOTOR_HALL3          (0x0503)
-#define CONFIG_MOTOR_HALL4          (0x0504)
-#define CONFIG_MOTOR_HALL5          (0x0505)
-#define CONFIG_MOTOR_HALL6          (0x0506)
-#define CONFIG_MOTOR_POLEPAIRS      (0x0507)
+#define CONFIG_MOTOR_NUMVARS        (9)
+#define CONFIG_MOTOR_HALL1          (0x0501) // Angle of motor when switching into state 1, forward rotation
+#define CONFIG_MOTOR_HALL2          (0x0502) // Angle when switching into state 2
+#define CONFIG_MOTOR_HALL3          (0x0503) // Angle when switching into state 3
+#define CONFIG_MOTOR_HALL4          (0x0504) // Angle when switching into state 4
+#define CONFIG_MOTOR_HALL5          (0x0505) // Angle when switching into state 5
+#define CONFIG_MOTOR_HALL6          (0x0506) // Angle when switching into state 6
+#define CONFIG_MOTOR_POLEPAIRS      (0x0507) // Turns of electrical / turns of mechanical
+#define CONFIG_MOTOR_GEAR_RATIO     (0x0508) // Turns of mechanical motor / turns of wheel
+#define CONFIG_MOTOR_WHEEL_SIZE     (0x0509) // Diameter in mm
 /*** Motor Default Values ***/
 // For Ebikeling 700C front 1200W motor
 #define DFLT_MOTOR_HALL1            (0.743786f)
@@ -170,8 +181,17 @@
 #define DFLT_MOTOR_HALL5            (0.593083f)
 #define DFLT_MOTOR_HALL6            (0.240492f)
 #define DFLT_MOTOR_POLEPAIRS        (23)
+#define DFLT_MOTOR_GEAR_RATIO       (1.0f) // Direct drive
+#define DFLT_MOTOR_WHEEL_SIZE       (2200.0f) // 700C-40 according to www.cateye.com tire size chart
 
-#endif
+/*** For EEPROM settings ***/
+#define TOTAL_EE_VARS   (CONFIG_ADC_NUMVARS + CONFIG_FOC_NUMVARS \
+                        + CONFIG_MAIN_NUMVARS + CONFIG_THRT_NUMVARS \
+                        + CONFIG_LMT_NUMVARS + CONFIG_MOTOR_NUMVARS)
+
+/*** Routines ***/
+#define ROUTINE_HALL_DETECT         (0x0101)
+
 
 #if 0
 /*** ADC Defaults ***/
@@ -259,6 +279,7 @@
 
 #define THROTTLE_OUTPUT_MIN         (0.00f)
 #define THROTTLE_OUTPUT_MAX         (0.99f)
+
 
 
 // Angle definitions - integer

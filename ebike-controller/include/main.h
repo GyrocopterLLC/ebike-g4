@@ -54,7 +54,7 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 #include "uart.h"
-#include "ui.h"
+//#include "ui.h"
 #include "wdt.h"
 #include "power_calcs.h"
 #include "crc32.h"
@@ -82,12 +82,21 @@ typedef struct _main_config {
     uint32_t Num_USB_Outputs;
     uint32_t USB_Speed;
     uint32_t USB_Choices[MAX_USB_OUTPUTS];
+    int32_t PWMFrequency;
+    float MaxPhaseCurrent;
+    float MaxPhaseRegenCurrent;
+    float MaxBatteryCurrent;
+    float MaxBatteryRegenCurrent;
+    float VoltageSoftCap;
+    float VoltageHardCap;
 } Config_Main;
 
 /* Exported constants --------------------------------------------------------*/
 #define MAXLEDCOUNT         1000
 #define DEBOUNCE_INTERVAL   10 // 10 milliseconds ==> 100Hz timer
 #define DEBOUNCE_MAX        5 // Must get integrator up to 5 to count as "pressed"
+#define MAX_RAMP_SPEED      (25.0f)
+#define MIN_RAMP_SPEED      (-25.0f)
 
 #define BOOTLOADER_RESET_FLAG 0xDEADBEEF
 
@@ -128,8 +137,8 @@ uint8_t MAIN_SetUSBDebugSpeed(uint8_t speedChoice);
 uint8_t MAIN_GetUSBDebugSpeed(void);
 uint8_t MAIN_SetUSBDebugging(uint8_t on_or_off);
 uint8_t MAIN_GetUSBDebugging(void);
-uint8_t MAIN_SetRampSpeed(uint32_t newspeed);
-uint8_t MAIN_SetRampDir(uint8_t forwardOrBackwards);
+float MAIN_GetRampSpeed(void);
+uint8_t MAIN_SetRampSpeed(float newspeed);
 uint8_t MAIN_SetVar(uint8_t var, float newval);
 float MAIN_GetVar(uint8_t var);
 float MAIN_GetVar_EEPROM(uint8_t var);

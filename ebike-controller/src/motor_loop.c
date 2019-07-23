@@ -207,7 +207,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 &(foc->Park_Q));
         // Pass filtered current to the PI(D)s
         foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (FULLSCALE_THROTTLE) * (cntl->ThrottleCommand)
+        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
                 - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
@@ -282,7 +282,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
          */
         // Pass current to the PI(D)s
         foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (FULLSCALE_THROTTLE) * (cntl->ThrottleCommand)
+        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
                 - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
@@ -334,7 +334,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 &(foc->Park_D), &(foc->Park_Q));
         // Input feedbacks to the Id and Iq controllers
         // Pass current to the PI(D)s
-        foc->Id_PID->Err = (FULLSCALE_THROTTLE) * (cntl->ThrottleCommand)
+        foc->Id_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
                 - foc->Park_D;
         foc->Iq_PID->Err = 0.0f - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;

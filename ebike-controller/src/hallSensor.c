@@ -62,6 +62,7 @@ uint32_t HallDetectTransitionsDone[6];
 
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
+static float HallSensor_CalcMidPoint(float a1, float a2);
 #ifdef TESTING_2X
 static void HallSensor2_CalcSpeed(void);
 #endif
@@ -421,11 +422,11 @@ uint8_t HallSensor2_Get_Direction(void) {
 uint8_t HallSensor_SetAngle(uint8_t state, float newAngle) {
     if(state < 1 || state > 6) {
         // Out of range, only valid for states 1 to 6
-        return UI_ERROR;
+        return DATA_PACKET_FAIL;
     }
     if((newAngle < 0.0f) || (newAngle > 1.0f)) {
         // Out of range, only angles zero to one allowed
-        return UI_ERROR;
+        return DATA_PACKET_FAIL;
     }
     // Copy the angle
     HallStateAnglesFwdFloat[state] = newAngle;
@@ -440,10 +441,10 @@ uint8_t HallSensor_SetAngle(uint8_t state, float newAngle) {
     }
     // Generate the midpoint angle table
     for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+        HallStateAnglesMidFloat[i] = HallSensor_CalcMidPoint(HallStateAnglesFwdFloat[i], HallStateAnglesRevFloat[i]);
     }
 
-    return UI_OK;
+    return DATA_PACKET_SUCCESS;
 }
 
 uint8_t HallSensor_SetAngleTable(float* angleTab) {
@@ -452,7 +453,7 @@ uint8_t HallSensor_SetAngleTable(float* angleTab) {
     for (i = 1; i <= 6; i++) {
         if ((angleTab[i] < 0.0f) || (angleTab[i] > 1.0f)) {
             // Fail, this is outside of the proper range
-            return UI_ERROR;
+            return DATA_PACKET_FAIL;
         }
     }
     // Copy over the foward angle table
@@ -471,9 +472,9 @@ uint8_t HallSensor_SetAngleTable(float* angleTab) {
     }
     // Generate the midpoint angle table
     for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
+        HallStateAnglesMidFloat[i] = HallSensor_CalcMidPoint(HallStateAnglesFwdFloat[i], HallStateAnglesRevFloat[i]);
     }
-    return UI_OK;
+    return DATA_PACKET_SUCCESS;
 }
 
 float* HallSensor_GetAngleTable(void) {
@@ -630,18 +631,8 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
     }
     // Generate the midpoint angle table
     for (uint8_t i = 1; i <= 6; i++) {
-        // Take care of the case where we are wrapping around 1.0
-        // If we didn't do this, the average angle would be close to 0.5 when it should instead
-        // be close to either 0.0 or 1.0
-        if( ((HallStateAnglesFwdFloat[i] > (5.0f/6.0f)) && (HallStateAnglesRevFloat[i] < (1.0f/6.0f))) ||
-            ((HallStateAnglesRevFloat[i] > (5.0f/6.0f)) && (HallStateAnglesFwdFloat[i] < (1.0f/6.0f)))) {
-            HallStateAnglesMidFloat[i] = (1.0f + HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
-            if(HallStateAnglesMidFloat[i] > 1.0f) {
-                HallStateAnglesMidFloat[i] -= 1.0f;
-            }
-        } else {
-            HallStateAnglesMidFloat[i] = (HallStateAnglesFwdFloat[i] + HallStateAnglesRevFloat[i]) / 2.0f;
-        }
+        HallStateAnglesMidFloat[i] = HallSensor_CalcMidPoint(HallStateAnglesRevFloat[i],HallStateAnglesFwdFloat[i]);
+
     }
 
 }
@@ -697,6 +688,26 @@ static void HallSensor_CalcSpeed(void) {
     HallSensor.AngleIncrement = (uint32_t)(HallSensor.Speed) / HallSensor.CallingFrequency;
 
 #endif
+}
+
+// Determines the midpoint of two angles.
+// Includes checking for wraparound.
+static float HallSensor_CalcMidPoint(float a1, float a2) {
+    float retval = 0.0f;
+    // Take care of the case where we are wrapping around 1.0
+    // If we didn't do this, the average angle would be close to 0.5 when it should instead
+    // be close to either 0.0 or 1.0
+    // If one angle is above 3/4 and the other is below 1/4, that's a wraparound case
+    if( ((a1 > (0.75f)) && (a2 < (0.25f))) ||
+        ((a2 > (0.75f)) && (a1 < (0.25f)))) {
+        retval = (1.0f + a1 + a2) / 2.0f;
+        if(retval > 1.0f) {
+            retval -= 1.0f;
+        }
+    } else {
+        retval = (a1 + a2) / 2.0f;
+    }
+    return retval;
 }
 
 #ifdef TESTING_2X

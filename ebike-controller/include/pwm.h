@@ -64,7 +64,7 @@
 
 /********** Functions **************/
 
-void PWM_Init(void);
+void PWM_Init(int32_t freq);
 /*
  inline void PWM_MotorOFF(void)
  {
@@ -79,10 +79,8 @@ void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC);
 void PWM_SetDutyF(float tA, float tB, float tC);
 uint8_t PWM_SetDeadTime(int32_t newDT);
 int32_t PWM_GetDeadTime(void);
-int32_t PWM_GetDeadTime_EEPROM(void);
 uint8_t PWM_SetFreq(int32_t freq);
 int32_t PWM_GetFreq(void);
-int32_t PWM_GetFreq_EEPROM(void);
 
 /* Defines for directly changing PWM outputs */
 
@@ -90,47 +88,60 @@ int32_t PWM_GetFreq_EEPROM(void);
 #define PWM_MotorOFF()      PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE)
 
 // PWM: OC mode is "PWM Mode 1", outputs enabled
-#define PHASE_C_PWM()       do{     PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);    \
-                            }while(0)
+inline void PHASE_C_PWM(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1);
+    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
+}
 // Low side on: OC mode is "Force inactive level", outputs enabled
-#define PHASE_C_LOW()        do{    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);    \
-                            }while(0)
+inline void PHASE_C_LOW(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2);
+    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
+}
 // Phase off: OC mode is "Force inactive", high-side output disabled, low-side enabled (will be outputting low)
-#define PHASE_C_OFF()        do{    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2); \
-                                    PWM_TIMER->CCER &= ~(TIM_CCER_CC1E);    \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC1NE);    \
-                            }while(0)
+inline void PHASE_C_OFF(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2);
+    PWM_TIMER->CCER &= ~(TIM_CCER_CC1E);
+    PWM_TIMER->CCER |= (TIM_CCER_CC1NE);
+}
 
-#define PHASE_B_PWM()        do{    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);    \
-                            }while(0)
-#define PHASE_B_LOW()        do{        PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);    \
-                            }while(0)
-#define PHASE_B_OFF()        do{    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);    \
-                                    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2); \
-                                    PWM_TIMER->CCER &= ~(TIM_CCER_CC2E);    \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC2NE);    \
-                            }while(0)
+inline void PHASE_B_PWM(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1);
+    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
+}
+inline void PHASE_B_LOW(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2);
+    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
+}
 
-#define PHASE_A_PWM()        do{    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);    \
-                                    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);    \
-                            }while(0)
-#define PHASE_A_LOW()        do{    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);    \
-                                    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2); \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);    \
-                            }while(0)
-#define PHASE_A_OFF()        do{    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);    \
-                                    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2); \
-                                    PWM_TIMER->CCER &= ~(TIM_CCER_CC3E);    \
-                                    PWM_TIMER->CCER |= (TIM_CCER_CC3NE);    \
-                            }while(0)
+inline void PHASE_B_OFF(void) {
+    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2);
+    PWM_TIMER->CCER &= ~(TIM_CCER_CC2E);
+    PWM_TIMER->CCER |= (TIM_CCER_CC2NE);
+}
+
+inline void PHASE_A_PWM(void) {
+    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1);
+    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
+}
+
+inline void PHASE_A_LOW(void) {
+    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2);
+    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
+}
+
+inline void PHASE_A_OFF(void) {
+    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2);
+    PWM_TIMER->CCER &= ~(TIM_CCER_CC3E);
+    PWM_TIMER->CCER |= (TIM_CCER_CC3NE);
+}
+
 #endif /* PWM_H_ */
