@@ -33,8 +33,6 @@
 #define RESULT_IS_32B				(4)
 #define RESULT_IS_FLOAT				(5)
 
-#define FEATURE_SERIAL_DATA         (0x0001)
-
 uint16_t data_process_command(Data_Packet_Type* pkt);
 uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval);
 uint16_t command_set_ram(uint8_t* pktdata);

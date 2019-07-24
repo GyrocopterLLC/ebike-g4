@@ -210,8 +210,8 @@ void dfsl_pid_defaultsf(PID_Float_Type* pid) {
     pid->Ki = DFLT_FOC_KI;
     pid->Kd = DFLT_FOC_KD;
     pid->Kc = DFLT_FOC_KC;
-    pid->OutMin = DFLT_FOC_OUTMIN;
-    pid->OutMax = DFLT_FOC_OUTMAX;
+    pid->OutMin = 1.0f;
+    pid->OutMax = -1.0f;
     pid->SatErr = 0.0f;
     pid->Out = 0.0f;
     pid->Up1 = 0.0f;

@@ -30,6 +30,8 @@
 #include "data_packet.h"
 #include "data_commands.h"
 
+static Data_Type command_get_datatype(uint16_t data_ID);
+
 /**
  * @brief  Data Process Command
  *              Interprets the command in a decoded packet. Calls the appropriate
@@ -167,214 +169,160 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // Data is two bytes for value ID
     uint16_t value_ID = data_packet_extract_16b(pktdata);
 //    uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
-    float retvalf;
-    uint8_t retval8b;
-    uint16_t retval16b;
-    uint32_t retval32b;
+    float retvalf= 0.0f;
+    uint16_t retval16b = 0;
+    uint32_t retval32b = 0;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    ((void) retval16b);
-
-    float* fhalltableptr;
 
     switch (value_ID) {
-    case CONFIG_MAIN_RAMP_SPEED:
-        retvalf = MAIN_GetRampSpeed();
-        data_packet_pack_float(retval, retvalf);
+    // 16-bit integer values
+    case CONFIG_MAIN_NUM_USB_OUTPUTS:
+        retval16b = MAIN_GetNumUSBDebugOutputs();
         break;
     case CONFIG_MAIN_USB_SPEED:
-        retval8b = MAIN_GetUSBDebugSpeed();
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
-    case CONFIG_MAIN_NUM_USB_OUTPUTS:
-        retval8b = MAIN_GetNumUSBDebugOutputs();
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
+        retval16b = MAIN_GetUSBDebugSpeed();
         break;
     case CONFIG_MAIN_USB_CHOICE_1:
-        retval8b = MAIN_GetUSBDebugOutput(0);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_2:
-        retval8b = MAIN_GetUSBDebugOutput(1);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_3:
-        retval8b = MAIN_GetUSBDebugOutput(2);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_4:
-        retval8b = MAIN_GetUSBDebugOutput(3);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_5:
-        retval8b = MAIN_GetUSBDebugOutput(4);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_6:
-        retval8b = MAIN_GetUSBDebugOutput(5);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_7:
-        retval8b = MAIN_GetUSBDebugOutput(6);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_8:
-        retval8b = MAIN_GetUSBDebugOutput(7);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_9:
-        retval8b = MAIN_GetUSBDebugOutput(8);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
-        break;
     case CONFIG_MAIN_USB_CHOICE_10:
-        retval8b = MAIN_GetUSBDebugOutput(9);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
+        retval16b = MAIN_GetUSBDebugOutput(value_ID - CONFIG_MAIN_USB_CHOICE_1);
+        break;
+    case CONFIG_THRT_TYPE1:
+        retval16b = throttle_get_type(1);
+        break;
+    case CONFIG_THRT_TYPE2:
+        retval16b = throttle_get_type(2);
+        break;
+    case CONFIG_MOTOR_POLEPAIRS:
+        // TODO: this.
+        break;
+    // 32 bit integer values
+    case CONFIG_FOC_PWM_FREQ:
+        retval32b = MAIN_GetFreq();
+        break;
+    case CONFIG_FOC_PWM_DEADTIME:
+        retval32b = MAIN_GetDeadTime();
+        break;
+    case CONFIG_MAIN_COUNTS_TO_FOC:
+        retval32b = MAIN_GetCountsToFOC();
+        break;
+    // 32 bit float values
+    case CONFIG_ADC_INV_TIA_GAIN:
+        retvalf = adcGetInverseTIAGain();
+        break;
+    case CONFIG_ADC_VBUS_RATIO:
+        retvalf = adcGetVbusRatio();
+        break;
+    case CONFIG_ADC_THERM_FIXED_R:
+        retvalf = adcGetThermFixedR();
+        break;
+    case CONFIG_ADC_THERM_R25:
+        retvalf = adcGetThermR25();
+        break;
+    case CONFIG_ADC_THERM_B:
+        retvalf = adcGetThermBeta();
         break;
     case CONFIG_FOC_KP:
         retvalf = MAIN_GetVar(0);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_FOC_KI:
         retvalf = MAIN_GetVar(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_FOC_KD:
         retvalf = MAIN_GetVar(2);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_FOC_KC:
         retvalf = MAIN_GetVar(3);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
-    case CONFIG_FOC_PWM_FREQ:
-        retval32b = PWM_GetFreq();
-        data_packet_pack_32b(retval, retval32b);
-        errCode = RESULT_IS_32B;
+    case CONFIG_MAIN_RAMP_SPEED:
+        retvalf = MAIN_GetRampSpeed();
         break;
-    case CONFIG_FOC_PWM_DEADTIME:
-        retval32b = PWM_GetDeadTime();
-        data_packet_pack_32b(retval, retval32b);
-        errCode = RESULT_IS_32B;
+    case CONFIG_MAIN_SPEED_TO_FOC:
+        retvalf = MAIN_GetSpeedToFOC();
         break;
-        // case CONFIG_MOTOR_PP:
-        // break;
-        // case CONFIG_MOTOR_RS:
-        // break;
-        // case CONFIG_MOTOR_LS:
-        // break;
-        // case CONFIG_MOTOR_FLUX:
-        // break;
-    case CONFIG_MOTOR_HALL1:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[1];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_MOTOR_HALL2:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[2];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_MOTOR_HALL3:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[3];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_MOTOR_HALL4:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[4];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_MOTOR_HALL5:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[5];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_MOTOR_HALL6:
-        fhalltableptr = HallSensor_GetAngleTable();
-        retvalf = fhalltableptr[6];
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_THRT_TYPE1:
-        retval8b = throttle_get_type(1);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
+    case CONFIG_MAIN_SWITCH_EPS:
+        retvalf = MAIN_GetSwitchoverEpsilon();
         break;
     case CONFIG_THRT_MIN1:
         retvalf = throttle_get_min(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_MAX1:
-        retvalf = throttle_get_min(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
+        retvalf = throttle_get_max(1);
         break;
     case CONFIG_THRT_HYST1:
         retvalf = throttle_get_hyst(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_FILT1:
         retvalf = throttle_get_filt(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_RISE1:
         retvalf = throttle_get_rise(1);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
-        break;
-    case CONFIG_THRT_TYPE2:
-        retval8b = throttle_get_type(2);
-        data_packet_pack_8b(retval, retval8b);
-        errCode = RESULT_IS_8B;
         break;
     case CONFIG_THRT_MIN2:
         retvalf = throttle_get_min(2);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_MAX2:
-        retvalf = throttle_get_min(2);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
+        retvalf = throttle_get_max(2);
         break;
     case CONFIG_THRT_HYST2:
         retvalf = throttle_get_hyst(2);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_FILT2:
         retvalf = throttle_get_filt(2);
-        data_packet_pack_float(retval, retvalf);
-        errCode = RESULT_IS_FLOAT;
         break;
     case CONFIG_THRT_RISE2:
         retvalf = throttle_get_rise(2);
-        data_packet_pack_float(retval, retvalf);
+        break;
+    case CONFIG_LMT_VOLT_FAULT_MIN:
+    case CONFIG_LMT_VOLT_FAULT_MAX:
+    case CONFIG_LMT_CUR_FAULT_MAX:
+    case CONFIG_LMT_VOLT_SOFTCAP:
+    case CONFIG_LMT_VOLT_HARDCAP:
+    case CONFIG_LMT_PHASE_CUR_MAX:
+    case CONFIG_LMT_PHASE_REGEN_MAX:
+    case CONFIG_LMT_BATT_CUR_MAX:
+    case CONFIG_LMT_BATT_REGEN_MAX:
+    case CONFIG_LMT_FET_TEMP_SOFTCAP:
+    case CONFIG_LMT_FET_TEMP_HARDCAP:
+    case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
+    case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
+        break;
+    case CONFIG_MOTOR_HALL1:
+    case CONFIG_MOTOR_HALL2:
+    case CONFIG_MOTOR_HALL3:
+    case CONFIG_MOTOR_HALL4:
+    case CONFIG_MOTOR_HALL5:
+    case CONFIG_MOTOR_HALL6:
+        retvalf = HallSensor_GetAngle(value_ID - CONFIG_MOTOR_HALL1 + 1);
+        break;
+    case CONFIG_MOTOR_GEAR_RATIO:
+    case CONFIG_MOTOR_WHEEL_SIZE:
+        break;
+    }
+
+    switch(command_get_datatype(value_ID)) {
+    case Data_Type_None:
+    case Data_Type_Int8:
+        return DATA_PACKET_FAIL;
+    case Data_Type_Int16:
+        errCode = RESULT_IS_16B;
+        data_packet_pack_16b(retval, retval16b);
+        break;
+    case Data_Type_Int32:
+        errCode = RESULT_IS_32B;
+        data_packet_pack_32b(retval, retval32b);
+        break;
+    case Data_Type_Float:
         errCode = RESULT_IS_FLOAT;
+        data_packet_pack_float(retval, retvalf);
         break;
     }
     return errCode;
@@ -385,161 +333,229 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     uint16_t value_ID = data_packet_extract_16b(pktdata);
     //uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     pktdata += 2;
-    // Then one to four bytes for value, depending on command
-    float valuef;
-    uint8_t value8b;
-    uint16_t value16b;
-    uint32_t value32b;
+    // Then two to four bytes for value, depending on command
+    float valuef = 0.0f;
+    uint16_t value16b = 0;
+    uint32_t value32b = 0;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
-    ((void) value16b);
+    switch(command_get_datatype(value_ID)) {
+    case Data_Type_None:
+    case Data_Type_Int8:
+        return DATA_COMMAND_FAIL;
+        break;
+    case Data_Type_Int16:
+        value16b = data_packet_extract_16b(pktdata);
+        break;
+    case Data_Type_Int32:
+        value32b = data_packet_extract_32b(pktdata);
+        break;
+    case Data_Type_Float:
+        valuef = data_packet_extract_float(pktdata);
+        break;
+    }
 
     switch (value_ID) {
-    case CONFIG_MAIN_RAMP_SPEED:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = MAIN_SetRampSpeed(valuef);
+    // 16-bit integer values
+    case CONFIG_MAIN_NUM_USB_OUTPUTS:
+        errCode = MAIN_SetNumUSBDebugOutputs((uint8_t)value16b);
         break;
     case CONFIG_MAIN_USB_SPEED:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugSpeed(value8b);
-        break;
-    case CONFIG_MAIN_NUM_USB_OUTPUTS:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetNumUSBDebugOutputs(value8b);
+        errCode = MAIN_SetUSBDebugSpeed((uint8_t)value16b);
         break;
     case CONFIG_MAIN_USB_CHOICE_1:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(0, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_2:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(1, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_3:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(2, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_4:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(3, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_5:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(4, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_6:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(5, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_7:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(6, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_8:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(7, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_9:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(8, value8b);
-        break;
     case CONFIG_MAIN_USB_CHOICE_10:
-        value8b = data_packet_extract_8b(pktdata);
-        errCode = MAIN_SetUSBDebugOutput(9, value8b);
+        errCode = MAIN_SetUSBDebugOutput(value_ID - CONFIG_MAIN_USB_CHOICE_1,
+                (uint8_t) value16b);
         break;
-    case CONFIG_FOC_KP:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = MAIN_SetVar(0, valuef);
+    case CONFIG_THRT_TYPE1:
+        errCode = throttle_set_type(1, (uint8_t) value16b);
         break;
-    case CONFIG_FOC_KI:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = MAIN_SetVar(1, valuef);
+    case CONFIG_THRT_TYPE2:
+        errCode = throttle_set_type(2, (uint8_t) value16b);
         break;
-    case CONFIG_FOC_KD:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = MAIN_SetVar(2, valuef);
+    case CONFIG_MOTOR_POLEPAIRS:
+        // TODO: this.
         break;
-    case CONFIG_FOC_KC:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = MAIN_SetVar(3, valuef);
-        break;
+
+    // 32 bit integer values
     case CONFIG_FOC_PWM_FREQ:
-        value32b = data_packet_extract_32b(pktdata);
         errCode = MAIN_SetFreq(value32b);
         break;
     case CONFIG_FOC_PWM_DEADTIME:
-        value32b = data_packet_extract_32b(pktdata);
         errCode = MAIN_SetDeadTime(value32b);
         break;
-//    case CONFIG_MOTOR_PP:
-//        break;
-        // case CONFIG_MOTOR_RS:
-        // break;
-        // case CONFIG_MOTOR_LS:
-        // break;
-        // case CONFIG_MOTOR_FLUX:
-        // break;
-    case CONFIG_MOTOR_HALL1:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(1, valuef);
+    case CONFIG_MAIN_COUNTS_TO_FOC:
+        errCode = MAIN_SetCountsToFOC(value32b);
         break;
-    case CONFIG_MOTOR_HALL2:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(2, valuef);
+
+    // 32 bit float values
+    case CONFIG_ADC_INV_TIA_GAIN:
+        errCode = adcSetInverseTIAGain(valuef);
         break;
-    case CONFIG_MOTOR_HALL3:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(3, valuef);
+    case CONFIG_ADC_VBUS_RATIO:
+        errCode = adcSetVbusRatio(valuef);
         break;
-    case CONFIG_MOTOR_HALL4:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(4, valuef);
+    case CONFIG_ADC_THERM_FIXED_R:
+        errCode = adcSetThermFixedR(valuef);
         break;
-    case CONFIG_MOTOR_HALL5:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(5, valuef);
+    case CONFIG_ADC_THERM_R25:
+        errCode = adcSetThermR25(valuef);
         break;
-    case CONFIG_MOTOR_HALL6:
-        valuef = data_packet_extract_float(pktdata);
-        errCode = HallSensor_SetAngle(6, valuef);
+    case CONFIG_ADC_THERM_B:
+        errCode = adcSetThermBeta(valuef);
         break;
-    case CONFIG_THRT_TYPE1:
+    case CONFIG_FOC_KP:
+        errCode = MAIN_SetVar(0, valuef);
+        break;
+    case CONFIG_FOC_KI:
+        errCode = MAIN_SetVar(1, valuef);
+        break;
+    case CONFIG_FOC_KD:
+        errCode = MAIN_SetVar(2, valuef);
+        break;
+    case CONFIG_FOC_KC:
+        errCode = MAIN_SetVar(3, valuef);
+        break;
+    case CONFIG_MAIN_RAMP_SPEED:
+        errCode = MAIN_SetRampSpeed(valuef);
+        break;
+    case CONFIG_MAIN_SPEED_TO_FOC:
+        errCode = MAIN_SetSpeedToFOC(valuef);
+        break;
+    case CONFIG_MAIN_SWITCH_EPS:
+        errCode = MAIN_SetSwitchoverEpsilon(valuef);
         break;
     case CONFIG_THRT_MIN1:
+        errCode = throttle_set_min(1, valuef);
         break;
     case CONFIG_THRT_MAX1:
+        errCode = throttle_set_max(1, valuef);
         break;
     case CONFIG_THRT_HYST1:
+        errCode = throttle_set_hyst(1, valuef);
         break;
     case CONFIG_THRT_FILT1:
+        errCode = throttle_set_filt(1, valuef);
         break;
     case CONFIG_THRT_RISE1:
-        break;
-    case CONFIG_THRT_TYPE2:
+        errCode = throttle_set_rise(1, valuef);
         break;
     case CONFIG_THRT_MIN2:
+        errCode = throttle_set_min(2, valuef);
         break;
     case CONFIG_THRT_MAX2:
+        errCode = throttle_set_max(2, valuef);
         break;
     case CONFIG_THRT_HYST2:
+        errCode = throttle_set_hyst(2, valuef);
         break;
     case CONFIG_THRT_FILT2:
+        errCode = throttle_set_filt(2, valuef);
         break;
     case CONFIG_THRT_RISE2:
+        errCode = throttle_set_rise(2, valuef);
+        break;
+    case CONFIG_LMT_VOLT_FAULT_MIN:
+    case CONFIG_LMT_VOLT_FAULT_MAX:
+    case CONFIG_LMT_CUR_FAULT_MAX:
+    case CONFIG_LMT_VOLT_SOFTCAP:
+    case CONFIG_LMT_VOLT_HARDCAP:
+    case CONFIG_LMT_PHASE_CUR_MAX:
+    case CONFIG_LMT_PHASE_REGEN_MAX:
+    case CONFIG_LMT_BATT_CUR_MAX:
+    case CONFIG_LMT_BATT_REGEN_MAX:
+    case CONFIG_LMT_FET_TEMP_SOFTCAP:
+    case CONFIG_LMT_FET_TEMP_HARDCAP:
+    case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
+    case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
+        break;
+    case CONFIG_MOTOR_HALL1:
+    case CONFIG_MOTOR_HALL2:
+    case CONFIG_MOTOR_HALL3:
+    case CONFIG_MOTOR_HALL4:
+    case CONFIG_MOTOR_HALL5:
+    case CONFIG_MOTOR_HALL6:
+        errCode = HallSensor_SetAngle(value_ID - CONFIG_MOTOR_HALL1 + 1, valuef);
+        break;
+    case CONFIG_MOTOR_GEAR_RATIO:
+    case CONFIG_MOTOR_WHEEL_SIZE:
         break;
     }
     return errCode;
 }
 
 uint16_t command_get_eeprom(uint8_t* pktdata, uint8_t* retval) {
-    ((void) pktdata);
-    ((void) retval);
-    return DATA_COMMAND_FAIL;
+    uint16_t value_ID = data_packet_extract_16b(pktdata);
+    int16_t retval16;
+    int32_t retval32;
+    float retvalf;
+    uint16_t errCode = DATA_PACKET_FAIL;
+
+    Data_Type type = command_get_datatype(value_ID);
+    switch(type) {
+    case Data_Type_None:
+    case Data_Type_Int8:
+        return DATA_PACKET_FAIL;
+    case Data_Type_Int16:
+        retval16 = EE_ReadInt16WithDefault(value_ID, 0);
+        data_packet_pack_16b(retval, retval16);
+        errCode = RESULT_IS_16B;
+        break;
+    case Data_Type_Int32:
+        retval32 = EE_ReadInt32WithDefault(value_ID, 0);
+        data_packet_pack_32b(retval, retval32);
+        errCode = RESULT_IS_32B;
+        break;
+    case Data_Type_Float:
+        retvalf = EE_ReadFloatWithDefault(value_ID, 0.0f);
+        data_packet_pack_float(retval, retvalf);
+        errCode = RESULT_IS_FLOAT;
+        break;
+    }
+
+    return errCode;
 }
 
 uint16_t command_set_eeprom(uint8_t* pktdata) {
-    ((void) pktdata);
-    return DATA_COMMAND_FAIL;
+    uint16_t value_ID = data_packet_extract_16b(pktdata);
+    pktdata += 2;
+    uint16_t errCode = DATA_PACKET_FAIL;
+
+    Data_Type type = command_get_datatype(value_ID);
+    switch(type) {
+    case Data_Type_None:
+    case Data_Type_Int8:
+        return DATA_PACKET_FAIL;
+    case Data_Type_Int16:
+        if (EE_SaveInt16(value_ID, data_packet_extract_16b(pktdata))
+                == FLASH_COMPLETE) {
+            errCode = DATA_COMMAND_SUCCESS;
+        }
+        break;
+    case Data_Type_Int32:
+        if (EE_SaveInt32(value_ID, data_packet_extract_32b(pktdata))
+                == FLASH_COMPLETE) {
+            errCode = DATA_COMMAND_SUCCESS;
+        }
+        break;
+    case Data_Type_Float:
+        if (EE_SaveFloat(value_ID, data_packet_extract_float(pktdata))
+                == FLASH_COMPLETE) {
+            errCode = DATA_COMMAND_SUCCESS;
+        }
+        break;
+    }
+
+    return errCode;
 }
 
 uint16_t command_enable_feature(uint8_t* pktdata) {
@@ -551,6 +567,9 @@ uint16_t command_enable_feature(uint8_t* pktdata) {
     case FEATURE_SERIAL_DATA:
         MAIN_SetUSBDebugging(1);
         errCode = DATA_COMMAND_SUCCESS;
+        break;
+    case FEATURE_BLDC_MODE:
+        errCode = MAIN_RequestBLDC();
         break;
     default:
         errCode = DATA_COMMAND_FAIL;
@@ -568,6 +587,9 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
     case FEATURE_SERIAL_DATA:
         MAIN_SetUSBDebugging(0);
         errCode = DATA_COMMAND_SUCCESS;
+        break;
+    case FEATURE_BLDC_MODE:
+        errCode = MAIN_RequestFOC();
         break;
     default:
         errCode = DATA_COMMAND_FAIL;
@@ -595,4 +617,81 @@ uint16_t command_run_routine(uint8_t* pktdata) {
 
     ((void) pktdata);
     return errCode;
+}
+
+static Data_Type command_get_datatype(uint16_t data_ID) {
+    Data_Type type = Data_Type_None;
+    switch(data_ID) {
+    // 16-bit integer values
+    case CONFIG_MAIN_NUM_USB_OUTPUTS:
+    case CONFIG_MAIN_USB_SPEED:
+    case CONFIG_MAIN_USB_CHOICE_1:
+    case CONFIG_MAIN_USB_CHOICE_2:
+    case CONFIG_MAIN_USB_CHOICE_3:
+    case CONFIG_MAIN_USB_CHOICE_4:
+    case CONFIG_MAIN_USB_CHOICE_5:
+    case CONFIG_MAIN_USB_CHOICE_6:
+    case CONFIG_MAIN_USB_CHOICE_7:
+    case CONFIG_MAIN_USB_CHOICE_8:
+    case CONFIG_MAIN_USB_CHOICE_9:
+    case CONFIG_MAIN_USB_CHOICE_10:
+    case CONFIG_THRT_TYPE1:
+    case CONFIG_THRT_TYPE2:
+    case CONFIG_MOTOR_POLEPAIRS:
+        type = Data_Type_Int16;
+        break;
+    // 32 bit integer values
+    case CONFIG_FOC_PWM_FREQ:
+    case CONFIG_FOC_PWM_DEADTIME:
+    case CONFIG_MAIN_COUNTS_TO_FOC:
+        type = Data_Type_Int32;
+        break;
+    // 32 bit float values
+    case CONFIG_ADC_INV_TIA_GAIN:
+    case CONFIG_ADC_VBUS_RATIO:
+    case CONFIG_ADC_THERM_FIXED_R:
+    case CONFIG_ADC_THERM_R25:
+    case CONFIG_ADC_THERM_B:
+    case CONFIG_FOC_KP:
+    case CONFIG_FOC_KI:
+    case CONFIG_FOC_KD:
+    case CONFIG_FOC_KC:
+    case CONFIG_MAIN_RAMP_SPEED:
+    case CONFIG_MAIN_SPEED_TO_FOC:
+    case CONFIG_MAIN_SWITCH_EPS:
+    case CONFIG_THRT_MIN1:
+    case CONFIG_THRT_MAX1:
+    case CONFIG_THRT_HYST1:
+    case CONFIG_THRT_FILT1:
+    case CONFIG_THRT_RISE1:
+    case CONFIG_THRT_MIN2:
+    case CONFIG_THRT_MAX2:
+    case CONFIG_THRT_HYST2:
+    case CONFIG_THRT_FILT2:
+    case CONFIG_THRT_RISE2:
+    case CONFIG_LMT_VOLT_FAULT_MIN:
+    case CONFIG_LMT_VOLT_FAULT_MAX:
+    case CONFIG_LMT_CUR_FAULT_MAX:
+    case CONFIG_LMT_VOLT_SOFTCAP:
+    case CONFIG_LMT_VOLT_HARDCAP:
+    case CONFIG_LMT_PHASE_CUR_MAX:
+    case CONFIG_LMT_PHASE_REGEN_MAX:
+    case CONFIG_LMT_BATT_CUR_MAX:
+    case CONFIG_LMT_BATT_REGEN_MAX:
+    case CONFIG_LMT_FET_TEMP_SOFTCAP:
+    case CONFIG_LMT_FET_TEMP_HARDCAP:
+    case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
+    case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
+    case CONFIG_MOTOR_HALL1:
+    case CONFIG_MOTOR_HALL2:
+    case CONFIG_MOTOR_HALL3:
+    case CONFIG_MOTOR_HALL4:
+    case CONFIG_MOTOR_HALL5:
+    case CONFIG_MOTOR_HALL6:
+    case CONFIG_MOTOR_GEAR_RATIO:
+    case CONFIG_MOTOR_WHEEL_SIZE:
+        type = Data_Type_Float;
+        break;
+    }
+    return type;
 }

@@ -231,7 +231,7 @@ int main(void) {
     // Configure the system clock to 168 MHz
     SystemClock_Config();
 
-    // Start up the EEPROM emulation, and (TODO) fetch stored values from it
+    // Start up the EEPROM emulation, and fetch stored values from it
     EE_Config_Addr_Table(VirtAddVarTab);
     EE_Init(VirtAddVarTab);
 
@@ -293,6 +293,9 @@ int main(void) {
     /* Start communications processor */
     CRC32_Init();
     USB_Data_Comm_Init();
+
+    /* Enable FOC mode */
+    config_main.ControlMethod = Control_FOC;
 
     /* Run Application (Interrupt mode) */
     while (1) {
@@ -630,8 +633,6 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[12] = Mfoc.Park_Q;
     usbdacvals[13] = (float) HallSensor.CaptureValue;
     usbdacvals[14] = (float) HallSensor.Prescaler;
-    //usbdacvals[13] = (uint32_t)((Id_control.Out+5.0f)*6553.6f);
-    //usbdacvals[14] = (uint32_t)((Iq_control.Out+5.0f)*6553.6f);
     usbdacvals[15] = (float) (g_errorCode);
     usbdacvals[16] = (float) (adcRaw(ADC_VREFINT));
     usbdacvals[17] = (float) HallSensor_Get_State();
@@ -690,8 +691,10 @@ void User_BasicTIM_IRQ(void) {
     }
     // Check if we should change out of standby
     if ((Mctrl.ThrottleCommand > 0.0f) && (Mctrl.state == Motor_Off)) {
-        Mctrl.state = Motor_Startup;
-//    Mctrl.state = Motor_SixStep;
+        if(config_main.ControlMethod == Control_FOC)
+            Mctrl.state = Motor_Startup;
+        if(config_main.ControlMethod == Control_BLDC)
+            Mctrl.state = Motor_SixStep;
     }
     // Blink the LEDs
     g_ledcount++;
@@ -977,8 +980,55 @@ int32_t MAIN_GetDeadTime(void) {
     return PWM_GetDeadTime(); // nanosec
 }
 
+uint8_t MAIN_SetCountsToFOC(uint32_t new_counts) {
+    config_main.CountsToFOC = new_counts;
+    return DATA_PACKET_SUCCESS;
+}
+
+uint32_t MAIN_GetCountsToFOC(void) {
+    return config_main.CountsToFOC;
+}
+
+uint8_t MAIN_SetSpeedToFOC(float new_speed) {
+    config_main.SpeedToFOC = new_speed;
+    return DATA_PACKET_SUCCESS;
+}
+
+float MAIN_GetSpeedToFOC(void) {
+    return config_main.SpeedToFOC;
+}
+
+uint8_t MAIN_SetSwitchoverEpsilon(float new_eps) {
+    config_main.SwitchEpsilon = new_eps;
+    return DATA_PACKET_SUCCESS;
+}
+
+float MAIN_GetSwitchoverEpsilon(void) {
+    return config_main.SwitchEpsilon;
+}
+
 void MAIN_SetError(uint32_t errorCode) {
     g_errorCode |= errorCode;
+}
+
+uint8_t MAIN_RequestBLDC(void) {
+    // Switch to BLDC only if the motor is currently off
+    // Also, must be currently in FOC
+    if((Mctrl.state == Motor_Off) && (config_main.ControlMethod == Control_FOC)) {
+        config_main.ControlMethod = Control_BLDC;
+        return DATA_PACKET_SUCCESS;
+    }
+    return DATA_PACKET_FAIL;
+}
+
+uint8_t MAIN_RequestFOC(void) {
+    // Switch to FOC if the motor is off, and was in BLDC
+    // Unnecessary to call this unless motor was changed to BLDC
+    if((Mctrl.state == Motor_Off) && (config_main.ControlMethod == Control_BLDC)) {
+        config_main.ControlMethod = Control_FOC;
+        return DATA_PACKET_SUCCESS;
+    }
+    return DATA_PACKET_FAIL;
 }
 
 void MAIN_SoftReset(uint8_t restartInBootloader) {
@@ -1133,18 +1183,10 @@ void MAIN_LoadVariables(void) {
     Id_control.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, Id_control.Ki);
     Id_control.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, Id_control.Kd);
     Id_control.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, Id_control.Kc);
-    Id_control.OutMin = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMIN,
-            Id_control.OutMin);
-    Id_control.OutMax = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMAX,
-            Id_control.OutMax);
     Iq_control.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, Iq_control.Kp);
     Iq_control.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, Iq_control.Ki);
     Iq_control.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, Iq_control.Kd);
     Iq_control.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, Iq_control.Kc);
-    Iq_control.OutMin = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMIN,
-            Iq_control.OutMin);
-    Iq_control.OutMax = EE_ReadFloatWithDefault(CONFIG_FOC_OUTMAX,
-            Iq_control.OutMax);
 
     config_main.RampSpeed = EE_ReadFloatWithDefault(CONFIG_MAIN_RAMP_SPEED,
             DFLT_MAIN_RAMP_SPEED);
@@ -1182,6 +1224,8 @@ void MAIN_LoadVariables(void) {
             CONFIG_LMT_PHASE_CUR_MAX, DFLT_LMT_PHASE_CUR_MAX);
     config_main.PWMFrequency = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_FREQ,
             DFLT_FOC_PWM_FREQ);
+    config_main.PWMDeadTime = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_DEADTIME,
+            DFLT_FOC_PWM_DEADTIME);
 
     usb_debug_countdown_timer = usb_speed_choices[config_main.USB_Speed];
     usb_debug_countdown_reload = usb_speed_choices[config_main.USB_Speed];

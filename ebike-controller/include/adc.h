@@ -82,6 +82,17 @@ float adcGetVref(void);
 void adcSetNull(uint8_t which_cur, uint16_t nullVal);
 float adcGetTempDegC(void);
 
+uint8_t adcSetInverseTIAGain(float new_gain);
+float adcGetInverseTIAGain(void);
+uint8_t adcSetVbusRatio(float new_ratio);
+float adcGetVbusRatio(void);
+uint8_t adcSetThermFixedR(float new_fixed_r);
+float adcGetThermFixedR(void);
+uint8_t adcSetThermR25(float new_r25);
+float adcGetThermR25(void);
+uint8_t adcSetThermBeta(float new_beta);
+float adcGetThermBeta(void);
+
 #if defined(USING_OLD_ADC_VER)
 void ADC_Init_OldVer(void);
 uint16_t ADC_GetData_OldVer(ADC_OutputTypeDef nadc);

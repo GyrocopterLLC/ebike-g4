@@ -286,3 +286,49 @@ float adcGetTempDegC(void) {
 
     return temp;
 }
+
+uint8_t adcSetInverseTIAGain(float new_gain) {
+    config_adc.Inverse_TIA_Gain = new_gain;
+    return DATA_PACKET_SUCCESS;
+}
+
+float adcGetInverseTIAGain(void) {
+    return config_adc.Inverse_TIA_Gain;
+}
+
+uint8_t adcSetVbusRatio(float new_ratio) {
+    config_adc.Vbus_Ratio = new_ratio;
+    return DATA_PACKET_SUCCESS;
+}
+
+float adcGetVbusRatio(void) {
+    return config_adc.Vbus_Ratio;
+}
+
+uint8_t adcSetThermFixedR(float new_fixed_r) {
+    config_adc.Thermistor_Fixed_R = new_fixed_r;
+    return DATA_PACKET_SUCCESS;
+}
+
+float adcGetThermFixedR(void) {
+    return config_adc.Thermistor_Fixed_R;
+}
+
+uint8_t adcSetThermR25(float new_r25) {
+    config_adc.Thermistor_R25 = new_r25;
+    return DATA_PACKET_SUCCESS;
+}
+
+float adcGetThermR25(void){
+    return config_adc.Thermistor_R25;
+}
+
+uint8_t adcSetThermBeta(float new_beta) {
+    config_adc.Thermistor_Beta = new_beta;
+    config_adc.Inverse_Therm_Beta = 1.0f / new_beta;
+    return DATA_PACKET_SUCCESS;
+}
+
+float adcGetThermBeta(void) {
+    return config_adc.Thermistor_Beta;
+}

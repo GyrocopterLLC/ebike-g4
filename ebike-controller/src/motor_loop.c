@@ -88,83 +88,36 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             // Enable the "participating" phases. One phase pwm, one phase low-side on,
             // and the third phase completely turned off
             case 2:
-                PHASE_B_PWM()
-                ;
-                PHASE_A_LOW()
-                ;
-                PHASE_C_OFF()
-                ;
+                PHASE_B_PWM();
+                PHASE_A_LOW();
+                PHASE_C_OFF();
                 break;
             case 6:
-                PHASE_C_PWM()
-                ;
-                PHASE_A_LOW()
-                ;
-                PHASE_B_OFF()
-                ;
+                PHASE_C_PWM();
+                PHASE_A_LOW();
+                PHASE_B_OFF();
                 break;
             case 4:
-                PHASE_C_PWM()
-                ;
-                PHASE_B_LOW()
-                ;
-                PHASE_A_OFF()
-                ;
+                PHASE_C_PWM();
+                PHASE_B_LOW();
+                PHASE_A_OFF();
                 break;
             case 5:
-                PHASE_A_PWM()
-                ;
-                PHASE_B_LOW()
-                ;
-                PHASE_C_OFF()
-                ;
+                PHASE_A_PWM();
+                PHASE_B_LOW();
+                PHASE_C_OFF();
                 break;
             case 1:
-                PHASE_A_PWM()
-                ;
-                PHASE_C_LOW()
-                ;
-                PHASE_B_OFF()
-                ;
+                PHASE_A_PWM();
+                PHASE_C_LOW();
+                PHASE_B_OFF();
                 break;
             case 3:
-                PHASE_B_PWM()
-                ;
-                PHASE_C_LOW()
-                ;
-                PHASE_A_OFF()
-                ;
+                PHASE_B_PWM();
+                PHASE_C_LOW();
+                PHASE_A_OFF();
                 break;
-//            case 6:
-//              PHASE_A_OFF();
-//              PHASE_C_LOW();
-//              PHASE_B_PWM();
-//              break;
-//            case 2:
-//              PHASE_C_OFF();
-//              PHASE_A_LOW();
-//              PHASE_B_PWM();
-//              break;
-//            case 3:
-//              PHASE_B_OFF();
-//              PHASE_A_LOW();
-//              PHASE_C_PWM();
-//              break;
-//            case 1:
-//              PHASE_A_OFF();
-//              PHASE_B_LOW();
-//              PHASE_C_PWM();
-//              break;
-//            case 5:
-//              PHASE_C_OFF();
-//              PHASE_B_LOW();
-//              PHASE_A_PWM();
-//              break;
-//            case 4:
-//              PHASE_B_OFF();
-//              PHASE_C_LOW();
-//              PHASE_A_PWM();
-//              break;
+
             default:
                 // Oh shit damage control
                 cntl->state = Motor_Fault;
@@ -181,12 +134,9 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // of the motor is discontinuous (similar to 6-step)
         // Driven angle is 90deg ahead of the midpoint of the Hall state
         if (lastRunState != Motor_Startup) {
-            PHASE_A_PWM()
-            ;
-            PHASE_B_PWM()
-            ;
-            PHASE_C_PWM()
-            ;
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
             PWM_MotorON();
         }
         MLoop_Turn_Off_Check(cntl);
@@ -207,8 +157,8 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 &(foc->Park_Q));
         // Pass filtered current to the PI(D)s
         foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
-                - foc->Park_Q;
+        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
+                * (cntl->ThrottleCommand) - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
         // Don't integrate unless the throttle is active
@@ -221,21 +171,23 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // Feed to inverse Park
         dfsl_iparkf(foc->Id_PID->Out, foc->Iq_PID->Out,
 //                HallStateToDriveFloat[obv->HallState], &ipark_a, &ipark_b);
-                HallSensor_GetStateMidpoint(obv->HallState), &ipark_a, &ipark_b);
+                HallSensor_GetStateMidpoint(obv->HallState), &ipark_a,
+                &ipark_b);
         // Saturate inputs to unit-length vector
         // Is magnitude of ipark greater than 1?
         if (((ipark_a * ipark_a) + (ipark_b * ipark_b)) > 1.0f) {
             // Trim by scaling by 1.0 / mag(ipark)
-            float mag_ipark = sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
-            ipark_a = ipark_a / mag_ipark;
-            ipark_b = ipark_b / mag_ipark;
+            float inv_mag_ipark = 1.0f
+                    / sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
+            ipark_a = ipark_a * inv_mag_ipark;
+            ipark_b = ipark_b * inv_mag_ipark;
         }
         // Inverse Park outputs to space vector modulation, output three-phase waveforms
         dfsl_svmf(ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
 
         // Check if we're ready for regular run mode
 //        if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC) {
-        if(HallSensor_Get_Speedf() > config_main.SpeedToFOC) {
+        if (HallSensor_Get_Speedf() > config_main.SpeedToFOC) {
             cntl->speed_cycle_integrator = cntl->speed_cycle_integrator + 1;
         } else {
             if (cntl->speed_cycle_integrator > 0) {
@@ -243,10 +195,12 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             }
         }
 //        if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
-        if(cntl->speed_cycle_integrator > config_main.CountsToFOC) {
+        if (cntl->speed_cycle_integrator > config_main.CountsToFOC) {
             // Hold off on changing to FOC until the angle is pretty darn close
             // to lining up.
-            if (fabsf(HallSensor_GetStateMidpoint(obv->HallState) - obv->RotorAngle) < config_main.SwitchEpsilon)
+            if (fabsf(
+                    HallSensor_GetStateMidpoint(obv->HallState)
+                            - obv->RotorAngle) < config_main.SwitchEpsilon)
 //          if (fabsf(HallStateToDriveFloat[obv->HallState] - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
                 cntl->state = Motor_AtSpeed;
         }
@@ -254,12 +208,9 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 
     case Motor_AtSpeed:
         if (lastRunState != Motor_AtSpeed) {
-            PHASE_A_PWM()
-            ;
-            PHASE_B_PWM()
-            ;
-            PHASE_C_PWM()
-            ;
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
             PWM_MotorON();
 //	    dfsl_pid_resetf(foc->Id_PID);
 //	    dfsl_pid_resetf(foc->Iq_PID);
@@ -282,8 +233,8 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
          */
         // Pass current to the PI(D)s
         foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
-                - foc->Park_Q;
+        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
+                * (cntl->ThrottleCommand) - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
         // Don't integrate unless the throttle is active
@@ -301,9 +252,10 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // Is magnitude of ipark greater than 1?
         if (((ipark_a * ipark_a) + (ipark_b * ipark_b)) > 1.0f) {
             // Trim by scaling by 1.0 / mag(ipark)
-            float mag_ipark = sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
-            ipark_a = ipark_a / mag_ipark;
-            ipark_b = ipark_b / mag_ipark;
+            float inv_mag_ipark = 1.0f
+                    / sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
+            ipark_a = ipark_a * inv_mag_ipark;
+            ipark_b = ipark_b * inv_mag_ipark;
         }
         // Inverse Park outputs to space vector modulation, output three-phase waveforms
         dfsl_svmf(ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
@@ -314,12 +266,9 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // The forced ramp angle is used instead of the actual motor angle,
         // which means that the motor is locked to a fixed rotational frequency.
         if (lastRunState != Motor_OpenLoop) {
-            PHASE_A_PWM()
-            ;
-            PHASE_B_PWM()
-            ;
-            PHASE_C_PWM()
-            ;
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
             PWM_MotorON();
             // Resetting the PID means the motor is gonna jump a little bit
             dfsl_pid_resetf(foc->Id_PID);
@@ -334,8 +283,8 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 &(foc->Park_D), &(foc->Park_Q));
         // Input feedbacks to the Id and Iq controllers
         // Pass current to the PI(D)s
-        foc->Id_PID->Err = (config_main.MaxPhaseCurrent) * (cntl->ThrottleCommand)
-                - foc->Park_D;
+        foc->Id_PID->Err = (config_main.MaxPhaseCurrent)
+                * (cntl->ThrottleCommand) - foc->Park_D;
         foc->Iq_PID->Err = 0.0f - foc->Park_Q;
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
@@ -355,9 +304,10 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // Is magnitude of ipark greater than 1?
         if (((ipark_a * ipark_a) + (ipark_b * ipark_b)) > 1.0f) {
             // Trim by scaling by 1.0 / mag(ipark)
-            float mag_ipark = sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
-            ipark_a = ipark_a / mag_ipark;
-            ipark_b = ipark_b / mag_ipark;
+            float inv_mag_ipark = 1.0f
+                    / sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
+            ipark_a = ipark_a * inv_mag_ipark;
+            ipark_b = ipark_b * inv_mag_ipark;
         }
         dfsl_svmf(ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
         break;

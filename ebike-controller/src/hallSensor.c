@@ -481,6 +481,10 @@ float* HallSensor_GetAngleTable(void) {
     return HallStateAnglesFwdFloat;
 }
 
+float HallSensor_GetAngle(uint8_t state) {
+    return HallStateAnglesFwdFloat[state];
+}
+
 float HallSensor_GetStateMidpoint(uint8_t state) {
     if((state < 1) || (state > 6)) {
         return 0.0f;

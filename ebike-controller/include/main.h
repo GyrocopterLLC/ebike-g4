@@ -70,9 +70,15 @@
 #define MAX_USB_SPEED_CHOICES       (6)
 #define USB_SPEED_RELOAD_VALS       {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
 
-typedef enum {
+typedef enum _pb_type {
     PB_RELEASED, PB_PRESSED
 } PB_TypeDef;
+
+typedef enum _control_methods {
+    Control_None,
+    Control_BLDC,
+    Control_FOC
+} Control_Methods;
 
 typedef struct _main_config {
     float RampSpeed;
@@ -83,12 +89,14 @@ typedef struct _main_config {
     uint32_t USB_Speed;
     uint32_t USB_Choices[MAX_USB_OUTPUTS];
     int32_t PWMFrequency;
+    int32_t PWMDeadTime;
     float MaxPhaseCurrent;
     float MaxPhaseRegenCurrent;
     float MaxBatteryCurrent;
     float MaxBatteryRegenCurrent;
     float VoltageSoftCap;
     float VoltageHardCap;
+    Control_Methods ControlMethod;
 } Config_Main;
 
 /* Exported constants --------------------------------------------------------*/
@@ -146,6 +154,14 @@ uint8_t MAIN_SetFreq(int32_t newfreq);
 int32_t MAIN_GetFreq(void);
 uint8_t MAIN_SetDeadTime(int32_t newDT);
 int32_t MAIN_GetDeadTime(void);
+uint8_t MAIN_RequestBLDC(void);
+uint8_t MAIN_RequestFOC(void);
+uint8_t MAIN_SetCountsToFOC(uint32_t new_counts);
+uint32_t MAIN_GetCountsToFOC(void);
+uint8_t MAIN_SetSpeedToFOC(float new_speed);
+float MAIN_GetSpeedToFOC(void);
+uint8_t MAIN_SetSwitchoverEpsilon(float new_eps);
+float MAIN_GetSwitchoverEpsilon(void);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 void MAIN_DumpRecord(void);

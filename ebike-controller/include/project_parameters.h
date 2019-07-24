@@ -26,15 +26,22 @@
 #ifndef PROJECT_PARAMETERS_H_
 #define PROJECT_PARAMETERS_H_
 
+typedef enum _data_type {
+    Data_Type_None,
+    Data_Type_Int8,
+    Data_Type_Int16,
+    Data_Type_Int32,
+    Data_Type_Float
+} Data_Type;
 
 /***  ADC Configuration Variable IDs ***/
 #define CONFIG_ADC_PREFIX           (0x0000)
 #define CONFIG_ADC_NUMVARS          (5)
-#define CONFIG_ADC_INV_TIA_GAIN     (0x0001) // 1 / (Shunt_resistance * amplifier_gain)
-#define CONFIG_ADC_VBUS_RATIO       (0x0002) // 1 / (R_bottom / (R_top + R_bottom))
-#define CONFIG_ADC_THERM_FIXED_R    (0x0003) // Temp sensor divisor resistor (on PCB)
-#define CONFIG_ADC_THERM_R25        (0x0004) // Temp sensor resistance at 25degC
-#define CONFIG_ADC_THERM_B          (0x0005) // Temp sensor beta value
+#define CONFIG_ADC_INV_TIA_GAIN     (0x0001) //F32: 1 / (Shunt_resistance * amplifier_gain)
+#define CONFIG_ADC_VBUS_RATIO       (0x0002) //F32: 1 / (R_bottom / (R_top + R_bottom))
+#define CONFIG_ADC_THERM_FIXED_R    (0x0003) //F32: Temp sensor divisor resistor (on PCB)
+#define CONFIG_ADC_THERM_R25        (0x0004) //F32: Temp sensor resistance at 25degC
+#define CONFIG_ADC_THERM_B          (0x0005) //F32: Temp sensor beta value
 /*** ADC Default Values ***/
 #define DFLT_ADC_INV_TIA_GAIN       (20.0f) // 0.001 Ohms, 50x INA213 gain, 1/(50*.001) = 20
 #define DFLT_ADC_VBUS_RATIO         (33.36246f) // 1 / (3.09kOhm / (100 + 3.09kOhm)) = 33.36246
@@ -44,44 +51,40 @@
 
 /*** FOC Variable IDs ***/
 #define CONFIG_FOC_PREFIX           (0x0100)
-#define CONFIG_FOC_NUMVARS          (8)
-#define CONFIG_FOC_KP               (0x0101) // Current loop proportional gain
-#define CONFIG_FOC_KI               (0x0102) // Current loop integral gain
-#define CONFIG_FOC_KD               (0x0103) // Current loop derivative gain
-#define CONFIG_FOC_KC               (0x0104) // Current loop integral correction gain
-#define CONFIG_FOC_OUTMIN           (0x0105) // Minimum PID output
-#define CONFIG_FOC_OUTMAX           (0x0106) // Maximum PID output
-#define CONFIG_FOC_PWM_FREQ         (0x0107) // Switching frequency
-#define CONFIG_FOC_PWM_DEADTIME     (0x0108) // Switching deadtime
+#define CONFIG_FOC_NUMVARS          (6)
+#define CONFIG_FOC_KP               (0x0101) //F32: Current loop proportional gain
+#define CONFIG_FOC_KI               (0x0102) //F32: Current loop integral gain
+#define CONFIG_FOC_KD               (0x0103) //F32: Current loop derivative gain
+#define CONFIG_FOC_KC               (0x0104) //F32: Current loop integral correction gain
+#define CONFIG_FOC_PWM_FREQ         (0x0105) //I32: Switching frequency (Hz)
+#define CONFIG_FOC_PWM_DEADTIME     (0x0106) //I32: Switching deadtime (ns)
 /*** FOC Default Values ***/
 #define DFLT_FOC_KP                 (0.1f)
 #define DFLT_FOC_KI                 (0.001f)
 #define DFLT_FOC_KD                 (0.0f)
 #define DFLT_FOC_KC                 (0.05f)
-#define DFLT_FOC_OUTMIN             (-0.95f)
-#define DFLT_FOC_OUTMAX             (0.95f)
 #define DFLT_FOC_PWM_FREQ           (20000)
 #define DFLT_FOC_PWM_DEADTIME       (500)
 
 /*** Main Variable IDs ***/
 #define CONFIG_MAIN_PREFIX          (0x0200)
 #define CONFIG_MAIN_NUMVARS         (16)
-#define CONFIG_MAIN_RAMP_SPEED      (0x0201)
-#define CONFIG_MAIN_COUNTS_TO_FOC   (0x0202)
-#define CONFIG_MAIN_SPEED_TO_FOC    (0x0203)
-#define CONFIG_MAIN_SWITCH_EPS      (0x0204)
-#define CONFIG_MAIN_NUM_USB_OUTPUTS (0x0205)
-#define CONFIG_MAIN_USB_SPEED       (0x0206)
-#define CONFIG_MAIN_USB_CHOICE_1    (0x0207)
-#define CONFIG_MAIN_USB_CHOICE_2    (0x0208)
-#define CONFIG_MAIN_USB_CHOICE_3    (0x0209)
-#define CONFIG_MAIN_USB_CHOICE_4    (0x020A)
-#define CONFIG_MAIN_USB_CHOICE_5    (0x020B)
-#define CONFIG_MAIN_USB_CHOICE_6    (0x020C)
-#define CONFIG_MAIN_USB_CHOICE_7    (0x020D)
-#define CONFIG_MAIN_USB_CHOICE_8    (0x020E)
-#define CONFIG_MAIN_USB_CHOICE_9    (0x020F)
-#define CONFIG_MAIN_USB_CHOICE_10   (0x0210)
+#define CONFIG_MAIN_RAMP_SPEED      (0x0201) //F32: Speed in Hz for internally generated ramp angle
+#define CONFIG_MAIN_COUNTS_TO_FOC   (0x0202) //I32: Number of PWM cycles above speed to switch to FOC
+#define CONFIG_MAIN_SPEED_TO_FOC    (0x0203) //F32: Speed above which to switch to FOC
+#define CONFIG_MAIN_SWITCH_EPS      (0x0204) //F32: Largest difference in angle when switching to FOC
+#define CONFIG_MAIN_NUM_USB_OUTPUTS (0x0205) //I16: Number from 1-10 of USB debugging outputs
+#define CONFIG_MAIN_USB_SPEED       (0x0206) //I16: Speed of USB debug, 0 through 5 (50Hz through 5kHz)
+#define CONFIG_MAIN_USB_CHOICE_1    (0x0207) //I16: Choice of variable 1 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_2    (0x0208) //I16: Choice of variable 2 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_3    (0x0209) //I16: Choice of variable 3 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_4    (0x020A) //I16: Choice of variable 4 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_5    (0x020B) //I16: Choice of variable 5 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_6    (0x020C) //I16: Choice of variable 6 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_7    (0x020D) //I16: Choice of variable 7 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_8    (0x020E) //I16: Choice of variable 8 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_9    (0x020F) //I16: Choice of variable 9 on USB (1 through 19)
+#define CONFIG_MAIN_USB_CHOICE_10   (0x0210) //I16: Choice of variable 10 on USB (1 through 19)
 /*** Main Default Values ***/
 #define DFLT_MAIN_RAMP_SPEED        (5.0f)
 #define DFLT_MAIN_COUNTS_TO_FOC     (1000)
@@ -103,18 +106,18 @@
 /*** Throttle Variable IDs ***/
 #define CONFIG_THRT_PREFIX          (0x0300)
 #define CONFIG_THRT_NUMVARS         (12)
-#define CONFIG_THRT_TYPE1           (0x0301) // (0) None, (1) Analog, or (2) PAS
-#define CONFIG_THRT_MIN1            (0x0302) // Voltage at throttle minimum
-#define CONFIG_THRT_MAX1            (0x0303) // Voltage at throttle maximum
-#define CONFIG_THRT_HYST1           (0x0304) // Hysteresis switching off or on
-#define CONFIG_THRT_FILT1           (0x0305) // Low pass filter setting (Hz)
-#define CONFIG_THRT_RISE1           (0x0306) // Rise time from 0->100% in seconds
-#define CONFIG_THRT_TYPE2           (0x0307)
-#define CONFIG_THRT_MIN2            (0x0308)
-#define CONFIG_THRT_MAX2            (0x0309)
-#define CONFIG_THRT_HYST2           (0x030A)
-#define CONFIG_THRT_FILT2           (0x030B)
-#define CONFIG_THRT_RISE2           (0x030C)
+#define CONFIG_THRT_TYPE1           (0x0301) //I16: (0) None, (1) Analog, or (2) PAS
+#define CONFIG_THRT_MIN1            (0x0302) //F32: Voltage at throttle minimum
+#define CONFIG_THRT_MAX1            (0x0303) //F32: Voltage at throttle maximum
+#define CONFIG_THRT_HYST1           (0x0304) //F32: Hysteresis switching off or on
+#define CONFIG_THRT_FILT1           (0x0305) //F32: Low pass filter setting (Hz)
+#define CONFIG_THRT_RISE1           (0x0306) //F32: Rise time from 0->100% in seconds
+#define CONFIG_THRT_TYPE2           (0x0307) //I16
+#define CONFIG_THRT_MIN2            (0x0308) //F32
+#define CONFIG_THRT_MAX2            (0x0309) //F32
+#define CONFIG_THRT_HYST2           (0x030A) //F32
+#define CONFIG_THRT_FILT2           (0x030B) //F32
+#define CONFIG_THRT_RISE2           (0x030C) //F32
 /*** Throttle Default Values ***/
 #define DFLT_THRT_TYPE1             (1) // Analog ADC type
 #define DFLT_THRT_MIN1              (0.85f)
@@ -132,19 +135,19 @@
 /*** Limit Variable IDs ***/
 #define CONFIG_LMT_PREFIX           (0x0400)
 #define CONFIG_LMT_NUMVARS          (13)
-#define CONFIG_LMT_VOLT_FAULT_MIN   (0x0401) // Trip fault code when voltage below this
-#define CONFIG_LMT_VOLT_FAULT_MAX   (0x0402) // Fault when voltage above this
-#define CONFIG_LMT_CUR_FAULT_MAX    (0x0403) // Fault when current (any phase) above this
-#define CONFIG_LMT_VOLT_SOFTCAP     (0x0404) // Start reducing current limit ("limp mode")
-#define CONFIG_LMT_VOLT_HARDCAP     (0x0405) // No more current below this
-#define CONFIG_LMT_PHASE_CUR_MAX    (0x0406) // Maximum throttle = this current
-#define CONFIG_LMT_PHASE_REGEN_MAX  (0x0407) // Maximum demand regen = this current
-#define CONFIG_LMT_BATT_CUR_MAX     (0x0408) // Clip demanded throttle when battery current at this
-#define CONFIG_LMT_BATT_REGEN_MAX   (0x0409) // Clip demanded regen when battery charge current here
-#define CONFIG_LMT_FET_TEMP_SOFTCAP (0x040A) // Soften current when FET temps here
-#define CONFIG_LMT_FET_TEMP_HARDCAP (0x040B) // No more current when FET temps here
-#define CONFIG_LMT_MOTOR_TEMP_SOFTCAP   (0x040C) // Soften current when motor temp here
-#define CONFIG_LMT_MOTOR_TEMP_HARDCAP   (0x040D) // No more current when motor temp here
+#define CONFIG_LMT_VOLT_FAULT_MIN   (0x0401) //F32: Trip fault code when voltage below this
+#define CONFIG_LMT_VOLT_FAULT_MAX   (0x0402) //F32: Fault when voltage above this
+#define CONFIG_LMT_CUR_FAULT_MAX    (0x0403) //F32: Fault when current (any phase) above this
+#define CONFIG_LMT_VOLT_SOFTCAP     (0x0404) //F32: Start reducing current limit ("limp mode")
+#define CONFIG_LMT_VOLT_HARDCAP     (0x0405) //F32: No more current below this
+#define CONFIG_LMT_PHASE_CUR_MAX    (0x0406) //F32: Maximum throttle = this current
+#define CONFIG_LMT_PHASE_REGEN_MAX  (0x0407) //F32: Maximum demand regen = this current
+#define CONFIG_LMT_BATT_CUR_MAX     (0x0408) //F32: Clip demanded throttle when battery current at this
+#define CONFIG_LMT_BATT_REGEN_MAX   (0x0409) //F32: Clip demanded regen when battery charge current here
+#define CONFIG_LMT_FET_TEMP_SOFTCAP (0x040A) //F32: Soften current when FET temps here
+#define CONFIG_LMT_FET_TEMP_HARDCAP (0x040B) //F32: No more current when FET temps here
+#define CONFIG_LMT_MOTOR_TEMP_SOFTCAP   (0x040C) //F32: Soften current when motor temp here
+#define CONFIG_LMT_MOTOR_TEMP_HARDCAP   (0x040D) //F32: No more current when motor temp here
 /*** Limit Default Values ***/
 #define DFLT_LMT_VOLT_FAULT_MIN     (44.8f) // 2.8 x 16 cells
 #define DFLT_LMT_VOLT_FAULT_MAX     (70.4f) // 4.4 x 16 cells
@@ -163,15 +166,15 @@
 /*** Motor Configuration Variable IDs ***/
 #define CONFIG_MOTOR_PREFIX         (0x0500)
 #define CONFIG_MOTOR_NUMVARS        (9)
-#define CONFIG_MOTOR_HALL1          (0x0501) // Angle of motor when switching into state 1, forward rotation
-#define CONFIG_MOTOR_HALL2          (0x0502) // Angle when switching into state 2
-#define CONFIG_MOTOR_HALL3          (0x0503) // Angle when switching into state 3
-#define CONFIG_MOTOR_HALL4          (0x0504) // Angle when switching into state 4
-#define CONFIG_MOTOR_HALL5          (0x0505) // Angle when switching into state 5
-#define CONFIG_MOTOR_HALL6          (0x0506) // Angle when switching into state 6
-#define CONFIG_MOTOR_POLEPAIRS      (0x0507) // Turns of electrical / turns of mechanical
-#define CONFIG_MOTOR_GEAR_RATIO     (0x0508) // Turns of mechanical motor / turns of wheel
-#define CONFIG_MOTOR_WHEEL_SIZE     (0x0509) // Diameter in mm
+#define CONFIG_MOTOR_HALL1          (0x0501) //F32: Angle of motor when switching into state 1, forward rotation
+#define CONFIG_MOTOR_HALL2          (0x0502) //F32: Angle when switching into state 2
+#define CONFIG_MOTOR_HALL3          (0x0503) //F32: Angle when switching into state 3
+#define CONFIG_MOTOR_HALL4          (0x0504) //F32: Angle when switching into state 4
+#define CONFIG_MOTOR_HALL5          (0x0505) //F32: Angle when switching into state 5
+#define CONFIG_MOTOR_HALL6          (0x0506) //F32: Angle when switching into state 6
+#define CONFIG_MOTOR_POLEPAIRS      (0x0507) //I16: Turns of electrical / turns of mechanical
+#define CONFIG_MOTOR_GEAR_RATIO     (0x0508) //F32: Turns of mechanical motor / turns of wheel
+#define CONFIG_MOTOR_WHEEL_SIZE     (0x0509) //F32: Diameter in mm
 /*** Motor Default Values ***/
 // For Ebikeling 700C front 1200W motor
 #define DFLT_MOTOR_HALL1            (0.743786f)
@@ -189,8 +192,12 @@
                         + CONFIG_MAIN_NUMVARS + CONFIG_THRT_NUMVARS \
                         + CONFIG_LMT_NUMVARS + CONFIG_MOTOR_NUMVARS)
 
-/*** Routines ***/
+/*** Routines - set to start ***/
 #define ROUTINE_HALL_DETECT         (0x0101)
+
+/*** Features - toggle on or off ***/
+#define FEATURE_SERIAL_DATA         (0x0001)
+#define FEATURE_BLDC_MODE           (0x0002)
 
 
 #if 0

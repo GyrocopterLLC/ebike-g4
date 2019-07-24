@@ -113,6 +113,7 @@ uint8_t HallSensor2_Get_Direction(void);
 uint8_t HallSensor_SetAngle(uint8_t state, float newAngle);
 uint8_t HallSensor_SetAngleTable(float* angleTab);
 float* HallSensor_GetAngleTable(void);
+float HallSensor_GetAngle(uint8_t state);
 float HallSensor_GetStateMidpoint(uint8_t state);
 //void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
