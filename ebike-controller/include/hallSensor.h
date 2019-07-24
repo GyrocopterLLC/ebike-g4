@@ -117,9 +117,13 @@ float HallSensor_GetAngle(uint8_t state);
 float HallSensor_GetStateMidpoint(uint8_t state);
 //void HallSensor_Init(uint32_t callingFrequency);
 void HallSensor_Init_NoHal(uint32_t callingFrequency);
+void HallSensor_Change_Frequency(uint32_t newfreq);
 void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength);
 void HallSensor_Disable_Hall_Detection(void);
 void HallSensor_UpdateCallback(void);
 void HallSensor_CaptureCallback(void);
+
+void HallSensor_Save_Variables(void);
+void HallSensor_Load_Variables(void);
 
 #endif /* HALLSENSOR_H_ */

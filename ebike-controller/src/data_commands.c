@@ -607,6 +607,21 @@ uint16_t command_run_routine(uint8_t* pktdata) {
     float valuef;
 
     switch(routine_ID) {
+
+    case ROUTINE_LOAD_ALL_EEPROM:
+        // Run the various loading functions
+        MAIN_LoadVariables();
+        HallSensor_Load_Variables();
+        adcLoadVariables();
+        throttle_load_variables();
+        break;
+    case ROUTINE_SAVE_ALL_EEPROM:
+        // Run all the saving functions
+        MAIN_SaveVariables();
+        HallSensor_Save_Variables();
+        adcSaveVariables();
+        throttle_save_variables();
+        break;
     case ROUTINE_HALL_DETECT:
         // Single variable float is applied current
         valuef = data_packet_extract_float(pktdata);
@@ -615,7 +630,6 @@ uint16_t command_run_routine(uint8_t* pktdata) {
         break;
     }
 
-    ((void) pktdata);
     return errCode;
 }
 

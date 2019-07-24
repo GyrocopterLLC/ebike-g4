@@ -85,9 +85,9 @@ typedef struct _main_config {
     uint32_t CountsToFOC;
     float SpeedToFOC;
     float SwitchEpsilon;
-    uint32_t Num_USB_Outputs;
-    uint32_t USB_Speed;
-    uint32_t USB_Choices[MAX_USB_OUTPUTS];
+    uint16_t Num_USB_Outputs;
+    uint16_t USB_Speed;
+    uint16_t USB_Choices[MAX_USB_OUTPUTS];
     int32_t PWMFrequency;
     int32_t PWMDeadTime;
     float MaxPhaseCurrent;
@@ -96,7 +96,12 @@ typedef struct _main_config {
     float MaxBatteryRegenCurrent;
     float VoltageSoftCap;
     float VoltageHardCap;
+    float FetTempSoftCap;
+    float FetTempHardCap;
+    float MotorTempSoftCap;
+    float MotorTempHardCap;
     Control_Methods ControlMethod;
+    float throttle_limit_scale;
 } Config_Main;
 
 /* Exported constants --------------------------------------------------------*/
@@ -111,7 +116,11 @@ typedef struct _main_config {
 #define SERIAL_DUMP_RATE        (1)
 #define TEMP_CONVERSION_RATE    (100)
 
-#define MAIN_ERR_HALL_STATE   (0x00000800)
+#define MAIN_FAULT_OV               ((uint32_t)0x00000001)
+#define MAIN_FAULT_UV               ((uint32_t)0x00000002)
+#define MAIN_FAULT_OC               ((uint32_t)0x00000004)
+#define MAIN_FAULT_HALL_STATE       ((uint32_t)0x00000800)
+
 
 #define MAINFLAG_SERIALDATAPRINT    ((uint32_t)0x00000001)
 #define MAINFLAG_SERIALDATAON       ((uint32_t)0x00000002)

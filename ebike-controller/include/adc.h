@@ -93,6 +93,9 @@ float adcGetThermR25(void);
 uint8_t adcSetThermBeta(float new_beta);
 float adcGetThermBeta(void);
 
+void adcSaveVariables(void);
+void adcLoadVariables(void);
+
 #if defined(USING_OLD_ADC_VER)
 void ADC_Init_OldVer(void);
 uint16_t ADC_GetData_OldVer(ADC_OutputTypeDef nadc);

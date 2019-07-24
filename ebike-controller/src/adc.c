@@ -52,13 +52,7 @@ void adcInit(void) {
     // ADC3: IC(12), Vbus(13), and Throttle2(8)
 
     // Load from eeprom
-    config_adc.Inverse_TIA_Gain = EE_ReadFloatWithDefault(CONFIG_ADC_INV_TIA_GAIN, DFLT_ADC_INV_TIA_GAIN);
-    config_adc.Vbus_Ratio = EE_ReadFloatWithDefault(CONFIG_ADC_VBUS_RATIO, DFLT_ADC_VBUS_RATIO);
-    config_adc.Thermistor_Fixed_R = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_FIXED_R, DFLT_ADC_THERM_FIXED_R);
-    config_adc.Thermistor_R25 = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_R25, DFLT_ADC_THERM_R25);
-    config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);
-    // For convenience
-    config_adc.Inverse_Therm_Beta = 1.0f / config_adc.Thermistor_Beta;
+    adcLoadVariables();
 
     GPIO_Clk(ADC_I_VBUS_THR1_PORT);
     GPIO_Clk(ADC_THR2_AND_TEMP_PORT);
@@ -331,4 +325,23 @@ uint8_t adcSetThermBeta(float new_beta) {
 
 float adcGetThermBeta(void) {
     return config_adc.Thermistor_Beta;
+}
+
+
+void adcSaveVariables(void) {
+    EE_SaveFloat(CONFIG_ADC_INV_TIA_GAIN, config_adc.Inverse_TIA_Gain);
+    EE_SaveFloat(CONFIG_ADC_VBUS_RATIO, config_adc.Vbus_Ratio);
+    EE_SaveFloat(CONFIG_ADC_THERM_FIXED_R, config_adc.Thermistor_Fixed_R);
+    EE_SaveFloat(CONFIG_ADC_THERM_R25, config_adc.Thermistor_R25);
+    EE_SaveFloat(CONFIG_ADC_THERM_B, config_adc.Thermistor_Beta);
+}
+
+void adcLoadVariables(void) {
+    config_adc.Inverse_TIA_Gain = EE_ReadFloatWithDefault(CONFIG_ADC_INV_TIA_GAIN, DFLT_ADC_INV_TIA_GAIN);
+    config_adc.Vbus_Ratio = EE_ReadFloatWithDefault(CONFIG_ADC_VBUS_RATIO, DFLT_ADC_VBUS_RATIO);
+    config_adc.Thermistor_Fixed_R = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_FIXED_R, DFLT_ADC_THERM_FIXED_R);
+    config_adc.Thermistor_R25 = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_R25, DFLT_ADC_THERM_R25);
+    config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);
+    // For convenience
+    config_adc.Inverse_Therm_Beta = 1.0f / config_adc.Thermistor_Beta;
 }

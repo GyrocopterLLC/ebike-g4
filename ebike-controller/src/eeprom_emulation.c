@@ -33,6 +33,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "eeprom_emulation.h"
 #include "project_parameters.h"
+#include "wdt.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -55,6 +56,7 @@ static void FLASH_Unlock(void);
 static void FLASH_Lock(void);
 static FLASH_Status FLASH_GetStatus(void);
 static FLASH_Status FLASH_WaitForLastOperation(void);
+static FLASH_Status FLASH_WaitForErase(void);
 static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector,
         uint8_t VoltageRange);
 static FLASH_Status FLASH_ProgramHalfWord(uint32_t Address, uint16_t Data);
@@ -538,6 +540,29 @@ static FLASH_Status FLASH_WaitForLastOperation(void) {
 }
 
 /**
+ * @brief  Waits for a FLASH erase to complete.
+ * @param  None
+ * @retval FLASH Status: The returned value can be: FLASH_BUSY, FLASH_ERROR_PROGRAM,
+ *                       FLASH_ERROR_WRP, FLASH_ERROR_OPERATION or FLASH_COMPLETE.
+ */
+static FLASH_Status FLASH_WaitForErase(void) {
+    __IO FLASH_Status status = FLASH_COMPLETE;
+
+    /* Check for the FLASH Status */
+    status = FLASH_GetStatus();
+
+    /* Wait for the FLASH operation to complete by polling on BUSY flag to be reset.
+     Even if the FLASH operation fails, the BUSY flag will be reset and an error
+     flag will be set */
+    while (status == FLASH_BUSY) {
+        WDT_feed(); // Ensure there is no reset
+        status = FLASH_GetStatus();
+    }
+    /* Return the operation status */
+    return status;
+}
+
+/**
  * @brief  Erases a specified FLASH Sector.
  *
  * @param  FLASH_Sector: The Sector number to be erased.
@@ -584,7 +609,7 @@ static FLASH_Status FLASH_EraseSector(uint32_t FLASH_Sector,
         FLASH->CR |= FLASH_CR_STRT;
 
         /* Wait for last operation to be completed */
-        status = FLASH_WaitForLastOperation();
+        status = FLASH_WaitForErase();
 
         /* if the erase operation is completed, disable the SER Bit */
         FLASH->CR &= (~FLASH_CR_SER);

@@ -54,56 +54,8 @@ static void throttle_set_scale(Throttle_Analog_Type* thr);
 void throttle_init(void) {
     // Reads from EEPROM and initializes throttle settings
     // This function can also be used to refresh the RAM settings from the EEPROM
-    psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE1,
-            DFLT_THRT_TYPE1);
-    throttle_switch_type(1, psThrottles[0]->throttle_type);
-    psThrottles[0]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST1,
-            DFLT_THRT_HYST1);
-    psThrottles[0]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT1,
-            DFLT_THRT_FILT1);
-    dfsl_biquadcalc_lpf(pThrottle_filts[0], THROTTLE_SAMPLING_RATE,
-            psThrottles[0]->filt,
-            THROTTLE_FILT_Q_DEFAULT);
-    psThrottles[0]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE1,
-            DFLT_THRT_RISE1);
-    psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN1,
-            DFLT_THRT_MIN1);
-    psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX1,
-            DFLT_THRT_MAX1);
-    throttle_set_scale(psAnalogThrottles[0]);
+    throttle_load_variables();
 
-    psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE2,
-            DFLT_THRT_TYPE2);
-    throttle_switch_type(2, psThrottles[1]->throttle_type);
-    psThrottles[1]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST2,
-            DFLT_THRT_HYST2);
-    psThrottles[1]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT2,
-            DFLT_THRT_FILT2);
-    dfsl_biquadcalc_lpf(pThrottle_filts[1], THROTTLE_SAMPLING_RATE,
-            psThrottles[1]->filt,
-            THROTTLE_FILT_Q_DEFAULT);
-    psThrottles[1]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE2,
-            DFLT_THRT_RISE2);
-    psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN2,
-            DFLT_THRT_MIN2);
-    psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX2,
-            DFLT_THRT_MAX2);
-    throttle_set_scale(psAnalogThrottles[1]);
-}
-
-void throttle_save_to_eeprom(void) {
-    EE_SaveInt16(CONFIG_THRT_TYPE1, psThrottles[0]->throttle_type);
-    EE_SaveInt16(CONFIG_THRT_TYPE2, psThrottles[1]->throttle_type);
-    EE_SaveFloat(CONFIG_THRT_MIN1, psAnalogThrottles[0]->min);
-    EE_SaveFloat(CONFIG_THRT_MIN2, psAnalogThrottles[1]->min);
-    EE_SaveFloat(CONFIG_THRT_MAX1, psAnalogThrottles[0]->max);
-    EE_SaveFloat(CONFIG_THRT_MAX2, psAnalogThrottles[1]->max);
-    EE_SaveFloat(CONFIG_THRT_HYST1, psThrottles[0]->hyst);
-    EE_SaveFloat(CONFIG_THRT_HYST2, psThrottles[1]->hyst);
-    EE_SaveFloat(CONFIG_THRT_RISE1, psThrottles[0]->rise);
-    EE_SaveFloat(CONFIG_THRT_RISE2, psThrottles[1]->rise);
-    EE_SaveFloat(CONFIG_THRT_FILT1, psThrottles[0]->filt);
-    EE_SaveFloat(CONFIG_THRT_FILT2, psThrottles[1]->filt);
 }
 
 void throttle_switch_type(uint8_t thrnum, uint8_t thrtype) {
@@ -519,4 +471,58 @@ float throttle_get_rise(uint8_t thrnum) {
         return psThrottles[thrnum - 1]->rise;
     }
     return 0.0f;
+}
+
+void throttle_save_variables(void) {
+    EE_SaveInt16(CONFIG_THRT_TYPE1, psThrottles[0]->throttle_type);
+    EE_SaveInt16(CONFIG_THRT_TYPE2, psThrottles[1]->throttle_type);
+    EE_SaveFloat(CONFIG_THRT_MIN1, psAnalogThrottles[0]->min);
+    EE_SaveFloat(CONFIG_THRT_MIN2, psAnalogThrottles[1]->min);
+    EE_SaveFloat(CONFIG_THRT_MAX1, psAnalogThrottles[0]->max);
+    EE_SaveFloat(CONFIG_THRT_MAX2, psAnalogThrottles[1]->max);
+    EE_SaveFloat(CONFIG_THRT_HYST1, psThrottles[0]->hyst);
+    EE_SaveFloat(CONFIG_THRT_HYST2, psThrottles[1]->hyst);
+    EE_SaveFloat(CONFIG_THRT_RISE1, psThrottles[0]->rise);
+    EE_SaveFloat(CONFIG_THRT_RISE2, psThrottles[1]->rise);
+    EE_SaveFloat(CONFIG_THRT_FILT1, psThrottles[0]->filt);
+    EE_SaveFloat(CONFIG_THRT_FILT2, psThrottles[1]->filt);
+}
+
+void throttle_load_variables(void) {
+    psThrottles[0]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE1,
+            DFLT_THRT_TYPE1);
+    throttle_switch_type(1, psThrottles[0]->throttle_type);
+    psThrottles[0]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST1,
+            DFLT_THRT_HYST1);
+    psThrottles[0]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT1,
+            DFLT_THRT_FILT1);
+    dfsl_biquadcalc_lpf(pThrottle_filts[0], THROTTLE_SAMPLING_RATE,
+            psThrottles[0]->filt,
+            THROTTLE_FILT_Q_DEFAULT);
+    psThrottles[0]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE1,
+            DFLT_THRT_RISE1);
+    psAnalogThrottles[0]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN1,
+            DFLT_THRT_MIN1);
+    psAnalogThrottles[0]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX1,
+            DFLT_THRT_MAX1);
+    throttle_set_scale(psAnalogThrottles[0]);
+
+    psThrottles[1]->throttle_type = EE_ReadInt16WithDefault(CONFIG_THRT_TYPE2,
+            DFLT_THRT_TYPE2);
+    throttle_switch_type(2, psThrottles[1]->throttle_type);
+    psThrottles[1]->hyst = EE_ReadFloatWithDefault(CONFIG_THRT_HYST2,
+            DFLT_THRT_HYST2);
+    psThrottles[1]->filt = EE_ReadFloatWithDefault(CONFIG_THRT_FILT2,
+            DFLT_THRT_FILT2);
+    dfsl_biquadcalc_lpf(pThrottle_filts[1], THROTTLE_SAMPLING_RATE,
+            psThrottles[1]->filt,
+            THROTTLE_FILT_Q_DEFAULT);
+    psThrottles[1]->rise = EE_ReadFloatWithDefault(CONFIG_THRT_RISE2,
+            DFLT_THRT_RISE2);
+    psAnalogThrottles[1]->min = EE_ReadFloatWithDefault(CONFIG_THRT_MIN2,
+            DFLT_THRT_MIN2);
+    psAnalogThrottles[1]->max = EE_ReadFloatWithDefault(CONFIG_THRT_MAX2,
+            DFLT_THRT_MAX2);
+    throttle_set_scale(psAnalogThrottles[1]);
+
 }

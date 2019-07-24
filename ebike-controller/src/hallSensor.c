@@ -614,31 +614,16 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
 #endif
 
     // Load default values from eeprom
-    HallStateAnglesFwdFloat[0] = F32_0_DEG;
-    HallStateAnglesFwdFloat[7] = F32_0_DEG;
-    HallStateAnglesFwdFloat[1] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL1, DFLT_MOTOR_HALL1);
-    HallStateAnglesFwdFloat[2] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL2, DFLT_MOTOR_HALL2);
-    HallStateAnglesFwdFloat[3] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL3, DFLT_MOTOR_HALL3);
-    HallStateAnglesFwdFloat[4] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL4, DFLT_MOTOR_HALL4);
-    HallStateAnglesFwdFloat[5] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL5, DFLT_MOTOR_HALL5);
-    HallStateAnglesFwdFloat[6] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL6, DFLT_MOTOR_HALL6);
+    HallSensor_Load_Variables();
 
-    // Update the forward and reverse lookup tables
-    HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat,
-            HallStateForwardOrder);
-    HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat,
-            HallStateReverseOrder);
-    // Generate the reverse angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
-                HallStateAnglesFwdFloat[i];
-    }
-    // Generate the midpoint angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = HallSensor_CalcMidPoint(HallStateAnglesRevFloat[i],HallStateAnglesFwdFloat[i]);
 
-    }
+}
 
+void HallSensor_Change_Frequency(uint32_t newfreq) {
+    HallSensor.CallingFrequency = newfreq;
+#ifdef TESTING_2X
+    HallSensor_2x.CallingFrequency = newfreq;
+#endif
 }
 
 /** HallSensor_CalcSpeed
@@ -956,7 +941,7 @@ void DMA2_Stream1_IRQHandler(void) {
 
             // Invalid state?
             if ((voted_state == 0) || (voted_state == 7)) {
-                MAIN_SetError(MAIN_ERR_HALL_STATE);
+                MAIN_SetError(MAIN_FAULT_HALL_STATE);
             }
             // Determine direction
             if (HallSensor.CurrentState == HallStateForwardOrder[voted_state]) {
@@ -1042,3 +1027,38 @@ void DMA2_Stream1_IRQHandler(void) {
 
 }
 
+void HallSensor_Save_Variables(void) {
+    EE_SaveFloat(CONFIG_MOTOR_HALL1, HallStateAnglesFwdFloat[1]);
+    EE_SaveFloat(CONFIG_MOTOR_HALL2, HallStateAnglesFwdFloat[2]);
+    EE_SaveFloat(CONFIG_MOTOR_HALL3, HallStateAnglesFwdFloat[3]);
+    EE_SaveFloat(CONFIG_MOTOR_HALL4, HallStateAnglesFwdFloat[4]);
+    EE_SaveFloat(CONFIG_MOTOR_HALL5, HallStateAnglesFwdFloat[5]);
+    EE_SaveFloat(CONFIG_MOTOR_HALL6, HallStateAnglesFwdFloat[6]);
+}
+
+void HallSensor_Load_Variables(void) {
+    HallStateAnglesFwdFloat[0] = F32_0_DEG;
+    HallStateAnglesFwdFloat[7] = F32_0_DEG;
+    HallStateAnglesFwdFloat[1] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL1, DFLT_MOTOR_HALL1);
+    HallStateAnglesFwdFloat[2] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL2, DFLT_MOTOR_HALL2);
+    HallStateAnglesFwdFloat[3] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL3, DFLT_MOTOR_HALL3);
+    HallStateAnglesFwdFloat[4] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL4, DFLT_MOTOR_HALL4);
+    HallStateAnglesFwdFloat[5] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL5, DFLT_MOTOR_HALL5);
+    HallStateAnglesFwdFloat[6] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL6, DFLT_MOTOR_HALL6);
+
+    // Update the forward and reverse lookup tables
+    HallSensor_AutoGenFwdInvTable(HallStateAnglesFwdFloat,
+            HallStateForwardOrder);
+    HallSensor_AutoGenRevInvTable(HallStateAnglesFwdFloat,
+            HallStateReverseOrder);
+    // Generate the reverse angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
+                HallStateAnglesFwdFloat[i];
+    }
+    // Generate the midpoint angle table
+    for (uint8_t i = 1; i <= 6; i++) {
+        HallStateAnglesMidFloat[i] = HallSensor_CalcMidPoint(HallStateAnglesRevFloat[i],HallStateAnglesFwdFloat[i]);
+
+    }
+}

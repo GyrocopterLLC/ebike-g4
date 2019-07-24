@@ -61,6 +61,7 @@ Motor_PWMDuties Mpwm;
 FOC_StateVariables Mfoc;
 
 float g_FetTemp;
+float g_MotorTemp;
 
 PowerCalcs Mpc;
 
@@ -315,6 +316,7 @@ int main(void) {
         if (g_MainFlags & MAINFLAG_CONVERTTEMPERATURE) {
             g_MainFlags &= ~MAINFLAG_CONVERTTEMPERATURE;
             g_FetTemp = adcGetTempDegC();
+            g_MotorTemp = 25.0f;
         }
         if (g_MainFlags & MAINFLAG_SERIALDATAON) {
             if (usb_debug_buffer_pos > 0) {
@@ -610,10 +612,24 @@ void User_PWMTIM_IRQ(void) {
 #endif
     Mobv.HallState = HallSensor_Get_State();
     Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
-    tA = (uint16_t) (Mpwm.tA * 65535.0f);
-    tB = (uint16_t) (Mpwm.tB * 65535.0f);
-    tC = (uint16_t) (Mpwm.tC * 65535.0f);
-    // Is throttle at zero? Motor off
+
+    // Don't allow below zero!
+    // Greater than one is okay, the PWM output will be fully on
+    if(Mpwm.tA < 0.0f) {
+        tA = 0;
+    } else {
+        tA = (uint16_t) (Mpwm.tA * 65535.0f);
+    }
+    if(Mpwm.tB < 0.0f) {
+        tB = 0;
+    } else {
+        tB = (uint16_t) (Mpwm.tB * 65535.0f);
+    }
+    if(Mpwm.tC < 0.0f) {
+        tC = 0;
+    } else {
+        tC = (uint16_t) (Mpwm.tC * 65535.0f);
+    }
 
     PWM_SetDuty(tA, tB, tC);
 
@@ -738,6 +754,49 @@ void User_BasicTIM_IRQ(void) {
     Mpc.Ialpha = Mfoc.Clarke_Alpha;
     Mpc.Ibeta = Mfoc.Clarke_Beta;
     power_calc(&Mpc);
+
+    // Throttle trimming due to limits being reached
+    config_main.throttle_limit_scale = 1.0f;
+
+    // Voltage limit
+    if(Mctrl.BusVoltage < config_main.VoltageSoftCap) {
+        if(Mctrl.BusVoltage < config_main.VoltageHardCap) {
+            // Completely shut off!
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            // Trim by scaling
+            config_main.throttle_limit_scale *= (Mctrl.BusVoltage
+                    - config_main.VoltageHardCap)
+                    / (config_main.VoltageSoftCap - config_main.VoltageHardCap);
+        }
+    }
+    // FET temperature limit
+    if(g_FetTemp > config_main.FetTempSoftCap) {
+        if(g_FetTemp > config_main.FetTempHardCap) {
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            config_main.throttle_limit_scale *= (g_FetTemp
+                    - config_main.FetTempSoftCap)
+                    / (config_main.FetTempHardCap - config_main.FetTempSoftCap);
+        }
+    }
+    // Motor temperature limit
+    if(g_MotorTemp > config_main.MotorTempSoftCap) {
+        if(g_MotorTemp > config_main.MotorTempHardCap) {
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            config_main.throttle_limit_scale *= (g_MotorTemp
+                    - config_main.MotorTempSoftCap)
+                    / (config_main.MotorTempHardCap - config_main.MotorTempSoftCap);
+        }
+    }
+
+    // Apply scaling
+    Mctrl.ThrottleCommand *= config_main.throttle_limit_scale;
+    if(config_main.throttle_limit_scale <= 0.0f) {
+        Mctrl.state = Motor_Off;
+        PWM_MotorOFF();
+    }
 }
 
 float MAIN_GetCurrentRampAngle(void) {
@@ -955,14 +1014,8 @@ float MAIN_GetVar(uint8_t var) {
 }
 
 uint8_t MAIN_SetFreq(int32_t newfreq) {
-    // Save the previous hall table - this can reset it to eeprom values
-    float hallTable[8];
     if(PWM_SetFreq(newfreq) == DATA_PACKET_SUCCESS) {
-        memcpy(hallTable, HallSensor_GetAngleTable(), 8*sizeof(float));
-        HallSensor_Init_NoHal(newfreq);
-        // Load back in the previous table.
-        HallSensor_SetAngleTable(hallTable);
-        // Save in active config
+        HallSensor_Change_Frequency(newfreq);
         config_main.PWMFrequency = newfreq;
         return DATA_PACKET_SUCCESS;
     }
@@ -1169,9 +1222,32 @@ uint32_t GetTick(void) {
 }
 
 void MAIN_SaveVariables(void) {
-    /* TODO: First add variables in RAM instead of hard-coded.
-     * Then enable writing to EEPROM.
-     */
+    EE_SaveFloat(CONFIG_FOC_KP, Id_control.Kp);
+    EE_SaveFloat(CONFIG_FOC_KI, Id_control.Ki);
+    EE_SaveFloat(CONFIG_FOC_KD, Id_control.Kd);
+    EE_SaveFloat(CONFIG_FOC_KC, Id_control.Kc);
+    EE_SaveFloat(CONFIG_MAIN_RAMP_SPEED, config_main.RampSpeed);
+    EE_SaveInt32(CONFIG_MAIN_COUNTS_TO_FOC, config_main.CountsToFOC);
+    EE_SaveFloat(CONFIG_MAIN_SPEED_TO_FOC, config_main.SpeedToFOC);
+    EE_SaveFloat(CONFIG_MAIN_SWITCH_EPS, config_main.SwitchEpsilon);
+    EE_SaveInt16(CONFIG_MAIN_NUM_USB_OUTPUTS, config_main.Num_USB_Outputs);
+    EE_SaveInt16(CONFIG_MAIN_USB_SPEED, config_main.USB_Speed);
+    for(uint8_t i = 0; i < MAX_USB_OUTPUTS; i++) {
+        EE_SaveInt16(CONFIG_MAIN_USB_CHOICE_1 + i, config_main.USB_Choices[i]);
+    }
+
+    EE_SaveFloat(CONFIG_LMT_PHASE_CUR_MAX, config_main.MaxPhaseCurrent);
+    EE_SaveFloat(CONFIG_LMT_BATT_CUR_MAX, config_main.MaxBatteryCurrent);
+    EE_SaveFloat(CONFIG_LMT_PHASE_REGEN_MAX, config_main.MaxPhaseRegenCurrent);
+    EE_SaveFloat(CONFIG_LMT_BATT_REGEN_MAX, config_main.MaxBatteryRegenCurrent);
+    EE_SaveFloat(CONFIG_LMT_VOLT_SOFTCAP, config_main.VoltageSoftCap);
+    EE_SaveFloat(CONFIG_LMT_VOLT_HARDCAP, config_main.VoltageHardCap);
+    EE_SaveInt32(CONFIG_FOC_PWM_FREQ, config_main.PWMFrequency);
+    EE_SaveInt32(CONFIG_FOC_PWM_DEADTIME, config_main.PWMDeadTime);
+    EE_SaveFloat(CONFIG_LMT_FET_TEMP_SOFTCAP, config_main.FetTempSoftCap);
+    EE_SaveFloat(CONFIG_LMT_FET_TEMP_HARDCAP, config_main.FetTempHardCap);
+    EE_SaveFloat(CONFIG_LMT_MOTOR_TEMP_SOFTCAP, config_main.MotorTempSoftCap);
+    EE_SaveFloat(CONFIG_LMT_MOTOR_TEMP_HARDCAP, config_main.MotorTempHardCap);
 }
 
 void MAIN_LoadVariables(void) {
@@ -1196,36 +1272,53 @@ void MAIN_LoadVariables(void) {
             DFLT_MAIN_SPEED_TO_FOC);
     config_main.SwitchEpsilon = EE_ReadFloatWithDefault(CONFIG_MAIN_SWITCH_EPS,
             DFLT_MAIN_SWITCH_EPS);
-    config_main.Num_USB_Outputs = EE_ReadInt32WithDefault(
+    config_main.Num_USB_Outputs = EE_ReadInt16WithDefault(
             CONFIG_MAIN_NUM_USB_OUTPUTS, DFLT_MAIN_NUM_USB_OUTPUTS);
-    config_main.USB_Speed = EE_ReadInt32WithDefault(CONFIG_MAIN_USB_SPEED,
+    config_main.USB_Speed = EE_ReadInt16WithDefault(CONFIG_MAIN_USB_SPEED,
             DFLT_MAIN_USB_SPEED);
-    config_main.USB_Choices[0] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[0] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_1, DFLT_MAIN_USB_CHOICE_1);
-    config_main.USB_Choices[1] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[1] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_2, DFLT_MAIN_USB_CHOICE_2);
-    config_main.USB_Choices[2] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[2] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_3, DFLT_MAIN_USB_CHOICE_3);
-    config_main.USB_Choices[3] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[3] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_4, DFLT_MAIN_USB_CHOICE_4);
-    config_main.USB_Choices[4] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[4] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_5, DFLT_MAIN_USB_CHOICE_5);
-    config_main.USB_Choices[5] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[5] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_6, DFLT_MAIN_USB_CHOICE_6);
-    config_main.USB_Choices[6] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[6] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_7, DFLT_MAIN_USB_CHOICE_7);
-    config_main.USB_Choices[7] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[7] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_8, DFLT_MAIN_USB_CHOICE_8);
-    config_main.USB_Choices[8] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[8] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_9, DFLT_MAIN_USB_CHOICE_9);
-    config_main.USB_Choices[9] = EE_ReadInt32WithDefault(
+    config_main.USB_Choices[9] = EE_ReadInt16WithDefault(
             CONFIG_MAIN_USB_CHOICE_10, DFLT_MAIN_USB_CHOICE_10);
     config_main.MaxPhaseCurrent = EE_ReadFloatWithDefault(
             CONFIG_LMT_PHASE_CUR_MAX, DFLT_LMT_PHASE_CUR_MAX);
+    config_main.MaxBatteryCurrent = EE_ReadFloatWithDefault(
+            CONFIG_LMT_BATT_CUR_MAX, DFLT_LMT_BATT_CUR_MAX);
+    config_main.MaxPhaseRegenCurrent = EE_ReadFloatWithDefault(
+            CONFIG_LMT_PHASE_REGEN_MAX, DFLT_LMT_PHASE_REGEN_MAX);
+    config_main.MaxBatteryRegenCurrent = EE_ReadFloatWithDefault(
+            CONFIG_LMT_BATT_REGEN_MAX, DFLT_LMT_BATT_REGEN_MAX);
+    config_main.VoltageSoftCap = EE_ReadFloatWithDefault(
+            CONFIG_LMT_VOLT_SOFTCAP, DFLT_LMT_VOLT_SOFTCAP);
+    config_main.VoltageHardCap = EE_ReadFloatWithDefault(
+            CONFIG_LMT_VOLT_HARDCAP, DFLT_LMT_VOLT_HARDCAP);
+    config_main.FetTempSoftCap = EE_ReadFloatWithDefault(CONFIG_LMT_FET_TEMP_SOFTCAP, DFLT_LMT_FET_TEMP_SOFTCAP);
+    config_main.FetTempHardCap = EE_ReadFloatWithDefault(CONFIG_LMT_FET_TEMP_HARDCAP, DFLT_LMT_FET_TEMP_HARDCAP);
+    config_main.MotorTempSoftCap = EE_ReadFloatWithDefault(CONFIG_LMT_MOTOR_TEMP_SOFTCAP, DFLT_LMT_MOTOR_TEMP_SOFTCAP);
+    config_main.MotorTempHardCap = EE_ReadFloatWithDefault(CONFIG_LMT_MOTOR_TEMP_HARDCAP, DFLT_LMT_MOTOR_TEMP_HARDCAP);
+
     config_main.PWMFrequency = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_FREQ,
             DFLT_FOC_PWM_FREQ);
+    MAIN_SetFreq(config_main.PWMFrequency);
     config_main.PWMDeadTime = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_DEADTIME,
             DFLT_FOC_PWM_DEADTIME);
+    MAIN_SetDeadTime(config_main.PWMDeadTime);
 
     usb_debug_countdown_timer = usb_speed_choices[config_main.USB_Speed];
     usb_debug_countdown_reload = usb_speed_choices[config_main.USB_Speed];

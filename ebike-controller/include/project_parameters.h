@@ -111,7 +111,7 @@ typedef enum _data_type {
 #define CONFIG_THRT_MAX1            (0x0303) //F32: Voltage at throttle maximum
 #define CONFIG_THRT_HYST1           (0x0304) //F32: Hysteresis switching off or on
 #define CONFIG_THRT_FILT1           (0x0305) //F32: Low pass filter setting (Hz)
-#define CONFIG_THRT_RISE1           (0x0306) //F32: Rise time from 0->100% in seconds
+#define CONFIG_THRT_RISE1           (0x0306) //F32: Maximum amount of throttle rise per count
 #define CONFIG_THRT_TYPE2           (0x0307) //I16
 #define CONFIG_THRT_MIN2            (0x0308) //F32
 #define CONFIG_THRT_MAX2            (0x0309) //F32
@@ -124,7 +124,7 @@ typedef enum _data_type {
 #define DFLT_THRT_MAX1              (2.20f)
 #define DFLT_THRT_HYST1             (0.025f)
 #define DFLT_THRT_FILT1             (2.0f)
-#define DFLT_THRT_RISE1             (0.0005f)
+#define DFLT_THRT_RISE1             (0.0005f) // 0->100 in 2 seconds
 #define DFLT_THRT_TYPE2             (0) // None
 #define DFLT_THRT_MIN2              (0.85f)
 #define DFLT_THRT_MAX2              (2.20f)
@@ -193,7 +193,10 @@ typedef enum _data_type {
                         + CONFIG_LMT_NUMVARS + CONFIG_MOTOR_NUMVARS)
 
 /*** Routines - set to start ***/
-#define ROUTINE_HALL_DETECT         (0x0101)
+#define ROUTINE_SAVE_ALL_EEPROM     (0x0101)
+#define ROUTINE_LOAD_ALL_EEPROM     (0x0102)
+
+#define ROUTINE_HALL_DETECT         (0x0201)
 
 /*** Features - toggle on or off ***/
 #define FEATURE_SERIAL_DATA         (0x0001)
