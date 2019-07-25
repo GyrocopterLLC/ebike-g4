@@ -202,6 +202,17 @@ typedef enum _data_type {
 #define FEATURE_SERIAL_DATA         (0x0001)
 #define FEATURE_BLDC_MODE           (0x0002)
 
+/*** Dashboard Data Format ***/
+#define DASHBOARD_DATA_LENGTH       (8*4)
+// Param1: F32: Throttle position (%)
+// Param2: F32: Speed (rpm)
+// Param3: F32: Phase Amps
+// Param4: F32: Battery Amps
+// Param5: F32: Battery Volts
+// Param6: F32: Controller FET Temperature (degC)
+// Param7: F32: Motor Temperature (degC)
+// Param8: I32: Fault Code
+
 
 #if 0
 /*** ADC Defaults ***/

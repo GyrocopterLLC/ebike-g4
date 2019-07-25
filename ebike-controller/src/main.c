@@ -1098,6 +1098,38 @@ void MAIN_SoftReset(uint8_t restartInBootloader) {
     NVIC_SystemReset();
 }
 
+uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer) {
+    // Param1: F32: Throttle position (%)
+    // Param2: F32: Speed (rpm)
+    // Param3: F32: Phase Amps
+    // Param4: F32: Battery Amps
+    // Param5: F32: Battery Volts
+    // Param6: F32: Controller FET Temperature (degC)
+    // Param7: F32: Motor Temperature (degC)
+    // Param8: I32: Fault Code
+    data_packet_pack_float(dataBuffer, Mctrl.ThrottleCommand);
+    dataBuffer+=4;
+#ifdef TESTING_2X
+    data_packet_pack_float(dataBuffer, HallSensor2_Get_Speedf());
+#else
+    data_packet_pack_float(dataBuffer, HallSensor_Get_Speedf());
+#endif
+    dataBuffer+=4;
+    data_packet_pack_float(dataBuffer, Mpc.PhaseCurrent);
+    dataBuffer+=4;
+    data_packet_pack_float(dataBuffer, Mpc.BatteryCurrent);
+    dataBuffer+=4;
+    data_packet_pack_float(dataBuffer, Mpc.Vbus);
+    dataBuffer+=4;
+    data_packet_pack_float(dataBuffer, g_FetTemp);
+    dataBuffer+=4;
+    data_packet_pack_float(dataBuffer, g_MotorTemp);
+    dataBuffer+=4;
+    data_packet_pack_32b(dataBuffer, g_errorCode);
+
+    return DATA_PACKET_SUCCESS;
+}
+
 void MAIN_DumpRecord(void) {
     if (!(g_MainFlags & MAINFLAG_DUMPDATAON))
         g_MainFlags |= MAINFLAG_DUMPRECORD;

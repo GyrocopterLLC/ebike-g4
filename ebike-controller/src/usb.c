@@ -1044,7 +1044,8 @@ void USB_ReadPacket(uint8_t* buf, uint16_t len) {
 void USB_WritePacket(uint8_t* buf, uint8_t epnum, uint16_t len) {
     uint16_t len32 = (len + 3) / 4;
     for (uint16_t i = 0; i < len32; i++) {
-        USB_DFIFO(epnum) = *((__attribute__((__packed__))  uint32_t *) buf);
+//        USB_DFIFO(epnum) = *((__attribute__((__packed__))  uint32_t *) buf);
+        USB_DFIFO(epnum) = *((uint32_t*)buf);
         buf += 4;
     }
 }

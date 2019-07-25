@@ -173,6 +173,7 @@ uint8_t MAIN_SetSwitchoverEpsilon(float new_eps);
 float MAIN_GetSwitchoverEpsilon(void);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
+uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer);
 void MAIN_DumpRecord(void);
 void MAIN_SaveVariables(void);
 void MAIN_LoadVariables(void);

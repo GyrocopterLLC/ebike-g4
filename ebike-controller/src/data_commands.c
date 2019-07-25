@@ -128,6 +128,12 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
         break;
     case HOST_NACK:
         break;
+    case REQUEST_DASHBOARD_DATA:
+        // Use the same memory locations, data field is ignored anyway
+        if( MAIN_GetDashboardData(pkt->Data) == DATA_COMMAND_SUCCESS) {
+            errCode = data_packet_create(pkt, DASHBOARD_DATA_RESULT, pkt->Data, DASHBOARD_DATA_LENGTH);
+        }
+        break;
 
         // Responses from a lower-level controller (e.g. BMS):
     case GET_RAM_RESULT:
@@ -614,6 +620,7 @@ uint16_t command_run_routine(uint8_t* pktdata) {
         HallSensor_Load_Variables();
         adcLoadVariables();
         throttle_load_variables();
+        errCode = DATA_COMMAND_SUCCESS;
         break;
     case ROUTINE_SAVE_ALL_EEPROM:
         // Run all the saving functions
@@ -621,6 +628,7 @@ uint16_t command_run_routine(uint8_t* pktdata) {
         HallSensor_Save_Variables();
         adcSaveVariables();
         throttle_save_variables();
+        errCode = DATA_COMMAND_SUCCESS;
         break;
     case ROUTINE_HALL_DETECT:
         // Single variable float is applied current
