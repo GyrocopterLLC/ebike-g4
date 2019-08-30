@@ -80,6 +80,19 @@ typedef enum _control_methods {
     Control_FOC
 } Control_Methods;
 
+typedef enum _main_limit_type {
+    Main_Limit_PhaseCurrent,
+    Main_Limit_PhaseRegenCurrent,
+    Main_Limit_BattCurrent,
+    Main_Limit_BattRegenCurrent,
+    Main_Limit_SoftVoltage,
+    Main_Limit_HardVoltage,
+    Main_Limit_SoftFetTemp,
+    Main_Limit_HardFetTemp,
+    Main_Limit_SoftMotorTemp,
+    Main_Limit_HardMotorTemp
+} Main_Limit_Type;
+
 typedef struct _main_config {
     float RampSpeed;
     uint32_t CountsToFOC;
@@ -174,6 +187,8 @@ float MAIN_GetSwitchoverEpsilon(void);
 void MAIN_SetError(uint32_t errorCode);
 void MAIN_SoftReset(uint8_t restartInBootloader);
 uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer);
+uint8_t MAIN_SetLimit(Main_Limit_Type lmt, float new_lmt);
+float MAIN_GetLimit(Main_Limit_Type lmt);
 void MAIN_DumpRecord(void);
 void MAIN_SaveVariables(void);
 void MAIN_LoadVariables(void);

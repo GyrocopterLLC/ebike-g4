@@ -697,19 +697,70 @@ void User_PWMTIM_IRQ(void) {
 // Calculates power usage
 void User_BasicTIM_IRQ(void) {
 
+    // Use a temporary holding variable. Only set the real throttle once!
+    // We don't want a race condition if the PWM interrupt happens while we are
+    // in the middle of this function.
+    float temp_throttle_command = 0.0f;
+
     // Check the throttle command, but skip if in a forced state
     if ((Mctrl.state != Motor_Fault) && (Mctrl.state != Motor_OpenLoop)) {
         throttle_process(1);
-        Mctrl.ThrottleCommand = throttle_get_command(1);
+        temp_throttle_command = throttle_get_command(1);
         // Trim to 99%
-        if (Mctrl.ThrottleCommand >= 1.0f)
-            Mctrl.ThrottleCommand = 0.99f;
+        if (temp_throttle_command >= 1.0f)
+            temp_throttle_command = 0.99f;
     }
+
+    // Throttle trimming due to limits being reached
+    config_main.throttle_limit_scale = 1.0f;
+
+    // Voltage limit
+    if (Mctrl.BusVoltage < config_main.VoltageSoftCap) {
+        if (Mctrl.BusVoltage < config_main.VoltageHardCap) {
+            // Completely shut off!
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            // Trim by scaling
+            config_main.throttle_limit_scale *= (Mctrl.BusVoltage
+                    - config_main.VoltageHardCap)
+                    / (config_main.VoltageSoftCap - config_main.VoltageHardCap);
+        }
+    }
+    // FET temperature limit
+    if (g_FetTemp > config_main.FetTempSoftCap) {
+        if (g_FetTemp > config_main.FetTempHardCap) {
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            config_main.throttle_limit_scale *= (g_FetTemp
+                    - config_main.FetTempSoftCap)
+                    / (config_main.FetTempHardCap - config_main.FetTempSoftCap);
+        }
+    }
+    // Motor temperature limit
+    if (g_MotorTemp > config_main.MotorTempSoftCap) {
+        if (g_MotorTemp > config_main.MotorTempHardCap) {
+            config_main.throttle_limit_scale = 0.0f;
+        } else {
+            config_main.throttle_limit_scale *= (g_MotorTemp
+                    - config_main.MotorTempSoftCap)
+                    / (config_main.MotorTempHardCap
+                            - config_main.MotorTempSoftCap);
+        }
+    }
+
+    // Apply scaling
+    Mctrl.ThrottleCommand = config_main.throttle_limit_scale
+            * temp_throttle_command;
+    if (config_main.throttle_limit_scale <= 0.0f) {
+        Mctrl.state = Motor_Off;
+        PWM_MotorOFF();
+    }
+
     // Check if we should change out of standby
     if ((Mctrl.ThrottleCommand > 0.0f) && (Mctrl.state == Motor_Off)) {
-        if(config_main.ControlMethod == Control_FOC)
+        if (config_main.ControlMethod == Control_FOC)
             Mctrl.state = Motor_Startup;
-        if(config_main.ControlMethod == Control_BLDC)
+        if (config_main.ControlMethod == Control_BLDC)
             Mctrl.state = Motor_SixStep;
     }
     // Blink the LEDs
@@ -755,48 +806,6 @@ void User_BasicTIM_IRQ(void) {
     Mpc.Ibeta = Mfoc.Clarke_Beta;
     power_calc(&Mpc);
 
-    // Throttle trimming due to limits being reached
-    config_main.throttle_limit_scale = 1.0f;
-
-    // Voltage limit
-    if(Mctrl.BusVoltage < config_main.VoltageSoftCap) {
-        if(Mctrl.BusVoltage < config_main.VoltageHardCap) {
-            // Completely shut off!
-            config_main.throttle_limit_scale = 0.0f;
-        } else {
-            // Trim by scaling
-            config_main.throttle_limit_scale *= (Mctrl.BusVoltage
-                    - config_main.VoltageHardCap)
-                    / (config_main.VoltageSoftCap - config_main.VoltageHardCap);
-        }
-    }
-    // FET temperature limit
-    if(g_FetTemp > config_main.FetTempSoftCap) {
-        if(g_FetTemp > config_main.FetTempHardCap) {
-            config_main.throttle_limit_scale = 0.0f;
-        } else {
-            config_main.throttle_limit_scale *= (g_FetTemp
-                    - config_main.FetTempSoftCap)
-                    / (config_main.FetTempHardCap - config_main.FetTempSoftCap);
-        }
-    }
-    // Motor temperature limit
-    if(g_MotorTemp > config_main.MotorTempSoftCap) {
-        if(g_MotorTemp > config_main.MotorTempHardCap) {
-            config_main.throttle_limit_scale = 0.0f;
-        } else {
-            config_main.throttle_limit_scale *= (g_MotorTemp
-                    - config_main.MotorTempSoftCap)
-                    / (config_main.MotorTempHardCap - config_main.MotorTempSoftCap);
-        }
-    }
-
-    // Apply scaling
-    Mctrl.ThrottleCommand *= config_main.throttle_limit_scale;
-    if(config_main.throttle_limit_scale <= 0.0f) {
-        Mctrl.state = Motor_Off;
-        PWM_MotorOFF();
-    }
 }
 
 float MAIN_GetCurrentRampAngle(void) {
@@ -1128,6 +1137,85 @@ uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer) {
     data_packet_pack_32b(dataBuffer, g_errorCode);
 
     return DATA_PACKET_SUCCESS;
+}
+
+uint8_t MAIN_SetLimit(Main_Limit_Type lmt, float new_lmt) {
+    uint8_t errCode = DATA_PACKET_SUCCESS;
+    switch(lmt) {
+    case Main_Limit_PhaseCurrent:
+        config_main.MaxPhaseCurrent = new_lmt;
+        break;
+    case Main_Limit_PhaseRegenCurrent:
+        config_main.MaxPhaseRegenCurrent = new_lmt;
+        break;
+    case Main_Limit_BattCurrent:
+        config_main.MaxBatteryCurrent = new_lmt;
+        break;
+    case Main_Limit_BattRegenCurrent:
+        config_main.MaxBatteryRegenCurrent = new_lmt;
+        break;
+    case Main_Limit_SoftVoltage:
+        config_main.VoltageSoftCap = new_lmt;
+        break;
+    case Main_Limit_HardVoltage:
+        config_main.VoltageHardCap = new_lmt;
+        break;
+    case Main_Limit_SoftFetTemp:
+        config_main.FetTempSoftCap = new_lmt;
+        break;
+    case Main_Limit_HardFetTemp:
+        config_main.FetTempHardCap = new_lmt;
+        break;
+    case Main_Limit_SoftMotorTemp:
+        config_main.MotorTempSoftCap = new_lmt;
+        break;
+    case Main_Limit_HardMotorTemp:
+        config_main.MotorTempHardCap = new_lmt;
+        break;
+    default:
+        errCode = DATA_PACKET_FAIL;
+        break;
+    }
+    return errCode;
+}
+float MAIN_GetLimit(Main_Limit_Type lmt) {
+    float retval;
+    switch(lmt) {
+    case Main_Limit_PhaseCurrent:
+        retval = config_main.MaxPhaseCurrent;
+        break;
+    case Main_Limit_PhaseRegenCurrent:
+        retval = config_main.MaxPhaseRegenCurrent;
+        break;
+    case Main_Limit_BattCurrent:
+        retval = config_main.MaxBatteryCurrent;
+        break;
+    case Main_Limit_BattRegenCurrent:
+        retval = config_main.MaxBatteryRegenCurrent;
+        break;
+    case Main_Limit_SoftVoltage:
+        retval = config_main.VoltageSoftCap;
+        break;
+    case Main_Limit_HardVoltage:
+        retval = config_main.VoltageHardCap;
+        break;
+    case Main_Limit_SoftFetTemp:
+        retval = config_main.FetTempSoftCap;
+        break;
+    case Main_Limit_HardFetTemp:
+        retval = config_main.FetTempHardCap;
+        break;
+    case Main_Limit_SoftMotorTemp:
+        retval = config_main.MotorTempSoftCap;
+        break;
+    case Main_Limit_HardMotorTemp:
+        retval = config_main.MotorTempHardCap;
+        break;
+    default:
+        retval = 0.0f;
+        break;
+    }
+    return retval;
 }
 
 void MAIN_DumpRecord(void) {

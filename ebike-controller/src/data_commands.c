@@ -80,14 +80,14 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
         errCode = command_get_eeprom(pkt->Data, retval);
         switch (errCode) {
         case RESULT_IS_8B:
-            errCode = data_packet_create(pkt, GET_RAM_RESULT, retval, 1);
+            errCode = data_packet_create(pkt, GET_EEPROM_RESULT, retval, 1);
             break;
         case RESULT_IS_16B:
-            errCode = data_packet_create(pkt, GET_RAM_RESULT, retval, 2);
+            errCode = data_packet_create(pkt, GET_EEPROM_RESULT, retval, 2);
             break;
         case RESULT_IS_32B:
         case RESULT_IS_FLOAT:
-            errCode = data_packet_create(pkt, GET_RAM_RESULT, retval, 4);
+            errCode = data_packet_create(pkt, GET_EEPROM_RESULT, retval, 4);
             break;
         default:
             errCode = data_packet_create(pkt, CONTROLLER_NACK, 0, 0);
@@ -290,16 +290,37 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_LMT_VOLT_FAULT_MIN:
     case CONFIG_LMT_VOLT_FAULT_MAX:
     case CONFIG_LMT_CUR_FAULT_MAX:
+        retvalf = -99999.0f;
+        break;
     case CONFIG_LMT_VOLT_SOFTCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_SoftVoltage);
+        break;
     case CONFIG_LMT_VOLT_HARDCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_HardVoltage);
+        break;
     case CONFIG_LMT_PHASE_CUR_MAX:
+        retvalf = MAIN_GetLimit(Main_Limit_PhaseCurrent);
+        break;
     case CONFIG_LMT_PHASE_REGEN_MAX:
+        retvalf = MAIN_GetLimit(Main_Limit_PhaseRegenCurrent);
+        break;
     case CONFIG_LMT_BATT_CUR_MAX:
+        retvalf = MAIN_GetLimit(Main_Limit_BattCurrent);
+        break;
     case CONFIG_LMT_BATT_REGEN_MAX:
+        retvalf = MAIN_GetLimit(Main_Limit_BattRegenCurrent);
+        break;
     case CONFIG_LMT_FET_TEMP_SOFTCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_SoftFetTemp);
+        break;
     case CONFIG_LMT_FET_TEMP_HARDCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_HardFetTemp);
+        break;
     case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_SoftMotorTemp);
+        break;
     case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
+        retvalf = MAIN_GetLimit(Main_Limit_HardMotorTemp);
         break;
     case CONFIG_MOTOR_HALL1:
     case CONFIG_MOTOR_HALL2:
@@ -473,16 +494,36 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     case CONFIG_LMT_VOLT_FAULT_MIN:
     case CONFIG_LMT_VOLT_FAULT_MAX:
     case CONFIG_LMT_CUR_FAULT_MAX:
+        break;
     case CONFIG_LMT_VOLT_SOFTCAP:
+        errCode = MAIN_SetLimit(Main_Limit_SoftVoltage, valuef);
+        break;
     case CONFIG_LMT_VOLT_HARDCAP:
+        errCode = MAIN_SetLimit(Main_Limit_HardVoltage, valuef);
+        break;
     case CONFIG_LMT_PHASE_CUR_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_PhaseCurrent, valuef);
+        break;
     case CONFIG_LMT_PHASE_REGEN_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_PhaseRegenCurrent, valuef);
+        break;
     case CONFIG_LMT_BATT_CUR_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_BattRegenCurrent, valuef);
+        break;
     case CONFIG_LMT_BATT_REGEN_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_SoftVoltage, valuef);
+        break;
     case CONFIG_LMT_FET_TEMP_SOFTCAP:
+        errCode = MAIN_SetLimit(Main_Limit_SoftFetTemp, valuef);
+        break;
     case CONFIG_LMT_FET_TEMP_HARDCAP:
+        errCode = MAIN_SetLimit(Main_Limit_HardFetTemp, valuef);
+        break;
     case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
+        errCode = MAIN_SetLimit(Main_Limit_SoftMotorTemp, valuef);
+        break;
     case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
+        errCode = MAIN_SetLimit(Main_Limit_HardMotorTemp, valuef);
         break;
     case CONFIG_MOTOR_HALL1:
     case CONFIG_MOTOR_HALL2:
