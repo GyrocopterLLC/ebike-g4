@@ -1144,6 +1144,7 @@ uint8_t MAIN_SetLimit(Main_Limit_Type lmt, float new_lmt) {
     switch(lmt) {
     case Main_Limit_PhaseCurrent:
         config_main.MaxPhaseCurrent = new_lmt;
+        config_main.inv_max_phase_current = (1.0f) / config_main.MaxPhaseCurrent;
         break;
     case Main_Limit_PhaseRegenCurrent:
         config_main.MaxPhaseRegenCurrent = new_lmt;
@@ -1418,6 +1419,7 @@ void MAIN_LoadVariables(void) {
             CONFIG_MAIN_USB_CHOICE_10, DFLT_MAIN_USB_CHOICE_10);
     config_main.MaxPhaseCurrent = EE_ReadFloatWithDefault(
             CONFIG_LMT_PHASE_CUR_MAX, DFLT_LMT_PHASE_CUR_MAX);
+    config_main.inv_max_phase_current = (1.0f) / config_main.MaxPhaseCurrent;
     config_main.MaxBatteryCurrent = EE_ReadFloatWithDefault(
             CONFIG_LMT_BATT_CUR_MAX, DFLT_LMT_BATT_CUR_MAX);
     config_main.MaxPhaseRegenCurrent = EE_ReadFloatWithDefault(

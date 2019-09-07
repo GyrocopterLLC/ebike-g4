@@ -156,9 +156,17 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 HallSensor_GetStateMidpoint(obv->HallState), &(foc->Park_D),
                 &(foc->Park_Q));
         // Pass filtered current to the PI(D)s
-        foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
-                * (cntl->ThrottleCommand) - foc->Park_Q;
+        // Error signals are normalized to 1.0. This allows us to use the same
+        // PID gains regardless of current scaling.
+        foc->Id_PID->Err = 0.0f
+                - ((foc->Park_D) * (config_main.inv_max_phase_current));
+        foc->Iq_PID->Err = cntl->ThrottleCommand
+                - ((foc->Park_Q) * (config_main.inv_max_phase_current));
+        // --- Old version, no normalizing ---
+//        foc->Id_PID->Err = 0.0f - foc->Park_D;
+//        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
+//                * (cntl->ThrottleCommand) - foc->Park_Q;
+        // --- End old version ---
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
         // Don't integrate unless the throttle is active
@@ -232,9 +240,17 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
          dfsl_biquadf(&Iq_Filt);
          */
         // Pass current to the PI(D)s
-        foc->Id_PID->Err = 0.0f - foc->Park_D;
-        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
-                * (cntl->ThrottleCommand) - foc->Park_Q;
+        // Error signals are normalized to 1.0. This allows us to use the same
+        // PID gains regardless of current scaling.
+        foc->Id_PID->Err = 0.0f
+                - ((foc->Park_D) * (config_main.inv_max_phase_current));
+        foc->Iq_PID->Err = cntl->ThrottleCommand
+                - ((foc->Park_Q) * (config_main.inv_max_phase_current));
+        // --- Old version, no normalizing ---
+//        foc->Id_PID->Err = 0.0f - foc->Park_D;
+//        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
+//                * (cntl->ThrottleCommand) - foc->Park_Q;
+        // --- End old version ---
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
         // Don't integrate unless the throttle is active
@@ -283,9 +299,17 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 &(foc->Park_D), &(foc->Park_Q));
         // Input feedbacks to the Id and Iq controllers
         // Pass current to the PI(D)s
-        foc->Id_PID->Err = (config_main.MaxPhaseCurrent)
-                * (cntl->ThrottleCommand) - foc->Park_D;
-        foc->Iq_PID->Err = 0.0f - foc->Park_Q;
+        // Error signals are normalized to 1.0. This allows us to use the same
+        // PID gains regardless of current scaling.
+        foc->Id_PID->Err = cntl->ThrottleCommand
+                - ((foc->Park_D) * (config_main.inv_max_phase_current));
+        foc->Iq_PID->Err = 0.0f
+                - ((foc->Park_Q) * (config_main.inv_max_phase_current));
+        // --- Old version, no normalizing ---
+//        foc->Id_PID->Err = (config_main.MaxPhaseCurrent)
+//                * (cntl->ThrottleCommand) - foc->Park_D;
+//        foc->Iq_PID->Err = 0.0f - foc->Park_Q;
+        // --- End old version ---
         //Id_control.Err = 0.0f - Id_Filt.Y;
         //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
         // Don't integrate unless the throttle is active

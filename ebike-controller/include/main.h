@@ -94,6 +94,7 @@ typedef enum _main_limit_type {
 } Main_Limit_Type;
 
 typedef struct _main_config {
+    // ----- Settings editable by user -----
     float RampSpeed;
     uint32_t CountsToFOC;
     float SpeedToFOC;
@@ -114,6 +115,9 @@ typedef struct _main_config {
     float MotorTempSoftCap;
     float MotorTempHardCap;
     Control_Methods ControlMethod;
+    // ----- Generated constants -----
+    float inv_max_phase_current;
+    // ----- Local variables -----
     float throttle_limit_scale;
 } Config_Main;
 
