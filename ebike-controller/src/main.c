@@ -271,6 +271,7 @@ int main(void) {
     User_BasicTim_Init();
     PWM_Init(config_main.PWMFrequency);
     HallSensor_Init_NoHal(config_main.PWMFrequency);
+    PWM_SetDeadTime(config_main.PWMDeadTime);
     HBD_Init();
 
     // USB init
@@ -647,8 +648,10 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[10] = Mctrl.BusVoltage;
     usbdacvals[11] = Mfoc.Park_D;
     usbdacvals[12] = Mfoc.Park_Q;
-    usbdacvals[13] = (float) HallSensor.CaptureValue;
-    usbdacvals[14] = (float) HallSensor.Prescaler;
+    usbdacvals[13] = Mfoc.Id_PID->Out;
+    usbdacvals[14] = Mfoc.Iq_PID->Out;
+//    usbdacvals[13] = (float) HallSensor.CaptureValue;
+//    usbdacvals[14] = (float) HallSensor.Prescaler;
     usbdacvals[15] = (float) (g_errorCode);
     usbdacvals[16] = (float) (adcRaw(ADC_VREFINT));
     usbdacvals[17] = (float) HallSensor_Get_State();

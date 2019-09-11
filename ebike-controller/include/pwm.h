@@ -59,8 +59,10 @@
 #define DT_RANGE3_MAX     3000
 #define DT_RANGE4_MAX     6000
 
-#define PWM_DEFAULT_DT_NS   500
-#define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
+#define PWM_DEFAULT_DT_NS   750
+#define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_1 | TIM_BDTR_DTG_2 | TIM_BDTR_DTG_3 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_5 | TIM_BDTR_DTG_6) // ~750ns (168MHz / 126 = 1.333MHz -> 0.75us)
+//#define PWM_DEFAULT_DT_NS   500
+//#define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_2 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_6) // ~500ns (168MHz / 84 = 2MHz -> 0.5us)
 
 /********** Functions **************/
 

@@ -64,7 +64,7 @@ typedef enum _data_type {
 #define DFLT_FOC_KD                 (0.0f)
 #define DFLT_FOC_KC                 (0.05f)
 #define DFLT_FOC_PWM_FREQ           (20000)
-#define DFLT_FOC_PWM_DEADTIME       (500)
+#define DFLT_FOC_PWM_DEADTIME       (750)
 
 /*** Main Variable IDs ***/
 #define CONFIG_MAIN_PREFIX          (0x0200)
@@ -148,6 +148,13 @@ typedef enum _data_type {
 #define CONFIG_LMT_FET_TEMP_HARDCAP (0x040B) //F32: No more current when FET temps here
 #define CONFIG_LMT_MOTOR_TEMP_SOFTCAP   (0x040C) //F32: Soften current when motor temp here
 #define CONFIG_LMT_MOTOR_TEMP_HARDCAP   (0x040D) //F32: No more current when motor temp here
+#define CONFIG_LMT_DISABLE_FLAGS    (0x040E) // I32: Bit-wise flags to disable individual limits
+                                            // Flags[0] = Disable Voltage faults
+                                            // Flags[1] = Disable Current faults
+                                            // Flags[2] = Disable Voltage checks (limp mode)
+                                            // Flags[3] = Disable battery current limits (note: phase limits cannot be disabled)
+                                            // Flags[4] = Disable FET temp checks
+                                            // Flags[5] = Disable motor temp checks
 /*** Limit Default Values ***/
 #define DFLT_LMT_VOLT_FAULT_MIN     (44.8f) // 2.8 x 16 cells
 #define DFLT_LMT_VOLT_FAULT_MAX     (70.4f) // 4.4 x 16 cells
@@ -162,6 +169,7 @@ typedef enum _data_type {
 #define DFLT_LMT_FET_TEMP_HARDCAP   (90.0f)
 #define DFLT_LMT_MOTOR_TEMP_SOFTCAP (75.0f)
 #define DFLT_LMT_MOTOR_TEMP_HARDCAP (90.0f)
+#define DFLT_LMT_DISABLE_FLAGS      (0)
 
 /*** Motor Configuration Variable IDs ***/
 #define CONFIG_MOTOR_PREFIX         (0x0500)
