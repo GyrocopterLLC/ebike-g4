@@ -604,12 +604,24 @@ void User_PWMTIM_IRQ(void) {
 #ifdef TESTING_2X
     HallSensor2_Inc_Angle();
 #endif
+#ifdef TESTING_PLL
+    HallSensorPLL_Update();
+#endif
     dfsl_rampgenf(&g_rampAngle, g_rampInc);
     Mctrl.RampAngle = g_rampAngle;
 #ifdef TESTING_2X
-    Mobv.RotorAngle = HallSensor2_Get_Anglef();
+//    Mobv.RotorAngle = HallSensor2_Get_Anglef(); // Can't be trusted!
+    Mobv.RotorAngle = HallSensor_Get_Anglef();
+#else
+#ifdef TESTING_PLL
+    if(HallSensorPLL_Is_Valid() == PLL_LOCKED) {
+        Mobv.RotorAngle = HallSensorPLL_Get_Anglef();
+    } else {
+        Mobv.RotorAngle = HallSensor_Get_Anglef();
+    }
 #else
     Mobv.RotorAngle = HallSensor_Get_Anglef();
+#endif
 #endif
     Mobv.HallState = HallSensor_Get_State();
     Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
@@ -653,11 +665,15 @@ void User_PWMTIM_IRQ(void) {
 //    usbdacvals[13] = (float) HallSensor.CaptureValue;
 //    usbdacvals[14] = (float) HallSensor.Prescaler;
     usbdacvals[15] = (float) (g_errorCode);
-    usbdacvals[16] = (float) (adcRaw(ADC_VREFINT));
+//    usbdacvals[16] = (float) (adcRaw(ADC_VREFINT));
+    usbdacvals[16] = g_FetTemp;
     usbdacvals[17] = (float) HallSensor_Get_State();
 #ifdef TESTING_2X
     usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif // TESTING_2X
+#ifdef TESTING_PLL
+    usbdacvals[18] = HallSensorPLL_Get_Anglef();
+#endif
 
     // Load up the output buffer
     if (g_MainFlags & MAINFLAG_SERIALDATAON) {
@@ -722,6 +738,7 @@ void User_BasicTIM_IRQ(void) {
         if (Mctrl.BusVoltage < config_main.VoltageHardCap) {
             // Completely shut off!
             config_main.throttle_limit_scale = 0.0f;
+            g_errorCode |= MAIN_FAULT_UV;
         } else {
             // Trim by scaling
             config_main.throttle_limit_scale *= (Mctrl.BusVoltage
@@ -733,6 +750,7 @@ void User_BasicTIM_IRQ(void) {
     if (g_FetTemp > config_main.FetTempSoftCap) {
         if (g_FetTemp > config_main.FetTempHardCap) {
             config_main.throttle_limit_scale = 0.0f;
+            g_errorCode |= MAIN_FAULT_FETTEMP;
         } else {
             config_main.throttle_limit_scale *= (g_FetTemp
                     - config_main.FetTempSoftCap)
@@ -743,11 +761,25 @@ void User_BasicTIM_IRQ(void) {
     if (g_MotorTemp > config_main.MotorTempSoftCap) {
         if (g_MotorTemp > config_main.MotorTempHardCap) {
             config_main.throttle_limit_scale = 0.0f;
+
+            g_errorCode |= MAIN_FAULT_MOTORTEMP;
         } else {
             config_main.throttle_limit_scale *= (g_MotorTemp
                     - config_main.MotorTempSoftCap)
                     / (config_main.MotorTempHardCap
                             - config_main.MotorTempSoftCap);
+        }
+    }
+
+    // Is there a fault state from previously?
+    if((g_errorCode & (MAIN_FAULT_UV|MAIN_FAULT_FETTEMP|MAIN_FAULT_MOTORTEMP))!= 0) {
+        // We can reset if the throttle position is back to zero
+        if(temp_throttle_command <= 0.0f) {
+            g_errorCode &= ~(MAIN_FAULT_UV|MAIN_FAULT_FETTEMP|MAIN_FAULT_MOTORTEMP);
+        }
+        // Otherwise, keep that motor disabled
+        else {
+            config_main.throttle_limit_scale = 0.0f;
         }
     }
 

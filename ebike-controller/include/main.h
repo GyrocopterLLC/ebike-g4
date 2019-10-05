@@ -65,7 +65,11 @@
 #include <string.h>
 #include <math.h>
 
+#if defined(TESTING_2X) || defined(TESTING_PLL)
 #define MAX_USB_VALS                (19)
+#else
+#define MAX_USB_VALS                (18)
+#endif
 #define MAX_USB_OUTPUTS             (10)
 #define MAX_USB_SPEED_CHOICES       (6)
 #define USB_SPEED_RELOAD_VALS       {400, 200, 100, 40, 20, 4} // 50Hz, 100Hz, 200Hz, 500Hz, 1kHz, 5kHz
@@ -136,7 +140,9 @@ typedef struct _main_config {
 #define MAIN_FAULT_OV               ((uint32_t)0x00000001)
 #define MAIN_FAULT_UV               ((uint32_t)0x00000002)
 #define MAIN_FAULT_OC               ((uint32_t)0x00000004)
-#define MAIN_FAULT_HALL_STATE       ((uint32_t)0x00000800)
+#define MAIN_FAULT_FETTEMP          ((uint32_t)0x00000008)
+#define MAIN_FAULT_MOTORTEMP        ((uint32_t)0x00000010)
+#define MAIN_FAULT_HALL_STATE       ((uint32_t)0x00000020)
 
 
 #define MAINFLAG_SERIALDATAPRINT    ((uint32_t)0x00000001)

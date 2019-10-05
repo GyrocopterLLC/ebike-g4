@@ -42,6 +42,9 @@ HallSensor_HandleTypeDef HallSensor;
 #ifdef TESTING_2X
 HallSensor_HandleTypeDef HallSensor_2x;
 #endif
+#ifdef TESTING_PLL
+HallSensorPLL_HandleTypeDef HallSensorPLL;
+#endif
 #if !defined(USE_FLOATING_POINT)
 uint16_t HallStateAngles[8] = HALL_ANGLES_INT;
 #endif
@@ -63,6 +66,7 @@ uint32_t HallDetectTransitionsDone[6];
 /*################### Private function declarations #########################*/
 static void HallSensor_CalcSpeed(void);
 static float HallSensor_CalcMidPoint(float a1, float a2);
+static float HallSensor_ClipToOne(float unclipped);
 #ifdef TESTING_2X
 static void HallSensor2_CalcSpeed(void);
 #endif
@@ -300,10 +304,7 @@ void HallSensor_Inc_Angle(void) {
     // Don't do anything if rotation is unknown.
 #if defined(USE_FLOATING_POINT)
     // Wraparound for floating point. Fixed point simply overflows the 16 bit variable.
-    if (HallSensor.Angle > 1.0f)
-        HallSensor.Angle -= 1.0f;
-    if (HallSensor.Angle < 0.0f)
-        HallSensor.Angle += 1.0f;
+    HallSensor.Angle = HallSensor_ClipToOne(HallSensor.Angle);
 #endif
 }
 #ifdef TESTING_2X
@@ -322,6 +323,43 @@ void HallSensor2_Inc_Angle(void) {
     if (HallSensor_2x.Angle < 0.0f)
         HallSensor_2x.Angle += 1.0f;
 #endif
+}
+#endif
+#ifdef TESTING_PLL
+void HallSensorPLL_Update(void) {
+    // Run the PLL to create a smoothed angle output
+    float phase_difference;
+    phase_difference =  HallSensor.Angle - HallSensorPLL.Phase;
+    while(phase_difference > 0.5f) {
+        phase_difference -= 1.0f;
+    }
+    while(phase_difference < -0.5f) {
+        phase_difference += 1.0f;
+    }
+    HallSensorPLL.Frequency += HallSensorPLL.Beta*phase_difference;
+    HallSensorPLL.Phase += HallSensorPLL.Alpha*phase_difference + HallSensorPLL.Frequency;
+    HallSensorPLL.Phase = HallSensor_ClipToOne(HallSensorPLL.Phase);
+
+    // Check for phase lock
+
+    if(phase_difference < 0.0f) {
+        phase_difference = -phase_difference; // Absolute value of phase error
+    }
+    if(phase_difference < PLL_LOCKED_PHASE_ERROR) {
+        if(HallSensorPLL.ValidCounter < PLL_LOCKED_COUNTS) {
+            HallSensorPLL.ValidCounter++;
+        }
+        if(HallSensorPLL.ValidCounter >= PLL_LOCKED_COUNTS) {
+            HallSensorPLL.Valid = PLL_LOCKED;
+        }
+    } else {
+        if(HallSensorPLL.ValidCounter > 0) {
+            HallSensorPLL.ValidCounter--;
+        }
+        if(HallSensorPLL.ValidCounter == 0) {
+            HallSensorPLL.Valid = PLL_UNLOCKED;
+        }
+    }
 }
 #endif
 
@@ -362,6 +400,12 @@ uint16_t HallSensor2_Get_Angle(void) {
 #endif
 }
 #endif
+#ifdef TESTING_PLL
+uint16_t HallSensorPLL_Get_Angle(void) {
+    return (uint16_t)(HallSensorPLL.Phase * 65536.0f);
+}
+#endif
+
 /** HallSensor_Get_Angle
  * Retrieves the motor electrical angle as a function of the Hall state.
  * Returns the floating point representation (0.0 -> 1.0)
@@ -372,6 +416,11 @@ float HallSensor_Get_Anglef(void) {
 #ifdef TESTING_2X
 float HallSensor2_Get_Anglef(void) {
     return HallSensor_2x.Angle;
+}
+#endif
+#ifdef TESTING_PLL
+float HallSensorPLL_Get_Anglef(void) {
+    return HallSensorPLL.Phase;
 }
 #endif
 
@@ -396,6 +445,11 @@ uint32_t HallSensor2_Get_Speed(void) {
 #endif
 }
 #endif
+#ifdef TESTING_PLL
+uint32_t HallSensorPLL_Get_Speed(void) {
+    return ((uint32_t)(HallSensorPLL.Frequency * 65536.0f))*HallSensor.CallingFrequency;
+}
+#endif
 /** HallSensor_Get_Speed
  * Returns the electrical speed in Hz as a floating point value.
  */
@@ -406,6 +460,11 @@ float HallSensor_Get_Speedf(void) {
 #ifdef TESTING_2X
 float HallSensor2_Get_Speedf(void) {
     return HallSensor_2x.Speed;
+}
+#endif
+#ifdef TESTING_PLL
+float HallSensorPLL_Get_Speedf(void) {
+    return HallSensorPLL.Frequency*((float)HallSensor.CallingFrequency);
 }
 #endif
 
@@ -567,6 +626,17 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
     HallSensor_2x.CurrentState = 0;
 #endif
 
+#ifdef TESTING_PLL
+    HallSensorPLL.Alpha = 500.0f;
+    HallSensorPLL.dt = 1.0f/((float)callingFrequency);
+    HallSensorPLL.Alpha = (500.0f)*(HallSensorPLL.dt);
+    HallSensorPLL.Beta = (0.5f)*(HallSensorPLL.Alpha)*(HallSensorPLL.Alpha);
+    HallSensorPLL.Valid = PLL_UNLOCKED;
+    HallSensorPLL.ValidCounter = 0;
+    HallSensorPLL.Phase = 0.0f;
+    HallSensorPLL.Frequency = 0.0f;
+#endif
+
     // Initialization for the Hall state measuring method.
     // Timer starts, triggered by Hall_Timer Capture, which then repeatedly moves
     // the GPIO input register into memory via DMA. When determining the Hall state
@@ -623,6 +693,12 @@ void HallSensor_Change_Frequency(uint32_t newfreq) {
     HallSensor.CallingFrequency = newfreq;
 #ifdef TESTING_2X
     HallSensor_2x.CallingFrequency = newfreq;
+#endif
+#ifdef TESTING_PLL
+    HallSensorPLL.Alpha = HallSensorPLL.Alpha / HallSensorPLL.dt;
+    HallSensorPLL.dt = (1.0f)/((float)newfreq);
+    HallSensorPLL.Alpha = HallSensorPLL.Alpha * HallSensorPLL.dt;
+    HallSensorPLL.Beta = (0.5f)*(HallSensorPLL.Alpha)*(HallSensorPLL.Alpha);
 #endif
 }
 
@@ -709,6 +785,24 @@ static void HallSensor2_CalcSpeed(void) {
     HallSensor_2x.CaptureValue = 0;
 }
 #endif
+#ifdef TESTING_PLL
+uint8_t HallSensorPLL_Is_Valid(void) {
+    return HallSensorPLL.Valid;
+}
+#endif
+
+static float HallSensor_ClipToOne(float unclipped)
+{
+    // Output is allowed to be [0, 1)
+    // Value of zero is allowed, but one is the same as zero.
+    while(unclipped < 0.0f) {
+        unclipped += 1.0f;
+    }
+    while(unclipped >= 1.0f) {
+        unclipped -= 1.0f;
+    }
+    return unclipped;
+}
 
 void HallSensor_Enable_Hall_Detection(float* angleTable, uint8_t tableLength) {
     HallDetectAngleTable = angleTable;
@@ -974,12 +1068,7 @@ void DMA2_Stream1_IRQHandler(void) {
                     HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]
                             + HallStateAnglesRevFloat[voted_state] + 1.0f)
                             * 0.5f;
-                    while (HallSensor.Angle > 1.0f) {
-                        HallSensor.Angle -= 1.0f;
-                    }
-                    while (HallSensor.Angle < 0.0f) {
-                        HallSensor.Angle += 1.0f;
-                    }
+                    HallSensor.Angle = HallSensor_ClipToOne(HallSensor.Angle);
 
                 } else {
                     HallSensor.Angle = (HallStateAnglesFwdFloat[voted_state]

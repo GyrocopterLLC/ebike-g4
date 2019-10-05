@@ -34,7 +34,8 @@
 #include "periphconfig.h"
 
 #define USE_FLOATING_POINT
-#define TESTING_2X
+//#define TESTING_2X
+#define TESTING_PLL
 
 #define HALL_TIMER_INPUT_CLOCK			84000000 // APB1 clock * 2
 #define HALL_TIMER_INPUT_CLOCK_MHZ		84 // APB1 clock * 2 / 1000000
@@ -86,6 +87,26 @@ typedef struct _hallsensor{
 
 } HallSensor_HandleTypeDef;
 
+#ifdef TESTING_PLL
+typedef struct _hallsensorpll{
+    float Alpha; // Gain for phase difference
+    float Beta; // Gain for frequency (fixed at alpha^2/2)
+    float dt; // Timestep
+    float Frequency; // Output frequency
+    float Phase; // Output angle
+    uint8_t Valid; // Is phase locked?
+    uint16_t ValidCounter; // Increments to saturation while locked
+
+} HallSensorPLL_HandleTypeDef;
+
+#define PLL_LOCKED_PHASE_ERROR      (0.2f)
+#define PLL_LOCKED_COUNTS           (1000)
+
+#define PLL_UNLOCKED                (0)
+#define PLL_LOCKED                  (1)
+
+#endif
+
 /************ Functions ************/
 
 uint8_t HallSensor_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab);
@@ -108,6 +129,14 @@ float HallSensor2_Get_Anglef(void);
 uint32_t HallSensor2_Get_Speed(void);
 float HallSensor2_Get_Speedf(void);
 uint8_t HallSensor2_Get_Direction(void);
+#endif
+#ifdef TESTING_PLL
+void HallSensorPLL_Update(void);
+uint16_t HallSensorPLL_Get_Angle(void);
+float HallSensorPLL_Get_Anglef(void);
+uint32_t HallSensorPLL_Get_Speed(void);
+float HallSensorPLL_Get_Speedf(void);
+uint8_t HallSensorPLL_Is_Valid(void);
 #endif
 
 uint8_t HallSensor_SetAngle(uint8_t state, float newAngle);
