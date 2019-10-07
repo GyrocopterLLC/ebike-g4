@@ -79,9 +79,10 @@ typedef enum _pb_type {
 } PB_TypeDef;
 
 typedef enum _control_methods {
-    Control_None,
-    Control_BLDC,
-    Control_FOC
+    Control_None, // invalid
+    Control_BLDC, // six-step (trapezoidal) control
+    Control_FOC, // Field oriented control
+    Control_Debug // all three PWMs simply follow the throttle
 } Control_Methods;
 
 typedef enum _main_limit_type {
@@ -188,6 +189,8 @@ uint8_t MAIN_SetDeadTime(int32_t newDT);
 int32_t MAIN_GetDeadTime(void);
 uint8_t MAIN_RequestBLDC(void);
 uint8_t MAIN_RequestFOC(void);
+uint8_t MAIN_EnableDebugPWM(void);
+uint8_t MAIN_DisableDebugPWM(void);
 uint8_t MAIN_SetCountsToFOC(uint32_t new_counts);
 uint32_t MAIN_GetCountsToFOC(void);
 uint8_t MAIN_SetSpeedToFOC(float new_speed);

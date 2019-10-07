@@ -61,6 +61,19 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         PWM_MotorOFF();
 
         break;
+    case Motor_Debug:
+        // Super simple debugging interface.
+        // All three PWMs copy their duty cycle from the throttle position.
+        if(lastRunState != Motor_Debug) {
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
+            PWM_MotorON();
+        }
+        duty->tA = cntl->ThrottleCommand;
+        duty->tB = cntl->ThrottleCommand;
+        duty->tC = cntl->ThrottleCommand;
+        break;
     case Motor_SixStep:
         if (lastRunState != Motor_SixStep) {
             PWM_MotorON();

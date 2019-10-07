@@ -618,6 +618,9 @@ uint16_t command_enable_feature(uint8_t* pktdata) {
     case FEATURE_BLDC_MODE:
         errCode = MAIN_RequestBLDC();
         break;
+    case FEATURE_DEBUG_PWM:
+        errCode = MAIN_EnableDebugPWM();
+        break;
     default:
         errCode = DATA_COMMAND_FAIL;
         break;
@@ -637,6 +640,9 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
         break;
     case FEATURE_BLDC_MODE:
         errCode = MAIN_RequestFOC();
+        break;
+    case FEATURE_DEBUG_PWM:
+        errCode = MAIN_DisableDebugPWM();
         break;
     default:
         errCode = DATA_COMMAND_FAIL;
@@ -676,6 +682,16 @@ uint16_t command_run_routine(uint8_t* pktdata) {
         valuef = data_packet_extract_float(pktdata);
         MAIN_DetectHallPositions(valuef);
         errCode = DATA_COMMAND_SUCCESS;
+        break;
+    case ROUTINE_SOFT_RESET:
+        // Run the reset command
+        // Shouldn't return from this function
+        MAIN_SoftReset(0);
+        break;
+    case ROUTINE_BOOTLOADER_RESET:
+        // Run the reset command but enable bootloader when back alive
+        // Shouldn't return from this function
+        MAIN_SoftReset(1);
         break;
     }
 

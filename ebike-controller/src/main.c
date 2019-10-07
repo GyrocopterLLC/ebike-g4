@@ -120,7 +120,7 @@ uint32_t systick_debounce_counter;
 uint8_t debounce_integrator;
 volatile PB_TypeDef pb_state;
 
-extern HallSensor_HandleTypeDef HallSensor;
+//extern HallSensor_HandleTypeDef HallSensor;
 
 PID_Float_Type Id_control,
 Iq_control;
@@ -797,6 +797,8 @@ void User_BasicTIM_IRQ(void) {
             Mctrl.state = Motor_Startup;
         if (config_main.ControlMethod == Control_BLDC)
             Mctrl.state = Motor_SixStep;
+        if(config_main.ControlMethod == Control_Debug)
+            Mctrl.state = Motor_Debug;
     }
     // Blink the LEDs
     g_ledcount++;
@@ -1122,6 +1124,26 @@ uint8_t MAIN_RequestFOC(void) {
     // Switch to FOC if the motor is off, and was in BLDC
     // Unnecessary to call this unless motor was changed to BLDC
     if((Mctrl.state == Motor_Off) && (config_main.ControlMethod == Control_BLDC)) {
+        config_main.ControlMethod = Control_FOC;
+        return DATA_PACKET_SUCCESS;
+    }
+    return DATA_PACKET_FAIL;
+}
+
+uint8_t MAIN_EnableDebugPWM(void) {
+    // Switch to debugging PWM
+    // This forces all three PWMs to follow the throttle command
+    // Theoretically, no current should flow through the motor
+    // since all three phases will be at the same potential
+    if((Mctrl.state == Motor_Off) && (config_main.ControlMethod == Control_FOC)) {
+        config_main.ControlMethod = Control_Debug;
+        return DATA_PACKET_SUCCESS;
+    }
+    return DATA_PACKET_FAIL;
+}
+
+uint8_t MAIN_DisableDebugPWM(void) {
+    if((Mctrl.state == Motor_Off) && (config_main.ControlMethod == Control_Debug)) {
         config_main.ControlMethod = Control_FOC;
         return DATA_PACKET_SUCCESS;
     }
