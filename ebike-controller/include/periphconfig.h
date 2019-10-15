@@ -27,6 +27,8 @@
 #define PERIPHCONFIG_H_
 
 /* Peripheral usage:
+ *
+ * *** TIMERS ***
  * TIM1 - 3phase bridge PWM output
  * TIM2 -
  * TIM3 - Hall sensors
@@ -41,12 +43,39 @@
  * TIM12 - Basic timer for application scheduling
  * TIM13 - PAS timer for Thr1
  * TIM14 - PAS timer for Thr2
+ * IDWG - Safety reset
+ * WWDG -
+ * RTC - Temporary save variables into BKPSRAM to command bootloader resets
+ *
+ * *** ANALOG ***
+ * ADC1, ADC2, ADC3 - Measure motor current, battery voltage, and throttle
+ *
+ * *** COMMUNICATION INTERFACES ***
  * USART1 -
  * USART2 - Battery management system (BMS)
  * USART3 - Handle bar display (HBD)
  * UART4 -
  * UART5 -
  * USART6 -
+ * SPI1 -
+ * SPI2/I2S2 -
+ * SPI3/I2S3 -
+ * I2C1 -
+ * I2C2 -
+ * I2C3 -
+ * CAN1 -
+ * CAN2 -
+ * SDIO -
+ * USB OTG FS - Debugging communications
+ * USB OTG HS -
+ *
+ * *** OTHER STUFF ***
+ * DMA1 -
+ * DMA2 - Hall sensor sampling (Stream1)
+ * CRC - Generate CRC-32 for packet data interface
+ * RNG -
+ * HASH -
+ * CRYP -
  */
 
 #define APB1_CLK      84000000

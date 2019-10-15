@@ -452,11 +452,22 @@ static uint8_t USB_GetLen(uint8_t *buf) {
     return len;
 }
 
+/**
+ *  @brief  Check how many data bytes are available to read on the USB virtual
+ *          comm port
+ *  @return The number of bytes ready to read.
+ */
 int32_t VCP_InWaiting(void) {
     int32_t remaining = USB_CDC_RxBuffer.Size - USB_CDC_RxBuffer.Position;
     return remaining;
 }
 
+/**
+ *  @brief  Read data bytes from USB virtual comm port.
+ *  @param  data (unsigned byte array) - the location to save the data to
+ *  @param  len (signed word) - number of bytes to read
+ *  @return The number of bytes actually read.
+ */
 int32_t VCP_Read(void* data, int32_t len) {
     if (!USB_CDC_RxBuffer.ReadDone)
         return 0;
@@ -477,11 +488,17 @@ int32_t VCP_Read(void* data, int32_t len) {
     return todo;
 }
 
+/**
+ *  @brief  Send data bytes over USB virtual comm port.
+ *  @param  data (unsigned byte array) - the data to send
+ *  @param  len (signed word) - number of bytes to send
+ *  @return The number of bytes actually sent.
+ */
 int32_t VCP_Write(const void* data, int32_t len) {
 
     if (USB_CDC_ClassData.TxState) {
         // Fail if still sending last data
-        return -1;
+        return 0;
     }
     if(len == 0) {
         return 0;

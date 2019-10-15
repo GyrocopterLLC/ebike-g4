@@ -25,7 +25,7 @@
 
 // Used resources:
 // TIM3, TIM4
-// DMAx Stream x
+// DMA2 Stream 1
 #ifndef HALLSENSOR_H_
 #define HALLSENSOR_H_
 

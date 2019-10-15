@@ -51,12 +51,14 @@
 #include "data_packet.h"
 #include "data_commands.h"
 
+uint8_t BMS_Packet_Buffer[PACKET_MAX_DATA_LENGTH+PACKET_OVERHEAD_BYTES];
+
 
 uint8_t BMS_Num_Connected_Boards; // Equal to the address of the last board in the chain
 BMS_Type* BMS_Board_Handles;
 
 uint8_t BMS_Refresh_All(Data_Packet_Type* pkt) {
-
+    (void)pkt;
 #if 0
     // Reinitialize boards
     pkt->Data[0] = BROADCAST_ADDRESS;
