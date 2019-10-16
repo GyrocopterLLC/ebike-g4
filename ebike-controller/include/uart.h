@@ -46,29 +46,26 @@
 #define BMS_BUFFER_LENGTH       128
 #define BMS_TXMT_TIMEOUT        3 // ms
 
-typedef struct _hbd_buffer{
+typedef enum _uart_sel{
+    SELECT_HBD_UART,
+    SELECT_BMS_UART
+} UART_Sel;
+
+typedef struct _uart_buffer{
     uint8_t Buffer[HBD_BUFFER_LENGTH];
     uint8_t RdPos, WrPos;
     uint8_t Done;
-} HBDBuffer_Type;
+} UARTBuffer_Type;
 
-typedef struct _bms_buffer {
-    uint8_t Buffer[BMS_BUFFER_LENGTH];
-    uint8_t RdPos, WrPos;
-    uint8_t Done;
-} BMSBuffer_Type;
 
 uint16_t UART_CalcBRR(uint32_t fck, uint32_t baud, uint8_t over8);
 
-void HBD_Init(void);
-void HBD_IRQ(void);
-int32_t HBD_Receive(void* buf, uint32_t count);
-int32_t HBD_Transmit(void* buf, uint32_t count);
+void UART_Init(void);
+int32_t UART_InWaiting(UART_Sel uart);
+uint8_t UART_IsFinishedTx(UART_Sel uart);
+int32_t UART_Read(UART_Sel uart, void* buf, uint32_t count);
+int32_t UART_Write(UART_Sel uart, void* buf, uint32_t count);
 
-void BMS_Init(void);
-void BMS_IRQ(void);
-void BMS_RenewAddresses(void);
-int32_t BMS_Receive(void* buf, uint32_t count);
-int32_t BMS_Transmit(void* buf, uint32_t count);
+void UART_IRQ(UART_Sel uart);
 
 #endif // UART_H_

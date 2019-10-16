@@ -234,8 +234,12 @@ void ADC_IRQHandler(void) {
     }
 }
 
+void USART2_IRQHandler(void) {
+    UART_IRQ(SELECT_BMS_UART);
+}
+
 void USART3_IRQHandler(void) {
-    HBD_IRQ();
+    UART_IRQ(SELECT_HBD_UART);
 }
 
 void EXTI0_IRQHandler(void) {

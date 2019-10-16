@@ -61,6 +61,7 @@
 #include "data_packet.h"
 #include "data_commands.h"
 #include "usb_data_comm.h"
+#include "bms_data_comm.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -137,6 +138,7 @@ typedef struct _main_config {
 
 #define SERIAL_DUMP_RATE        (1)
 #define TEMP_CONVERSION_RATE    (100)
+#define BMS_CHECK_RATE          (10000) // Check every 10 seconds
 
 #define MAIN_FAULT_OV               ((uint32_t)0x00000001)
 #define MAIN_FAULT_UV               ((uint32_t)0x00000002)
@@ -144,6 +146,10 @@ typedef struct _main_config {
 #define MAIN_FAULT_FETTEMP          ((uint32_t)0x00000008)
 #define MAIN_FAULT_MOTORTEMP        ((uint32_t)0x00000010)
 #define MAIN_FAULT_HALL_STATE       ((uint32_t)0x00000020)
+#define MAIN_FAULT_BMS_COMM         ((uint32_t)0x00000040)
+#define MAIN_FAULT_BMS_OV           ((uint32_t)0x00000080)
+#define MAIN_FAULT_BMS_UV           ((uint32_t)0x00000100)
+#define MAIN_FAULT_BMS_V_MISMATCH   ((uint32_t)0x00000200)
 
 
 #define MAINFLAG_SERIALDATAPRINT    ((uint32_t)0x00000001)
@@ -155,6 +161,10 @@ typedef struct _main_config {
 #define MAINFLAG_HALLDETECTFAIL     ((uint32_t)0x00000040)
 #define MAINFLAG_HALLDETECTPASS     ((uint32_t)0x00000080)
 #define MAINFLAG_LASTCOMMSERIAL     ((uint32_t)0x00000100)
+#define MAINFLAG_CHECKBMS           ((uint32_t)0x00000200)
+#define MAINFLAG_DEBUG_SENDBMSRESET ((uint32_t)0x00010000)
+#define MAINFLAG_DEBUG_SETBMSADDR   ((uint32_t)0x00020000)
+#define MAINFLAG_DEBUG_ASKBMSBATTS  ((uint32_t)0x00040000)
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */

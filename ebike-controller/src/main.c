@@ -272,7 +272,7 @@ int main(void) {
     PWM_Init(config_main.PWMFrequency);
     HallSensor_Init_NoHal(config_main.PWMFrequency);
     PWM_SetDeadTime(config_main.PWMDeadTime);
-    HBD_Init();
+    UART_Init();
 
     // USB init
     USB_Init();
@@ -299,6 +299,11 @@ int main(void) {
     /* Enable FOC mode */
     config_main.ControlMethod = Control_FOC;
 
+    /* Start connecting to the BMS boards */
+    BMS_Data_Comm_Init();
+//    BMS_Restart_Chain();
+
+
     /* Run Application (Interrupt mode) */
     while (1) {
         // Feed the watchdog!
@@ -306,6 +311,9 @@ int main(void) {
 
         // Check USB serial for data
         USB_Data_Comm_Periodic_Check();
+        // Check BMS serial for data
+        BMS_Periodic_Check();
+
 
         if (pb_state == PB_PRESSED) {
             // Wait until release
@@ -314,6 +322,16 @@ int main(void) {
             // Change data output state
             g_MainFlags ^= MAINFLAG_SERIALDATAON;
         }
+
+        if(g_MainFlags & MAINFLAG_CHECKBMS) {
+            g_MainFlags &= ~MAINFLAG_CHECKBMS;
+//            if(!BMS_Busy()) {
+//                if((g_errorCode & MAIN_FAULT_BMS_COMM) == 0) {
+//                    BMS_Refresh_Data();
+//                }
+//            }
+        }
+
         if (g_MainFlags & MAINFLAG_CONVERTTEMPERATURE) {
             g_MainFlags &= ~MAINFLAG_CONVERTTEMPERATURE;
             g_FetTemp = adcGetTempDegC();
@@ -356,6 +374,36 @@ int main(void) {
                 g_MainFlags &= ~(MAINFLAG_HALLDETECTPASS);
             }
         }
+
+        // DEBUG STUFF
+        if(g_MainFlags & MAINFLAG_DEBUG_SENDBMSRESET) {
+            g_MainFlags &= ~MAINFLAG_DEBUG_SENDBMSRESET;
+            uint8_t mydata[4];
+            mydata[0] = BROADCAST_ADDRESS;
+            mydata[1] = 0x00;
+            mydata[2] = 0x01;
+            mydata[3] = 0;
+            BMS_Send_One_Packet(SET_RAM_VARIABLE, mydata, 4);
+        }
+        if(g_MainFlags & MAINFLAG_DEBUG_SETBMSADDR) {
+            g_MainFlags &= ~MAINFLAG_DEBUG_SETBMSADDR;
+            uint8_t mydata1[4];
+            mydata1[0] = 0;
+            mydata1[1] = 0x00;
+            mydata1[2] = 0x01;
+            mydata1[3] = 1;
+            BMS_Send_One_Packet(SET_RAM_VARIABLE, mydata1, 4);
+        }
+        if(g_MainFlags & MAINFLAG_DEBUG_ASKBMSBATTS) {
+            g_MainFlags &= ~MAINFLAG_DEBUG_ASKBMSBATTS;
+            uint8_t mydata2[3];
+            mydata2[0] = 1;
+            mydata2[1] = 0x01;
+            mydata2[2] = 0x21;
+            BMS_Send_One_Packet(GET_RAM_VARIABLE, mydata2, 3);
+        }
+
+
         if (Mctrl.state == Motor_OpenLoop) {
             RunHallDetectRoutine();
         }
@@ -409,21 +457,25 @@ static void VCP_SendWrapper(char* buf, uint32_t len) {
     }
 }
 
-static void HBD_SendWrapper(char* buf, uint32_t len) {
+static void HBD_SendWrapper(char *buf, uint32_t len) {
     if (len <= HBD_BUFFER_LENGTH) {
-        while (HBD_Transmit(buf, len) < 0)
+        while (UART_IsFinishedTx(SELECT_HBD_UART) == 0)
             ;
+        UART_Write(SELECT_HBD_UART, buf, len);
     } else {
         uint32_t hbd_pointer = 0;
         while (len > 0) {
             if (len > (HBD_BUFFER_LENGTH)) {
-                while (HBD_Transmit(&(buf[hbd_pointer]), HBD_BUFFER_LENGTH) < 0)
+                while (UART_IsFinishedTx(SELECT_HBD_UART) == 0)
                     ;
+               UART_Write(SELECT_HBD_UART, &(buf[hbd_pointer]),
+                        HBD_BUFFER_LENGTH);
                 hbd_pointer += HBD_BUFFER_LENGTH;
                 len -= HBD_BUFFER_LENGTH;
             } else {
-                while (HBD_Transmit(&(buf[hbd_pointer]), len) < 0)
+                while (UART_IsFinishedTx(SELECT_HBD_UART) == 0)
                     ;
+                UART_Write(SELECT_HBD_UART, &(buf[hbd_pointer]), len);
                 len = 0;
             }
         }
@@ -585,6 +637,9 @@ void SYSTICK_IRQHandler(void) {
     }
     if ((g_MainSysTick % TEMP_CONVERSION_RATE) == 0) {
         g_MainFlags |= MAINFLAG_CONVERTTEMPERATURE;
+    }
+    if((g_MainSysTick % BMS_CHECK_RATE) == 0) {
+        g_MainFlags |= MAINFLAG_CHECKBMS;
     }
 }
 
