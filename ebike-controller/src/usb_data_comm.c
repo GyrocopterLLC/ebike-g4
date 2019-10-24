@@ -49,6 +49,7 @@ static void USB_Data_Comm_Process_Command(void);
  * @retval None
  */
 void USB_Data_Comm_Init(void) {
+    USB_Data_Comm_Packet.State = DATA_COMM_IDLE;
     USB_Data_Comm_Packet.Data = USB_Data_Comm_DataBuffer;
     USB_Data_Comm_Packet.TxBuffer = USB_Data_Comm_TxBuffer;
     USB_Data_Comm_Packet.TxReady = 0;
@@ -56,6 +57,37 @@ void USB_Data_Comm_Init(void) {
     USB_Data_Comm_RxBuffer_WrPlace = 0;
 
 }
+
+/**
+ * @brief  USB Data Communications One Byte Check
+ *         Handles the USB serial port incoming data. Determines
+ *         if a properly encoded packet has been received, and
+ *         sends to the appropriate handler if it has. Operates
+ *         one byte at a time using an internal state machine.
+ * @param  None
+ * @retval None
+ */
+void USB_Data_Comm_OneByte_Check(void) {
+    // Loop through each incoming byte
+    int32_t numbytes = VCP_InWaiting();
+    uint8_t this_byte;
+    while(numbytes > 0) {
+        // Load one new byte
+        if(VCP_Read(&this_byte, 1) != 1) {
+            // Check that a byte was really received
+            return;
+        }
+        numbytes--;
+        if(data_packet_extract_one_byte(&USB_Data_Comm_Packet, this_byte) == DATA_PACKET_SUCCESS) {
+            if(USB_Data_Comm_Packet.RxReady == 1) {
+                // Double checked and good to go
+                USB_Data_Comm_Process_Command();
+            }
+        }
+    }
+}
+
+#if 0
 
 /**
  * @brief  USB Data Communications Periodic Check
@@ -126,6 +158,8 @@ void USB_Data_Comm_Periodic_Check(void) {
         USB_Data_Comm_RxBuffer_WrPlace -= pkt_end;
     }
 }
+
+#endif
 
 /**
  * @brief  USB Data Communications Process Command

@@ -301,7 +301,7 @@ int main(void) {
 
     /* Start connecting to the BMS boards */
     BMS_Data_Comm_Init();
-//    BMS_Restart_Chain();
+    BMS_Restart_Chain();
 
 
     /* Run Application (Interrupt mode) */
@@ -310,9 +310,9 @@ int main(void) {
         WDT_feed();
 
         // Check USB serial for data
-        USB_Data_Comm_Periodic_Check();
+        USB_Data_Comm_OneByte_Check();
         // Check BMS serial for data
-        BMS_Periodic_Check();
+        BMS_OneByte_Check();
 
 
         if (pb_state == PB_PRESSED) {
@@ -325,11 +325,11 @@ int main(void) {
 
         if(g_MainFlags & MAINFLAG_CHECKBMS) {
             g_MainFlags &= ~MAINFLAG_CHECKBMS;
-//            if(!BMS_Busy()) {
-//                if((g_errorCode & MAIN_FAULT_BMS_COMM) == 0) {
-//                    BMS_Refresh_Data();
-//                }
-//            }
+            if(!BMS_Busy()) {
+                if((g_errorCode & MAIN_FAULT_BMS_COMM) == 0) {
+                    BMS_Refresh_Data();
+                }
+            }
         }
 
         if (g_MainFlags & MAINFLAG_CONVERTTEMPERATURE) {

@@ -27,6 +27,7 @@
 #define _USB_DATA_COMM_H_
 
 void USB_Data_Comm_Init(void);
+void USB_Data_Comm_OneByte_Check(void);
 void USB_Data_Comm_Periodic_Check(void);
 
 #endif //_USB_DATA_COMM_H_

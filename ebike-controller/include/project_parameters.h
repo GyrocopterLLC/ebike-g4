@@ -354,6 +354,7 @@ typedef enum _data_type {
 #define PRIO_BMS_UART   (4)
 #define PRIO_PAS        (5)
 #define PRIO_USB        (6)
+#define PRIO_DATA_PACKET_TIMER  (7)
 
 
 #if 0

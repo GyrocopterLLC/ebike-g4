@@ -34,7 +34,7 @@
  * TIM3 - Hall sensors
  * TIM4 -
  * TIM5 -
- * TIM6 -
+ * TIM6 - Data packet timeouts
  * TIM7 -
  * TIM8 - Hall sampling timer
  * TIM9 -
@@ -128,6 +128,12 @@
 #define APP_CLK                   TIM12_CLK
 #define APP_TIMER_CLK_ENABLE()    RCC->APB1ENR |= RCC_APB1ENR_TIM12EN
 #define APP_IRQn                  TIM8_BRK_TIM12_IRQn
+
+// Data packets timeout
+#define DATA_PACKET_TIM           TIM6
+#define DATA_PACKET_CLK           TIM6_CLK
+#define DATA_PACKET_TIMER_CLK_ENABLE()  RCC->APB1ENR |= RCC_APB1ENR_TIM6EN
+#define DATA_PACKET_IRQn          TIM6_DAC_IRQn
 
 // BMS
 #define BMS_UART              USART2

@@ -113,6 +113,7 @@ void BMS_Send_One_Packet(uint8_t pktType, uint8_t* data, uint8_t datalen);
 void BMS_Restart_Chain(void);
 void BMS_Refresh_Data(void);
 uint8_t BMS_Busy(void);
+void BMS_OneByte_Check(void);
 void BMS_Periodic_Check(void); // Called frequently by main
 
 #endif

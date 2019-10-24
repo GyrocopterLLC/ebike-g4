@@ -28,9 +28,26 @@
 
 #include <string.h>
 
+#define DATA_PACKET_TIMEOUT_MS          50
+
+typedef enum _data_comm_state {
+    // Note: each state describes the *previous* byte received.
+    DATA_COMM_IDLE,
+    DATA_COMM_START_0,
+    DATA_COMM_START_1,
+    DATA_COMM_PKT_TYPE,
+    DATA_COMM_NPKT_TYPE,
+    DATA_COMM_DATALEN_0,
+    DATA_COMM_DATALEN_1,
+    DATA_COMM_CRC_0,
+    DATA_COMM_CRC_1,
+    DATA_COMM_CRC_2,
+} Data_Comm_State;
+
 typedef struct _data_packet {
+    uint32_t TimerStart; // Used for timing out during packet reception
     uint16_t DataLength;
-    uint16_t StartPosition;
+//    uint16_t StartPosition;
     uint8_t PacketType;
     uint8_t FaultCode;
     uint8_t RxReady;
@@ -39,6 +56,10 @@ typedef struct _data_packet {
     uint8_t TxReady;
     uint16_t TxLength;
     uint8_t* TxBuffer;
+
+    Data_Comm_State State; // Tracking packet reception progress
+    uint16_t DataBytesRead; // Ditto
+    uint32_t Remote_CRC_32;
 } Data_Packet_Type;
 
 #define DATA_PACKET_FAIL        (0)
@@ -153,9 +174,10 @@ inline float data_packet_extract_float(uint8_t* array) {
     return fTemp;
 }
 
+void data_packet_init(void);
 uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
         uint16_t datalen);
-
+uint8_t data_packet_extract_one_byte(Data_Packet_Type *pkt, uint8_t new_byte);
 uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
         uint16_t buflen);
 

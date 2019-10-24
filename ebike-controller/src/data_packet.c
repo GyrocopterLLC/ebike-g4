@@ -41,7 +41,13 @@
  */
 
 #include "main.h"
+#include "periphconfig.h"
 #include "data_packet.h"
+
+// *** Global variables ***
+// Used for creating the local CRC for comparison
+uint8_t TempPacketArray[PACKET_OVERHEAD_BYTES + PACKET_MAX_DATA_LENGTH];
+
 /**
  * Packet types:
  * - From host to controller:
@@ -63,6 +69,23 @@
  * -- 0x91 - ACK
  * -- 0x92 - NACK
  */
+
+uint32_t data_packet_recreate_crc(uint8_t PacketType, uint8_t* DataBuffer, uint16_t DataLength) {
+    uint32_t crc;
+    uint16_t place = 0;
+    TempPacketArray[place++] = PACKET_START_0;
+    TempPacketArray[place++] = PACKET_START_1;
+    TempPacketArray[place++] = PacketType;
+    TempPacketArray[place++] = PacketType ^ 0xFF; // All bits flipped
+    TempPacketArray[place++] = (uint8_t)((DataLength & 0xFF00) >> 8); // Hibyte
+    TempPacketArray[place++] = (uint8_t)(DataLength & 0x00FF); // Lobyte
+    for(uint16_t i = 0; i < DataLength; i++) {
+        TempPacketArray[place++] = DataBuffer[i];
+    }
+    crc = CRC32_Generate(TempPacketArray, DataLength + PACKET_NONCRC_OVHD_BYTES);
+
+    return crc;
+}
 
 /**
  * @brief  Data Packet Create
@@ -109,6 +132,122 @@ uint8_t data_packet_create(Data_Packet_Type* pkt, uint8_t type, uint8_t* data,
 
 }
 
+/**
+ * @brief  Data Packet Extract One Byte Method
+ *         Decodes a data packet coming in from any data channel. Discovers
+ *         the packet type, pulls out the packet data, and checks the CRC
+ *         field for transmission errors.
+ *         Processed one byte at a time using an internal state machine.
+ * @param  pkt - pointer to the Data_Packet_Type which will hold the
+ *               decoded packet
+ * @param  new_byte - raw data byte coming in from any comm channel. Simply
+ *                    pass in the incoming bytes one at a time, this function
+ *                    takes care of keeping track of past bytes.
+ * @retval DATA_PACKET_FAIL - no new packet found (yet!)
+ *         DATA_PACKET_SUCCESS - the packet was valid and was decoded
+ */
+uint8_t data_packet_extract_one_byte(Data_Packet_Type *pkt, uint8_t new_byte) {
+    uint8_t retval = DATA_PACKET_FAIL;
+
+    // First check for timeout
+    if(pkt->State != DATA_COMM_IDLE) {
+        // Every other state can time out
+        if(GetTick() - pkt->TimerStart > DATA_PACKET_TIMEOUT_MS) {
+            // Reset back to beginning
+            pkt->State = DATA_COMM_IDLE;
+        }
+    }
+
+    // Now everything is determined based on the state
+    switch (pkt->State) {
+    case DATA_COMM_IDLE:
+        // Is this byte the first Start byte?
+        // Otherwise, ignore
+        if (new_byte == PACKET_START_0) {
+            pkt->State = DATA_COMM_START_0;
+            // Start timeout. Packet must be received fairly quickly or else comm is reset.
+            pkt->TimerStart = GetTick();
+        }
+        break;
+    case DATA_COMM_START_0:
+        // Must be second start byte, otherwise reset
+        if (new_byte == PACKET_START_1) {
+            pkt->State = DATA_COMM_START_1;
+        } else {
+            // Back to idle since we didn't get the expected sequence
+            pkt->State = DATA_COMM_IDLE;
+            pkt->FaultCode = NO_START_DETECTED;
+        }
+        break;
+    case DATA_COMM_START_1:
+        // Next byte is packet type. Just read it, can't error check until next one
+        pkt->PacketType = new_byte;
+        pkt->State = DATA_COMM_PKT_TYPE;
+        break;
+    case DATA_COMM_PKT_TYPE:
+        // This should be the inverted packet type. Now we can error check
+        new_byte = new_byte^0xFF; // Invert this one
+        if (new_byte != pkt->PacketType) {
+            pkt->State = DATA_COMM_IDLE;
+            pkt->FaultCode = BAD_PACKET_TYPE;
+        } else {
+            pkt->State = DATA_COMM_NPKT_TYPE;
+        }
+        break;
+    case DATA_COMM_NPKT_TYPE:
+        // Ready to read the first byte of data length
+        pkt->DataLength = ((uint16_t) new_byte) << 8;
+        pkt->State = DATA_COMM_DATALEN_0;
+        break;
+    case DATA_COMM_DATALEN_0:
+        // And the second byte
+        pkt->DataLength += new_byte;
+        pkt->DataBytesRead = 0;
+        pkt->State = DATA_COMM_DATALEN_1;
+        break;
+    case DATA_COMM_DATALEN_1:
+        // Now we got to keep track of how much data has been collected
+        // Count to DataLen bytes, then shift in the 4 bytes of CRC-32
+        // Using the packet's data buffer, we don't need to make our own.
+        if (pkt->DataBytesRead < pkt->DataLength) {
+            pkt->Data[pkt->DataBytesRead++] =
+                    new_byte;
+        } else {
+            // Now onto the CRC
+            pkt->Remote_CRC_32 = ((uint32_t) new_byte) << 24;
+            pkt->State = DATA_COMM_CRC_0;
+        }
+        break;
+    case DATA_COMM_CRC_0:
+        pkt->Remote_CRC_32 += ((uint32_t) new_byte) << 16;
+        pkt->State = DATA_COMM_CRC_1;
+        break;
+    case DATA_COMM_CRC_1:
+        pkt->Remote_CRC_32 += ((uint32_t) new_byte) << 8;
+        pkt->State = DATA_COMM_CRC_2;
+        break;
+    case DATA_COMM_CRC_2:
+        // Finally at the end. If this CRC matches, we have a good packet.
+        pkt->Remote_CRC_32 += ((uint32_t) new_byte);
+        // Calculate our own CRC
+        if (pkt->Remote_CRC_32
+                == data_packet_recreate_crc(pkt->PacketType,
+                        pkt->Data, pkt->DataLength)) {
+            // Good packet!
+            pkt->RxReady = 1;
+            pkt->FaultCode = NO_FAULT;
+            retval = DATA_PACKET_SUCCESS;
+            pkt->State = DATA_COMM_IDLE; // Reset for the next packet
+        } else {
+            // Failed CRC. Bad packet.
+            pkt->FaultCode = BAD_CRC;
+            pkt->State = DATA_COMM_IDLE;
+        }
+    }
+    return retval;
+}
+
+#if 0
 /**
  * @brief  Data Packet Extract
  *            Decodes a data packet coming in from any data channel. Discovers
@@ -221,3 +360,4 @@ uint8_t data_packet_extract(Data_Packet_Type* pkt, uint8_t* buf,
     pkt->RxReady = 1;
     return DATA_PACKET_SUCCESS;
 }
+#endif
