@@ -121,12 +121,10 @@ void BMS_Restart_Chain(void) {
             == DATA_PACKET_SUCCESS) {
         bms.RetryCount = 0;
         UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer, BMS_Packet.TxLength);
+        // Start the timeout to check if BMS has failed or disconnected
+        BMS_Start_Timeout(BMS_TIMEOUT_MS);
+        bms.CommState = BMS_STATE_ADDRESSING;
     }
-
-    bms.CommState = BMS_STATE_ADDRESSING;
-    // Start the timeout to check if BMS has failed or disconnected
-    BMS_Start_Timeout(BMS_TIMEOUT_MS);
-
     // Wait for response. It will show up in BMS_Periodic_Check
 }
 
@@ -150,11 +148,10 @@ void BMS_Refresh_Data(void) {
             == DATA_PACKET_SUCCESS) {
         bms.RetryCount = 0;
         UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer, BMS_Packet.TxLength);
+        bms.CommState = BMS_STATE_VOLTAGES;
+        // Start the timeout to check if BMS has failed or disconnected
+        BMS_Start_Timeout(BMS_TIMEOUT_MS);
     }
-
-    bms.CommState = BMS_STATE_VOLTAGES;
-    // Start the timeout to check if BMS has failed or disconnected
-    BMS_Start_Timeout(BMS_TIMEOUT_MS);
 
     // Wait for response. It will show up in BMS_Periodic_Check
 }
@@ -292,8 +289,9 @@ static void BMS_Process_Command(void) {
                 bms.RetryCount = 0;
                 UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                         BMS_Packet.TxLength);
+                BMS_Start_Timeout(BMS_TIMEOUT_MS);
             }
-            BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
         } else if (BMS_Packet.PacketType == GET_RAM_RESULT) {
             // Now we know the number of batteries on this board.
             bms.BattsPerBoard[bms.NumConnectedBoards-1] = data_packet_extract_16b(
@@ -308,8 +306,9 @@ static void BMS_Process_Command(void) {
                 bms.RetryCount = 0;
                 UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                         BMS_Packet.TxLength);
+                BMS_Start_Timeout(BMS_TIMEOUT_MS);
             }
-            BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
         } else {
             // Maybe a NACK or something else. Regardless it's not supposed to happen
             // Retry last packet, or fail if already at max retries.
@@ -345,8 +344,9 @@ static void BMS_Process_Command(void) {
                         bms.CommState = BMS_STATE_STATUSES;
                         UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                                 BMS_Packet.TxLength);
+                        BMS_Start_Timeout(BMS_TIMEOUT_MS);
                     }
-                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
                 } else {
                     // Move to the next board
                     bms.CurrentBoard++;
@@ -358,8 +358,9 @@ static void BMS_Process_Command(void) {
                         bms.RetryCount = 0;
                         UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                                 BMS_Packet.TxLength);
+                        BMS_Start_Timeout(BMS_TIMEOUT_MS);
                     }
-                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
                 }
             } else {
                 // More batteries on this board
@@ -372,8 +373,9 @@ static void BMS_Process_Command(void) {
                     bms.RetryCount = 0;
                     UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                             BMS_Packet.TxLength);
+                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
                 }
-                BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
             }
         } else {
             // Maybe a NACK or something else. Regardless it's not supposed to happen
@@ -413,8 +415,9 @@ static void BMS_Process_Command(void) {
                         bms.RetryCount = 0;
                         UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                                 BMS_Packet.TxLength);
+                        BMS_Start_Timeout(BMS_TIMEOUT_MS);
                     }
-                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
                 }
             } else {
                 // More batteries on this board
@@ -427,8 +430,9 @@ static void BMS_Process_Command(void) {
                     bms.RetryCount = 0;
                     UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                             BMS_Packet.TxLength);
+                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
                 }
-                BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
             }
         } else {
             // Maybe a NACK or something else. Regardless it's not supposed to happen
@@ -511,8 +515,9 @@ static void BMS_Process_Timeout(void) {
                         BMS_Packet.Data, 4) == DATA_PACKET_SUCCESS) {
                     UART_Write(SELECT_BMS_UART, BMS_Packet.TxBuffer,
                             BMS_Packet.TxLength);
+                    BMS_Start_Timeout(BMS_TIMEOUT_MS);
                 }
-                BMS_Start_Timeout(BMS_TIMEOUT_MS);
+
 
             } else {
                 // Send the same packet again.
