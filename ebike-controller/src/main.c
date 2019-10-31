@@ -325,7 +325,7 @@ int main(void) {
 
         if(g_MainFlags & MAINFLAG_CHECKBMS) {
             g_MainFlags &= ~MAINFLAG_CHECKBMS;
-            if(!BMS_Busy()) {
+            if((!BMS_Busy()) && BMS_Is_Connected()) {
                 if((g_errorCode & MAIN_FAULT_BMS_COMM) == 0) {
                     BMS_Refresh_Data();
                 }

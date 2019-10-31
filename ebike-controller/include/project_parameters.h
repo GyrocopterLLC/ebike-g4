@@ -187,6 +187,13 @@ typedef enum _data_type {
 #define DFLT_MOTOR_GEAR_RATIO       (1.0f) // Direct drive
 #define DFLT_MOTOR_WHEEL_SIZE       (2200.0f) // 700C-40 according to www.cateye.com tire size chart
 
+/*** BMS Interactions ***/
+#define CONFIG_BMS_PREFIX           (0x0600)
+#define CONFIG_BMS_ISCONNECTED      (0x0601) //I8: Zero for not connected, one for connected
+#define CONFIG_BMS_NUMBATTS         (0x0602) //I16: Total number of batteries in the chain
+#define CONFIG_BMS_GETBAT_N         (0x0603) //F32: Voltage of a particular cell (requires 2-byte cell number, zero indexed)
+#define CONFIG_BMS_GETSTATUS_N      (0x0604) //I32: Status of a particular cell (requires 2-byte cell number, zero indexed)
+
 /*** For EEPROM settings ***/
 #define TOTAL_EE_VARS   (CONFIG_ADC_NUMVARS + CONFIG_FOC_NUMVARS \
                         + CONFIG_MAIN_NUMVARS + CONFIG_THRT_NUMVARS \

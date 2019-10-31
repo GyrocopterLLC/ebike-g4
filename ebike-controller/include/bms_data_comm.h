@@ -46,7 +46,9 @@ typedef enum _bms_comm_state {
 } BMS_CommState;
 
 typedef struct _bms_type {
+    uint8_t IsConnected;
     uint8_t NumConnectedBoards; // Equal to the address of the last board in the chain
+    uint16_t NumTotalBatts; // Sum of all batteries on all boards
     uint16_t BattsPerBoard[MAX_BMS_BOARDS]; // Could be different on each board
 
     float* BattVoltages; // Dynamically allocated to length = sum(BattsPerBoard)
@@ -109,6 +111,10 @@ typedef struct _bms_type {
 #define ACTION_CAL_AND_SAVE_BATT4   ((uint16_t)0x1014)
 
 void BMS_Data_Comm_Init(void);
+uint8_t BMS_Is_Connected(void);
+uint16_t BMS_Get_Num_Batts(void);
+float BMS_Get_Batt_Voltage(uint16_t battnum);
+uint32_t BMS_Get_Batt_Status(uint16_t battnum);
 void BMS_Send_One_Packet(uint8_t pktType, uint8_t* data, uint8_t datalen);
 void BMS_Restart_Chain(void);
 void BMS_Refresh_Data(void);

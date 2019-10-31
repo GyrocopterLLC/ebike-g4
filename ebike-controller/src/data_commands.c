@@ -176,12 +176,17 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     uint16_t value_ID = data_packet_extract_16b(pktdata);
 //    uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     float retvalf= 0.0f;
+    uint8_t retval8b = 0;
     uint16_t retval16b = 0;
     uint32_t retval32b = 0;
     uint16_t errCode = DATA_COMMAND_FAIL;
 
 
     switch (value_ID) {
+    // 8-bit integer values
+    case CONFIG_BMS_ISCONNECTED:
+        retval8b = BMS_Is_Connected();
+        break;
     // 16-bit integer values
     case CONFIG_MAIN_NUM_USB_OUTPUTS:
         retval16b = MAIN_GetNumUSBDebugOutputs();
@@ -210,6 +215,10 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_MOTOR_POLEPAIRS:
         // TODO: this.
         break;
+
+    case CONFIG_BMS_NUMBATTS:
+        retval16b = BMS_Get_Num_Batts();
+        break;
     // 32 bit integer values
     case CONFIG_FOC_PWM_FREQ:
         retval32b = MAIN_GetFreq();
@@ -219,6 +228,10 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         break;
     case CONFIG_MAIN_COUNTS_TO_FOC:
         retval32b = MAIN_GetCountsToFOC();
+        break;
+    case CONFIG_BMS_GETSTATUS_N:
+        // Which battery is also in the data
+        retval32b = BMS_Get_Batt_Status(data_packet_extract_16b(&(pktdata[2])));
         break;
     // 32 bit float values
     case CONFIG_ADC_INV_TIA_GAIN:
@@ -333,12 +346,20 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_MOTOR_GEAR_RATIO:
     case CONFIG_MOTOR_WHEEL_SIZE:
         break;
+
+    case CONFIG_BMS_GETBAT_N:
+        // Which battery is also in the data
+        retvalf = BMS_Get_Batt_Voltage(data_packet_extract_16b(&(pktdata[2])));
+        break;
+
     }
 
     switch(command_get_datatype(value_ID)) {
     case Data_Type_None:
     case Data_Type_Int8:
-        return DATA_PACKET_FAIL;
+        errCode = RESULT_IS_8B;
+        data_packet_pack_8b(retval, retval8b);
+        break;
     case Data_Type_Int16:
         errCode = RESULT_IS_16B;
         data_packet_pack_16b(retval, retval16b);
@@ -701,6 +722,10 @@ uint16_t command_run_routine(uint8_t* pktdata) {
 static Data_Type command_get_datatype(uint16_t data_ID) {
     Data_Type type = Data_Type_None;
     switch(data_ID) {
+    // 8-bit integer values
+    case CONFIG_BMS_ISCONNECTED:
+        type = Data_Type_Int8;
+        break;
     // 16-bit integer values
     case CONFIG_MAIN_NUM_USB_OUTPUTS:
     case CONFIG_MAIN_USB_SPEED:
@@ -717,12 +742,14 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
     case CONFIG_THRT_TYPE1:
     case CONFIG_THRT_TYPE2:
     case CONFIG_MOTOR_POLEPAIRS:
+    case CONFIG_BMS_NUMBATTS:
         type = Data_Type_Int16;
         break;
     // 32 bit integer values
     case CONFIG_FOC_PWM_FREQ:
     case CONFIG_FOC_PWM_DEADTIME:
     case CONFIG_MAIN_COUNTS_TO_FOC:
+    case CONFIG_BMS_GETSTATUS_N:
         type = Data_Type_Int32;
         break;
     // 32 bit float values
@@ -769,6 +796,7 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
     case CONFIG_MOTOR_HALL6:
     case CONFIG_MOTOR_GEAR_RATIO:
     case CONFIG_MOTOR_WHEEL_SIZE:
+    case CONFIG_BMS_GETBAT_N:
         type = Data_Type_Float;
         break;
     }

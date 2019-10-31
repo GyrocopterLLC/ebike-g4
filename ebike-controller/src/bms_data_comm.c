@@ -78,10 +78,15 @@ void BMS_Data_Comm_Init(void) {
     BMS_Packet.TxReady = 0;
     BMS_Packet.RxReady = 0;
 
+    bms.IsConnected = 0;
     bms.NumConnectedBoards = 0;
     bms.BattStatuses = 0; // Null pointer = unallocated
     bms.BattVoltages = 0;
     bms.Timeout = 0; // Set timeout inactive
+}
+
+uint8_t BMS_Is_Connected(void) {
+    return bms.IsConnected;
 }
 
 // For debugging purposes.
@@ -192,6 +197,26 @@ void BMS_OneByte_Check(void) {
             }
         }
     }
+}
+
+uint16_t BMS_Get_Num_Batts(void) {
+    return bms.NumTotalBatts;
+}
+
+float BMS_Get_Batt_Voltage(uint16_t battnum) {
+    if(bms.BattVoltages != 0) { // Make sure it's allocated first
+        if(battnum < bms.NumTotalBatts)
+            return bms.BattVoltages[battnum];
+    }
+    return -1.0f;
+}
+
+uint32_t BMS_Get_Batt_Status(uint16_t battnum) {
+    if(bms.BattStatuses != 0) {
+        if(battnum < bms.NumTotalBatts)
+            return bms.BattStatuses[battnum];
+    }
+    return 0xFFFFFFFF; // All status flags on means failure
 }
 
 #if 0
@@ -315,6 +340,7 @@ static void BMS_Process_Command(void) {
             if(bms.RetryCount >= BMS_MAX_RETRIES) {
                 bms.CommState = BMS_STATE_IDLE;
                 MAIN_SetError(MAIN_FAULT_BMS_COMM);
+                bms.IsConnected = 0;
             } else {
                 bms.RetryCount++;
                 // Send the same packet again.
@@ -383,6 +409,7 @@ static void BMS_Process_Command(void) {
             if(bms.RetryCount >= BMS_MAX_RETRIES) {
                 bms.CommState = BMS_STATE_IDLE;
                 MAIN_SetError(MAIN_FAULT_BMS_COMM);
+                bms.IsConnected = 0;
             } else {
                 bms.RetryCount++;
                 // Send the same packet again.
@@ -440,6 +467,7 @@ static void BMS_Process_Command(void) {
             if(bms.RetryCount >= BMS_MAX_RETRIES) {
                 bms.CommState = BMS_STATE_IDLE;
                 MAIN_SetError(MAIN_FAULT_BMS_COMM);
+                bms.IsConnected = 0;
             } else {
                 bms.RetryCount++;
                 // Send the same packet again.
@@ -464,7 +492,7 @@ static void BMS_Process_Command(void) {
  * @retval None
  */
 static void BMS_Process_Timeout(void) {
-    uint32_t numTotalBatts;
+
     switch(bms.CommState) {
     case BMS_STATE_IDLE:
         // This shouldn't have been a timeout!
@@ -477,22 +505,24 @@ static void BMS_Process_Timeout(void) {
             bms.CommState = BMS_STATE_IDLE;
             if(bms.NumConnectedBoards == 0) {
                 MAIN_SetError(MAIN_FAULT_BMS_COMM);
+                bms.IsConnected = 0;
             } else {
                 // Need to initialize the dynamically allocated arrays
-                numTotalBatts = 0;
+                bms.NumTotalBatts = 0;
                 for(uint8_t i = 0; i < bms.NumConnectedBoards; i++) {
-                    numTotalBatts += bms.BattsPerBoard[i];
+                    bms.NumTotalBatts += bms.BattsPerBoard[i];
                 }
                 if(bms.BattVoltages != 0) {
                     free(bms.BattVoltages);
                     bms.BattVoltages = 0;
                 }
-                bms.BattVoltages = malloc(sizeof(float)*numTotalBatts);
+                bms.BattVoltages = malloc(sizeof(float)*bms.NumTotalBatts);
                 if(bms.BattStatuses != 0) {
                     free(bms.BattStatuses);
                     bms.BattStatuses = 0;
                 }
-                bms.BattStatuses = malloc(sizeof(uint32_t)*numTotalBatts);
+                bms.BattStatuses = malloc(sizeof(uint32_t)*bms.NumTotalBatts);
+                bms.IsConnected = 1;
             }
         } else {
             bms.RetryCount++;
@@ -534,6 +564,7 @@ static void BMS_Process_Timeout(void) {
             bms.CommState = BMS_STATE_IDLE;
             // Failure!
             MAIN_SetError(MAIN_FAULT_BMS_COMM);
+            bms.IsConnected = 0;
         } else {
             bms.RetryCount++;
             // Retry the last packet
