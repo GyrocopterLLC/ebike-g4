@@ -31,9 +31,11 @@
 #include "data_commands.h"
 
 // Private variables
-uint8_t USB_Data_Comm_RxBuffer[PACKET_MAX_LENGTH];
 uint8_t USB_Data_Comm_TxBuffer[PACKET_MAX_LENGTH];
+#if 0
+uint8_t USB_Data_Comm_RxBuffer[PACKET_MAX_LENGTH];
 int32_t USB_Data_Comm_RxBuffer_WrPlace;
+#endif
 uint8_t USB_Data_Comm_DataBuffer[PACKET_MAX_DATA_LENGTH];
 Data_Packet_Type USB_Data_Comm_Packet;
 
@@ -54,7 +56,9 @@ void USB_Data_Comm_Init(void) {
     USB_Data_Comm_Packet.TxBuffer = USB_Data_Comm_TxBuffer;
     USB_Data_Comm_Packet.TxReady = 0;
     USB_Data_Comm_Packet.RxReady = 0;
+#if 0
     USB_Data_Comm_RxBuffer_WrPlace = 0;
+#endif
 
 }
 

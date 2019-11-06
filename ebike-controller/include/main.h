@@ -62,6 +62,7 @@
 #include "data_commands.h"
 #include "usb_data_comm.h"
 #include "bms_data_comm.h"
+#include "hbd_data_comm.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

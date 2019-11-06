@@ -303,6 +303,9 @@ int main(void) {
     BMS_Data_Comm_Init();
     BMS_Restart_Chain();
 
+    /* Start connection with handle bar display */
+    HBD_Data_Comm_Init();
+
 
     /* Run Application (Interrupt mode) */
     while (1) {
@@ -313,6 +316,8 @@ int main(void) {
         USB_Data_Comm_OneByte_Check();
         // Check BMS serial for data
         BMS_OneByte_Check();
+        // Check HBD serial for data
+        HBD_OneByte_Check();
 
 
         if (pb_state == PB_PRESSED) {
