@@ -32,9 +32,12 @@
 #include "periphconfig.h"
 
 #define USART_CLK				42000000
-#define HBD_BAUDRATE			115200
-#define HBD_USARTDIV			(22.8125f)
-#define HBD_BRR					(22 << 4) + 13
+//#define HBD_BAUDRATE			115200
+//#define HBD_USARTDIV			(22.8125f)
+//#define HBD_BRR					(22 << 4) + 13
+#define HBD_BAUDRATE            38400
+#define HBD_USARTDIV            (68.375) // About 0.02% error. 42M / (16*68.375) = 38391 baud
+#define HBD_BRR                 (68<<4) + 6 // 68 for the mantissa, 6/16 for the fraction
 
 #define BMS_BAUDRATE			115200
 #define BMS_USARTDIV			(22.8125f)

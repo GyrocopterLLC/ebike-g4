@@ -221,7 +221,7 @@ int32_t UART_Read(UART_Sel uart, void* buf, uint32_t count) {
 
     while ((place < count) && (place < buffer_remaining)) {
         buf8b[place++] = p_RxBuffer->Buffer[p_RxBuffer->RdPos++];
-        if (p_RxBuffer->RdPos > buffer_length)
+        if (p_RxBuffer->RdPos >= buffer_length)
             p_RxBuffer->RdPos = 0;
     }
     // Clear "done" flag if no more bytes to read
@@ -344,7 +344,7 @@ void UART_IRQ(UART_Sel uart) {
             && ((uart_hw->CR1 & USART_CR1_TXEIE) != 0)) {
         // Check if more data to send
         if (((p_TxBuffer->RdPos + 1) == p_TxBuffer->WrPos)
-                || ((p_TxBuffer->RdPos == buffer_length)
+                || (((p_TxBuffer->RdPos + 1) == buffer_length)
                         && (p_TxBuffer->WrPos == 0))) {
             // We are done after this byte!
             p_TxBuffer->Done = 1;
