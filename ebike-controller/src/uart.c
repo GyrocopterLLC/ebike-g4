@@ -343,8 +343,8 @@ void UART_IRQ(UART_Sel uart) {
     if (((uart_hw->SR & USART_SR_TXE) != 0)
             && ((uart_hw->CR1 & USART_CR1_TXEIE) != 0)) {
         // Check if more data to send
-        if (((p_TxBuffer->RdPos + 1) == p_TxBuffer->WrPos)
-                || (((p_TxBuffer->RdPos + 1) == buffer_length)
+        if (((p_TxBuffer->RdPos + 1U) == p_TxBuffer->WrPos)
+                || (((p_TxBuffer->RdPos + 1U) == buffer_length)
                         && (p_TxBuffer->WrPos == 0))) {
             // We are done after this byte!
             p_TxBuffer->Done = 1;
@@ -362,7 +362,7 @@ void UART_IRQ(UART_Sel uart) {
     }
     if (((uart_hw->SR & USART_SR_TC) != 0)
             && ((uart_hw->CR1 & USART_CR1_TCIE) != 0)) {
-        // Trasmission complete, turn off the interrupt
+        // Transmission complete, turn off the interrupt
         uart_hw->CR1 &= ~(USART_CR1_TCIE);
     }
 }

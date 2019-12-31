@@ -97,7 +97,10 @@ typedef enum _main_limit_type {
     Main_Limit_SoftFetTemp,
     Main_Limit_HardFetTemp,
     Main_Limit_SoftMotorTemp,
-    Main_Limit_HardMotorTemp
+    Main_Limit_HardMotorTemp,
+    Main_Limit_MinVoltFault,
+    Main_Limit_MaxVoltFault,
+    Main_Limit_CurrentFault
 } Main_Limit_Type;
 
 typedef struct _main_config {
@@ -109,6 +112,9 @@ typedef struct _main_config {
     uint16_t Num_USB_Outputs;
     uint16_t USB_Speed;
     uint16_t USB_Choices[MAX_USB_OUTPUTS];
+    uint16_t MotorPolePairs;
+    float WheelSizeMM;
+    float GearRatio;
     int32_t PWMFrequency;
     int32_t PWMDeadTime;
     float MaxPhaseCurrent;
@@ -121,9 +127,13 @@ typedef struct _main_config {
     float FetTempHardCap;
     float MotorTempSoftCap;
     float MotorTempHardCap;
+    float MinVoltFault;
+    float MaxVoltFault;
+    float CurrentFault;
     Control_Methods ControlMethod;
     // ----- Generated constants -----
     float inv_max_phase_current;
+    float inv_pole_pairs;
     // ----- Local variables -----
     float throttle_limit_scale;
 } Config_Main;
@@ -213,6 +223,12 @@ void MAIN_SoftReset(uint8_t restartInBootloader);
 uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer);
 uint8_t MAIN_SetLimit(Main_Limit_Type lmt, float new_lmt);
 float MAIN_GetLimit(Main_Limit_Type lmt);
+float MAIN_GetGearRatio(void);
+float MAIN_GetWheelSize(void);
+uint16_t MAIN_GetPolePairs(void);
+uint8_t MAIN_SetGearRatio(float new_ratio);
+uint8_t MAIN_SetWheelSize(float new_size_mm);
+uint8_t MAIN_SetPolePairs(uint16_t new_pole_pairs);
 void MAIN_DumpRecord(void);
 void MAIN_SaveVariables(void);
 void MAIN_LoadVariables(void);

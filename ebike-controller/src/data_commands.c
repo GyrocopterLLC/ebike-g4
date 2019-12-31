@@ -213,7 +213,7 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         retval16b = throttle_get_type(2);
         break;
     case CONFIG_MOTOR_POLEPAIRS:
-        // TODO: this.
+        retval16b = MAIN_GetPolePairs();
         break;
 
     case CONFIG_BMS_NUMBATTS:
@@ -301,9 +301,13 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         retvalf = throttle_get_rise(2);
         break;
     case CONFIG_LMT_VOLT_FAULT_MIN:
+        retvalf = MAIN_GetLimit(Main_Limit_MinVoltFault);
+        break;
     case CONFIG_LMT_VOLT_FAULT_MAX:
+        retvalf = MAIN_GetLimit(Main_Limit_MaxVoltFault);
+        break;
     case CONFIG_LMT_CUR_FAULT_MAX:
-        retvalf = -99999.0f;
+        retvalf = MAIN_GetLimit(Main_Limit_CurrentFault);
         break;
     case CONFIG_LMT_VOLT_SOFTCAP:
         retvalf = MAIN_GetLimit(Main_Limit_SoftVoltage);
@@ -344,7 +348,10 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         retvalf = HallSensor_GetAngle(value_ID - CONFIG_MOTOR_HALL1 + 1);
         break;
     case CONFIG_MOTOR_GEAR_RATIO:
+        retvalf = MAIN_GetGearRatio();
+        break;
     case CONFIG_MOTOR_WHEEL_SIZE:
+        retvalf = MAIN_GetWheelSize();
         break;
 
     case CONFIG_BMS_GETBAT_N:
@@ -431,7 +438,7 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         errCode = throttle_set_type(2, (uint8_t) value16b);
         break;
     case CONFIG_MOTOR_POLEPAIRS:
-        // TODO: this.
+        errCode = MAIN_SetPolePairs(value16b);
         break;
 
     // 32 bit integer values
@@ -513,8 +520,13 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         errCode = throttle_set_rise(2, valuef);
         break;
     case CONFIG_LMT_VOLT_FAULT_MIN:
+        errCode = MAIN_SetLimit(Main_Limit_MinVoltFault, valuef);
+        break;
     case CONFIG_LMT_VOLT_FAULT_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_MaxVoltFault, valuef);
+        break;
     case CONFIG_LMT_CUR_FAULT_MAX:
+        errCode = MAIN_SetLimit(Main_Limit_CurrentFault, valuef);
         break;
     case CONFIG_LMT_VOLT_SOFTCAP:
         errCode = MAIN_SetLimit(Main_Limit_SoftVoltage, valuef);
@@ -555,7 +567,10 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         errCode = HallSensor_SetAngle(value_ID - CONFIG_MOTOR_HALL1 + 1, valuef);
         break;
     case CONFIG_MOTOR_GEAR_RATIO:
+        errCode = MAIN_SetGearRatio(valuef);
+        break;
     case CONFIG_MOTOR_WHEEL_SIZE:
+        errCode = MAIN_SetWheelSize(valuef);
         break;
     }
     return errCode;

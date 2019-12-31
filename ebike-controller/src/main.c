@@ -1233,12 +1233,17 @@ uint8_t MAIN_GetDashboardData(uint8_t* dataBuffer) {
     // Param6: F32: Controller FET Temperature (degC)
     // Param7: F32: Motor Temperature (degC)
     // Param8: I32: Fault Code
+
+    // MPH = eHz * wheel circ *3600 / polepairs
+    // RPM = eHz * 60 / polepairs
+    float rpm_conversion = 60.0f * config_main.inv_pole_pairs;
+
     data_packet_pack_float(dataBuffer, Mctrl.ThrottleCommand);
     dataBuffer+=4;
 #ifdef TESTING_2X
-    data_packet_pack_float(dataBuffer, HallSensor2_Get_Speedf());
+    data_packet_pack_float(dataBuffer, rpm_conversion*HallSensor2_Get_Speedf());
 #else
-    data_packet_pack_float(dataBuffer, HallSensor_Get_Speedf());
+    data_packet_pack_float(dataBuffer, rpm_conversion*HallSensor_Get_Speedf());
 #endif
     dataBuffer+=4;
     data_packet_pack_float(dataBuffer, Mpc.PhaseCurrent);
@@ -1290,6 +1295,15 @@ uint8_t MAIN_SetLimit(Main_Limit_Type lmt, float new_lmt) {
     case Main_Limit_HardMotorTemp:
         config_main.MotorTempHardCap = new_lmt;
         break;
+    case Main_Limit_MinVoltFault:
+        config_main.MinVoltFault = new_lmt;
+        break;
+    case Main_Limit_MaxVoltFault:
+        config_main.MaxVoltFault = new_lmt;
+        break;
+    case Main_Limit_CurrentFault:
+        config_main.CurrentFault = new_lmt;
+        break;
     default:
         errCode = DATA_PACKET_FAIL;
         break;
@@ -1329,11 +1343,46 @@ float MAIN_GetLimit(Main_Limit_Type lmt) {
     case Main_Limit_HardMotorTemp:
         retval = config_main.MotorTempHardCap;
         break;
+    case Main_Limit_MinVoltFault:
+        retval = config_main.MinVoltFault;
+        break;
+    case Main_Limit_MaxVoltFault:
+        retval = config_main.MaxVoltFault;
+        break;
+    case Main_Limit_CurrentFault:
+        retval = config_main.CurrentFault;
+        break;
     default:
         retval = 0.0f;
         break;
     }
     return retval;
+}
+
+float MAIN_GetGearRatio(void) {
+    return config_main.GearRatio;
+}
+
+float MAIN_GetWheelSize(void) {
+    return config_main.WheelSizeMM;
+}
+
+uint16_t MAIN_GetPolePairs(void) {
+    return config_main.MotorPolePairs;
+}
+
+uint8_t MAIN_SetGearRatio(float new_ratio) {
+    config_main.GearRatio = new_ratio;
+    return DATA_PACKET_SUCCESS;
+}
+uint8_t MAIN_SetWheelSize(float new_size_mm) {
+    config_main.WheelSizeMM = new_size_mm;
+    return DATA_PACKET_SUCCESS;
+}
+uint8_t MAIN_SetPolePairs(uint16_t new_pole_pairs) {
+    config_main.MotorPolePairs = new_pole_pairs;
+    config_main.inv_pole_pairs = 1.0f / ((float)new_pole_pairs);
+    return DATA_PACKET_SUCCESS;
 }
 
 void MAIN_DumpRecord(void) {
@@ -1486,6 +1535,13 @@ void MAIN_SaveVariables(void) {
     EE_SaveFloat(CONFIG_LMT_FET_TEMP_HARDCAP, config_main.FetTempHardCap);
     EE_SaveFloat(CONFIG_LMT_MOTOR_TEMP_SOFTCAP, config_main.MotorTempSoftCap);
     EE_SaveFloat(CONFIG_LMT_MOTOR_TEMP_HARDCAP, config_main.MotorTempHardCap);
+    EE_SaveFloat(CONFIG_LMT_VOLT_FAULT_MIN, config_main.MinVoltFault);
+    EE_SaveFloat(CONFIG_LMT_VOLT_FAULT_MAX, config_main.MaxVoltFault);
+    EE_SaveFloat(CONFIG_LMT_CUR_FAULT_MAX, config_main.CurrentFault);
+
+    EE_SaveFloat(CONFIG_MOTOR_WHEEL_SIZE, config_main.WheelSizeMM);
+    EE_SaveFloat(CONFIG_MOTOR_GEAR_RATIO, config_main.GearRatio);
+    EE_SaveInt16(CONFIG_MOTOR_POLEPAIRS, config_main.MotorPolePairs);
 }
 
 void MAIN_LoadVariables(void) {
@@ -1551,6 +1607,14 @@ void MAIN_LoadVariables(void) {
     config_main.FetTempHardCap = EE_ReadFloatWithDefault(CONFIG_LMT_FET_TEMP_HARDCAP, DFLT_LMT_FET_TEMP_HARDCAP);
     config_main.MotorTempSoftCap = EE_ReadFloatWithDefault(CONFIG_LMT_MOTOR_TEMP_SOFTCAP, DFLT_LMT_MOTOR_TEMP_SOFTCAP);
     config_main.MotorTempHardCap = EE_ReadFloatWithDefault(CONFIG_LMT_MOTOR_TEMP_HARDCAP, DFLT_LMT_MOTOR_TEMP_HARDCAP);
+    config_main.MinVoltFault = EE_ReadFloatWithDefault(CONFIG_LMT_VOLT_FAULT_MIN, DFLT_LMT_VOLT_FAULT_MIN);
+    config_main.MaxVoltFault = EE_ReadFloatWithDefault(CONFIG_LMT_VOLT_FAULT_MAX, DFLT_LMT_VOLT_FAULT_MAX);
+    config_main.CurrentFault = EE_ReadFloatWithDefault(CONFIG_LMT_CUR_FAULT_MAX, DFLT_LMT_CUR_FAULT_MAX);
+
+    config_main.GearRatio = EE_ReadFloatWithDefault(CONFIG_MOTOR_GEAR_RATIO, DFLT_MOTOR_GEAR_RATIO);
+    config_main.WheelSizeMM = EE_ReadFloatWithDefault(CONFIG_MOTOR_WHEEL_SIZE, DFLT_MOTOR_WHEEL_SIZE);
+    config_main.MotorPolePairs = EE_ReadInt16WithDefault(CONFIG_MOTOR_POLEPAIRS, DFLT_MOTOR_POLEPAIRS);
+    config_main.inv_pole_pairs = 1.0f/((float)config_main.MotorPolePairs);
 
     config_main.PWMFrequency = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_FREQ,
             DFLT_FOC_PWM_FREQ);
