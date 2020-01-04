@@ -1371,6 +1371,10 @@ uint16_t MAIN_GetPolePairs(void) {
     return config_main.MotorPolePairs;
 }
 
+float MAIN_GetMotorKv(void) {
+    return config_main.MotorKv;
+}
+
 uint8_t MAIN_SetGearRatio(float new_ratio) {
     config_main.GearRatio = new_ratio;
     return DATA_PACKET_SUCCESS;
@@ -1382,6 +1386,13 @@ uint8_t MAIN_SetWheelSize(float new_size_mm) {
 uint8_t MAIN_SetPolePairs(uint16_t new_pole_pairs) {
     config_main.MotorPolePairs = new_pole_pairs;
     config_main.inv_pole_pairs = 1.0f / ((float)new_pole_pairs);
+    return DATA_PACKET_SUCCESS;
+}
+uint8_t MAIN_SetMotorKv(float new_voltage_constant) {
+    config_main.MotorKv = new_voltage_constant; // in rpm / volt
+    config_main.kv_volts_per_ehz = ((float)config_main.MotorPolePairs) * config_main.MotorKv; // in erpm / volt
+    config_main.kv_volts_per_ehz = 60.0f / config_main.kv_volts_per_ehz; // in volt/eHz
+
     return DATA_PACKET_SUCCESS;
 }
 
@@ -1613,8 +1624,8 @@ void MAIN_LoadVariables(void) {
 
     config_main.GearRatio = EE_ReadFloatWithDefault(CONFIG_MOTOR_GEAR_RATIO, DFLT_MOTOR_GEAR_RATIO);
     config_main.WheelSizeMM = EE_ReadFloatWithDefault(CONFIG_MOTOR_WHEEL_SIZE, DFLT_MOTOR_WHEEL_SIZE);
-    config_main.MotorPolePairs = EE_ReadInt16WithDefault(CONFIG_MOTOR_POLEPAIRS, DFLT_MOTOR_POLEPAIRS);
-    config_main.inv_pole_pairs = 1.0f/((float)config_main.MotorPolePairs);
+    MAIN_SetPolePairs(EE_ReadInt16WithDefault(CONFIG_MOTOR_POLEPAIRS, DFLT_MOTOR_POLEPAIRS));
+    MAIN_SetMotorKv(EE_ReadFloatWithDefault(CONFIG_MOTOR_KV, DFLT_MOTOR_KV));
 
     config_main.PWMFrequency = EE_ReadInt32WithDefault(CONFIG_FOC_PWM_FREQ,
             DFLT_FOC_PWM_FREQ);

@@ -165,7 +165,7 @@ typedef enum _data_type {
 
 /*** Motor Configuration Variable IDs ***/
 #define CONFIG_MOTOR_PREFIX         (0x0500)
-#define CONFIG_MOTOR_NUMVARS        (9)
+#define CONFIG_MOTOR_NUMVARS        (10)
 #define CONFIG_MOTOR_HALL1          (0x0501) //F32: Angle of motor when switching into state 1, forward rotation
 #define CONFIG_MOTOR_HALL2          (0x0502) //F32: Angle when switching into state 2
 #define CONFIG_MOTOR_HALL3          (0x0503) //F32: Angle when switching into state 3
@@ -175,6 +175,7 @@ typedef enum _data_type {
 #define CONFIG_MOTOR_POLEPAIRS      (0x0507) //I16: Turns of electrical / turns of mechanical
 #define CONFIG_MOTOR_GEAR_RATIO     (0x0508) //F32: Turns of mechanical motor / turns of wheel
 #define CONFIG_MOTOR_WHEEL_SIZE     (0x0509) //F32: Diameter in mm
+#define CONFIG_MOTOR_KV             (0x050A) //F32: Motor voltage constant (RPM / Volt)
 /*** Motor Default Values ***/
 // For Ebikeling 700C front 1200W motor
 #define DFLT_MOTOR_HALL1            (0.743786f)
@@ -185,7 +186,9 @@ typedef enum _data_type {
 #define DFLT_MOTOR_HALL6            (0.240492f)
 #define DFLT_MOTOR_POLEPAIRS        (23)
 #define DFLT_MOTOR_GEAR_RATIO       (1.0f) // Direct drive
-#define DFLT_MOTOR_WHEEL_SIZE       (2200.0f) // 700C-40 according to www.cateye.com tire size chart
+#define DFLT_MOTOR_WHEEL_SIZE       (700.28f) // 700C-40 according to www.cateye.com tire size chart
+                                                // 2200 mm / PI = 700.28mm
+#define DFLT_MOTOR_KV               (0.0f) // When zero, PI loop feedforward is disabled
 
 /*** BMS Interactions ***/
 #define CONFIG_BMS_PREFIX           (0x0600)

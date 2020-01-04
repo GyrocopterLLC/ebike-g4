@@ -353,7 +353,8 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_MOTOR_WHEEL_SIZE:
         retvalf = MAIN_GetWheelSize();
         break;
-
+    case CONFIG_MOTOR_KV:
+        retvalf = MAIN_GetMotorKv();
     case CONFIG_BMS_GETBAT_N:
         // Which battery is also in the data
         retvalf = BMS_Get_Batt_Voltage(data_packet_extract_16b(&(pktdata[2])));
@@ -571,6 +572,9 @@ uint16_t command_set_ram(uint8_t* pktdata) {
         break;
     case CONFIG_MOTOR_WHEEL_SIZE:
         errCode = MAIN_SetWheelSize(valuef);
+        break;
+    case CONFIG_MOTOR_KV:
+        errCode = MAIN_SetMotorKv(valuef);
         break;
     }
     return errCode;
@@ -811,6 +815,7 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
     case CONFIG_MOTOR_HALL6:
     case CONFIG_MOTOR_GEAR_RATIO:
     case CONFIG_MOTOR_WHEEL_SIZE:
+    case CONFIG_MOTOR_KV:
     case CONFIG_BMS_GETBAT_N:
         type = Data_Type_Float;
         break;
