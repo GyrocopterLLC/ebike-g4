@@ -355,6 +355,7 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
         break;
     case CONFIG_MOTOR_KV:
         retvalf = MAIN_GetMotorKv();
+        break;
     case CONFIG_BMS_GETBAT_N:
         // Which battery is also in the data
         retvalf = BMS_Get_Batt_Voltage(data_packet_extract_16b(&(pktdata[2])));

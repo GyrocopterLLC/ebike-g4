@@ -151,6 +151,24 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             PHASE_B_PWM();
             PHASE_C_PWM();
             PWM_MotorON();
+            // The PIDs should be reset. If the motor is spinning already,
+            // this will cause a huge regenerative braking spike.
+            // Zero output on the three phases is like putting out zero
+            // volts, and the motor will be acting like a generator
+            // with its back-emf. We need to apply voltage at least equal
+            // to the back-emf (or a close estimate!) as our true zero-current
+            // starting point.
+            /*** TODO: Check what the steady-state value of Ui_q tends to be,
+             *         see if it's a linear relationship to speed, find the formula.
+             *   TODO: Only do this startup routine when speed is well known (PLL locked)
+            foc->Iq_PID->Ui = config_main.kv_volts_per_ehz * obv->RotorSpeed_eHz;
+            if(foc->Iq_PID->Ui > foc->Iq_PID->OutMax) {
+                foc->Iq_PID->Ui = 0.0f; // Don't bother if it's too large. Probably an error state.
+            }
+            if(foc->Iq_PID->Ui < foc->Iq_PID->OutMin) {
+                foc->Iq_PID->Ui = 0.0f; // Likewise if it's less than the minimum.
+            }
+            ***/
         }
         MLoop_Turn_Off_Check(cntl);
         if ((obv->HallState > 6) || (obv->HallState < 1)) {

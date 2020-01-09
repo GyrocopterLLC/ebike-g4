@@ -54,6 +54,7 @@ typedef struct _Motor_Observations {
     float iB;
     float iC;
     float RotorAngle;
+    float RotorSpeed_eHz;
     uint8_t HallState;
 } Motor_Observations;
 
