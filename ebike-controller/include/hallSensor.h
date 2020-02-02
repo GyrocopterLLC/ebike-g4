@@ -58,9 +58,14 @@
 #define HALL_ROT_FORWARD				1
 #define HALL_ROT_REVERSE				2
 
+// Error checking
+#define HALL_MAX_SPEED_CHANGE           (3.0f)
+#define HALL_MIN_STEADY_ROTATION_COUNT  (6) // One full electrical rotation
+
 typedef struct _hallsensor{
 #if defined(USE_FLOATING_POINT)
     float Speed;
+    float PreviousSpeed;
     uint32_t CallingFrequency;
     float AngleIncrement;
     float Angle;
@@ -70,8 +75,11 @@ typedef struct _hallsensor{
     uint16_t PrescalerForState[6];
     uint8_t Status;
     uint8_t OverflowCount;
+    uint8_t SteadyRotationCount;
     uint8_t RotationDirection;
+    uint8_t PreviousRotationDirection;
     uint8_t CurrentState;
+    uint8_t Valid;
 #else
     uint32_t Speed; // Expressed in Hz * 2^16 (aka Q16 number)
     uint32_t CallingFrequency;// How rapidly the speed calculation will be updated
@@ -104,6 +112,9 @@ typedef struct _hallsensorpll{
 
 #define PLL_UNLOCKED                (0)
 #define PLL_LOCKED                  (1)
+
+#define ANGLE_INVALID               (0)
+#define ANGLE_VALID                 (1)
 
 #endif
 

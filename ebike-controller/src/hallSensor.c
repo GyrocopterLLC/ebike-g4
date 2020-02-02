@@ -611,11 +611,16 @@ void HallSensor_Init_NoHal(uint32_t callingFrequency) {
 
     HallSensor.Prescaler = HALL_PSC_MAX;
     HallSensor.Status = 0;
-    HallSensor.Speed = 0;
+    HallSensor.Speed = 0.0f;
+    HallSensor.PreviousSpeed = 0.0f;
     HallSensor.CallingFrequency = callingFrequency;
     HallSensor.OverflowCount = 0;
+    HallSensor.SteadyRotationCount = 0;
     HallSensor.Status |= HALL_STOPPED;
     HallSensor.CurrentState = 0;
+    HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
+    HallSensor.PreviousRotationDirection = HALL_ROT_UNKNOWN;
+    HallSensor.Valid = ANGLE_INVALID;
 #ifdef TESTING_2X
     HallSensor_2x.Prescaler = HALL_PSC_MAX;
     HallSensor_2x.Status = 0;
@@ -995,6 +1000,57 @@ void HallSensor_CaptureCallback(void) {
     }
     // Now it's safe to clear overflow counts
     HallSensor.OverflowCount = 0;
+
+
+    /****
+     * TODO: Hall sensor validity.
+     * Need to check if the angle is a good estimate of the motor position.
+     * Also counts as a check of speed validity.
+     * This is based on (1) getting update times that aren't changing too fast,
+     * and (2) direction isn't changing.
+     *
+     * (1) Update times are smooth-ish
+     * IF (last_speed is similar to this_speed)
+     * THEN speed_check is valid
+     * ELSE IF (last_speed is too different from this_speed)
+     * THEN speed_check isn't valid
+     *
+     * (2) direction isn't changing
+     * IF (direction is the same for N times)
+     * THEN direction_check is valid
+     * ELSE IF (direction is unknown) OR (direction swapped even once)
+     * THEN direction_check isn't valid
+     *
+     * IF (speed_check and direction_check are both valid)
+     * THEN angle is valid AND speed is valid
+     */
+
+    // Check if speed is changing at a reasonable rate
+    if(fabsf(HallSensor.Speed - HallSensor.PreviousSpeed) < HALL_MAX_SPEED_CHANGE)
+    {
+        // Check if direction is steady
+        if(HallSensor.RotationDirection != HALL_ROT_UNKNOWN) {
+            if(HallSensor.RotationDirection == HallSensor.PreviousRotationDirection) {
+                if(HallSensor.SteadyRotationCount >= HALL_MIN_STEADY_ROTATION_COUNT) {
+                    // It's valid!
+                    HallSensor.Valid = ANGLE_VALID;
+                } else {
+                    // All is good, but counting up until valid
+                    HallSensor.SteadyRotationCount++;
+                    HallSensor.Valid = ANGLE_INVALID;
+                }
+            } else {
+                // Bad direction, reset the counter
+                HallSensor.SteadyRotationCount = 0;
+                HallSensor.Valid = ANGLE_INVALID;
+            }
+        } else {
+            // Bad speed, reset the counter
+            HallSensor.SteadyRotationCount = 0;
+            HallSensor.Valid = ANGLE_INVALID;
+        }
+
+    }
 }
 
 void DMA2_Stream1_IRQHandler(void) {
