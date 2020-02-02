@@ -160,15 +160,20 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             // starting point.
             /*** TODO: Check what the steady-state value of Ui_q tends to be,
              *         see if it's a linear relationship to speed, find the formula.
+             *
+             *         Seems to be! Looks pretty consistent as a ratio between UI_Q*DCvolts :: speed
              *   TODO: Only do this startup routine when speed is well known (PLL locked)
-            foc->Iq_PID->Ui = config_main.kv_volts_per_ehz * obv->RotorSpeed_eHz;
+             *
+             *         Well, PLL locks right away even if the speed=0. So that's useless.
+             *         */
+            foc->Iq_PID->Ui = config_main.kv_volts_per_ehz * obv->RotorSpeed_eHz / cntl->BusVoltage;
             if(foc->Iq_PID->Ui > foc->Iq_PID->OutMax) {
                 foc->Iq_PID->Ui = 0.0f; // Don't bother if it's too large. Probably an error state.
             }
             if(foc->Iq_PID->Ui < foc->Iq_PID->OutMin) {
                 foc->Iq_PID->Ui = 0.0f; // Likewise if it's less than the minimum.
             }
-            ***/
+
         }
         MLoop_Turn_Off_Check(cntl);
         if ((obv->HallState > 6) || (obv->HallState < 1)) {

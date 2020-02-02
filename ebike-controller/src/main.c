@@ -659,6 +659,7 @@ void User_PWMTIM_IRQ(void) {
     Mobv.iB = adcGetCurrent(ADC_IB);
     Mobv.iC = adcGetCurrent(ADC_IC);
     Mctrl.BusVoltage = adcGetVbus();
+    Mobv.RotorSpeed_eHz = HallSensor_Get_Speedf();
 
     HallSensor_Inc_Angle();
 #ifdef TESTING_2X
@@ -732,7 +733,11 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif // TESTING_2X
 #ifdef TESTING_PLL
-    usbdacvals[18] = HallSensorPLL_Get_Anglef();
+    // Show the PLL unless it's invalid, then just show hall state
+    if(HallSensorPLL_Is_Valid() == PLL_LOCKED)
+        usbdacvals[18] = HallSensorPLL_Get_Anglef();
+    else
+        usbdacvals[18] = (float) HallSensor_Get_State();
 #endif
 
     // Load up the output buffer
@@ -1390,8 +1395,12 @@ uint8_t MAIN_SetPolePairs(uint16_t new_pole_pairs) {
 }
 uint8_t MAIN_SetMotorKv(float new_voltage_constant) {
     config_main.MotorKv = new_voltage_constant; // in rpm / volt
-    config_main.kv_volts_per_ehz = ((float)config_main.MotorPolePairs) * config_main.MotorKv; // in erpm / volt
-    config_main.kv_volts_per_ehz = 60.0f / config_main.kv_volts_per_ehz; // in volt/eHz
+    if(new_voltage_constant < 0.01f) {
+        config_main.kv_volts_per_ehz = 0.0f;
+    } else {
+        config_main.kv_volts_per_ehz = ((float)config_main.MotorPolePairs) * config_main.MotorKv; // in erpm / volt
+        config_main.kv_volts_per_ehz = 60.0f / config_main.kv_volts_per_ehz; // in volt/eHz
+    }
 
     return DATA_PACKET_SUCCESS;
 }

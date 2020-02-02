@@ -87,8 +87,8 @@ typedef enum _data_type {
 #define CONFIG_MAIN_USB_CHOICE_10   (0x0210) //I16: Choice of variable 10 on USB (1 through 19)
 /*** Main Default Values ***/
 #define DFLT_MAIN_RAMP_SPEED        (5.0f)
-#define DFLT_MAIN_COUNTS_TO_FOC     (1000)
-#define DFLT_MAIN_SPEED_TO_FOC      (10.0f)
+#define DFLT_MAIN_COUNTS_TO_FOC     (200)
+#define DFLT_MAIN_SPEED_TO_FOC      (5.0f)
 #define DFLT_MAIN_SWITCH_EPS        (0.00833333f) // About 3 degrees
 #define DFLT_MAIN_NUM_USB_OUTPUTS   (5)
 #define DFLT_MAIN_USB_SPEED         (0) // Slowest (50 Hz)
@@ -152,8 +152,8 @@ typedef enum _data_type {
 #define DFLT_LMT_VOLT_FAULT_MIN     (44.8f) // 2.8 x 16 cells
 #define DFLT_LMT_VOLT_FAULT_MAX     (70.4f) // 4.4 x 16 cells
 #define DFLT_LMT_CUR_FAULT_MAX      (24.0f) // Just below max sensing level
-#define DFLT_LMT_VOLT_SOFTCAP       (52.8f) // 3.3 x 16 cells
-#define DFLT_LMT_VOLT_HARDCAP       (48.0f) // 3.0 x 16 cells
+#define DFLT_LMT_VOLT_SOFTCAP       (10.0f) // For testing, just apply 12V or more
+#define DFLT_LMT_VOLT_HARDCAP       (8.0f)
 #define DFLT_LMT_PHASE_CUR_MAX      (20.0f)
 #define DFLT_LMT_PHASE_REGEN_MAX    (5.0f)
 #define DFLT_LMT_BATT_CUR_MAX       (20.0f)
@@ -187,7 +187,8 @@ typedef enum _data_type {
 #define DFLT_MOTOR_POLEPAIRS        (23)
 #define DFLT_MOTOR_GEAR_RATIO       (1.0f) // Direct drive
 #define DFLT_MOTOR_WHEEL_SIZE       (700.28f) // 700C-40 according to www.cateye.com tire size chart
-                                                // 2200 mm / PI = 700.28mm
+                                                // https://www.cateye.com/data/resources/Tire_size_chart_ENG_151106.pdf
+                                                // 2200 mm / pi = 700.28mm
 #define DFLT_MOTOR_KV               (0.0f) // When zero, PI loop feedforward is disabled
 
 /*** BMS Interactions ***/
