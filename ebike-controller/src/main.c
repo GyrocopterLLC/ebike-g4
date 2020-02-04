@@ -660,7 +660,7 @@ void User_PWMTIM_IRQ(void) {
     Mobv.iC = adcGetCurrent(ADC_IC);
     Mctrl.BusVoltage = adcGetVbus();
     Mobv.RotorSpeed_eHz = HallSensor_Get_Speedf();
-
+    Mobv.HallState = HallSensor_Get_State();
     HallSensor_Inc_Angle();
 #ifdef TESTING_2X
     HallSensor2_Inc_Angle();
@@ -675,16 +675,20 @@ void User_PWMTIM_IRQ(void) {
     Mobv.RotorAngle = HallSensor_Get_Anglef();
 #else
 #ifdef TESTING_PLL
-    if(HallSensorPLL_Is_Valid() == PLL_LOCKED) {
+    if(HallSensor_Is_Valid() == ANGLE_VALID) {
         Mobv.RotorAngle = HallSensorPLL_Get_Anglef();
     } else {
-        Mobv.RotorAngle = HallSensor_Get_Anglef();
+        Mobv.RotorAngle = HallSensor_GetStateMidpoint(Mobv.HallState);
     }
 #else
-    Mobv.RotorAngle = HallSensor_Get_Anglef();
+    if(HallSensor_Is_Valid() == ANGLE_VALID) {
+        Mobv.RotorAngle = HallSensor_Get_Anglef();
+    } else {
+        Mobv.RotorAngle = HallSensor_GetStateMidpoint(Mobv.HallState);
+    }
 #endif
 #endif
-    Mobv.HallState = HallSensor_Get_State();
+
     Motor_Loop(&Mctrl, &Mobv, &Mfoc, &Mpwm);
 
     // Don't allow below zero!
@@ -716,7 +720,8 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[5] = Mpwm.tC;
     usbdacvals[6] = Mctrl.ThrottleCommand;
     usbdacvals[7] = Mctrl.RampAngle;
-    usbdacvals[8] = HallSensor_Get_Anglef();
+//    usbdacvals[8] = HallSensor_Get_Anglef();
+    usbdacvals[8] = Mobv.RotorAngle;
     usbdacvals[9] = HallSensor_Get_Speedf();
     usbdacvals[10] = Mctrl.BusVoltage;
     usbdacvals[11] = Mfoc.Park_D;
@@ -733,11 +738,12 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif // TESTING_2X
 #ifdef TESTING_PLL
+    usbdacvals[18] = HallSensor_Is_Valid();
     // Show the PLL unless it's invalid, then just show hall state
-    if(HallSensorPLL_Is_Valid() == PLL_LOCKED)
-        usbdacvals[18] = HallSensorPLL_Get_Anglef();
-    else
-        usbdacvals[18] = (float) HallSensor_Get_State();
+//    if(HallSensorPLL_Is_Valid() == PLL_LOCKED)
+//        usbdacvals[18] = HallSensorPLL_Get_Anglef();
+//    else
+//        usbdacvals[18] = (float) HallSensor_Get_State();
 #endif
 
     // Load up the output buffer
@@ -859,7 +865,8 @@ void User_BasicTIM_IRQ(void) {
     // Check if we should change out of standby
     if ((Mctrl.ThrottleCommand > 0.0f) && (Mctrl.state == Motor_Off)) {
         if (config_main.ControlMethod == Control_FOC)
-            Mctrl.state = Motor_Startup;
+//            Mctrl.state = Motor_Startup;
+            Mctrl.state = Motor_AtSpeed;
         if (config_main.ControlMethod == Control_BLDC)
             Mctrl.state = Motor_SixStep;
         if(config_main.ControlMethod == Control_Debug)

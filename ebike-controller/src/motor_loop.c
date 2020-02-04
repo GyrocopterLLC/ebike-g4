@@ -142,6 +142,11 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             }
         }
         break;
+
+
+// Commenting out this startup routine for now. Now taken care of by the Hall
+// sensor keeping track of its own validity instead.
+#if 0
     case Motor_Startup:
         // During this startup routine, the FOC is active but the angle
         // of the motor is discontinuous (similar to 6-step)
@@ -249,13 +254,32 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                 cntl->state = Motor_AtSpeed;
         }
         break;
-
+#endif
     case Motor_AtSpeed:
         if (lastRunState != Motor_AtSpeed) {
             PHASE_A_PWM();
             PHASE_B_PWM();
             PHASE_C_PWM();
             PWM_MotorON();
+
+            // Prevent huge regen current spike when turning on abruptly.
+            // Without this feed-forward going into the Iq controller,
+            // the output voltage is starting at zero. That's fine for a stopped
+            // motor, but it acts as a generator for one that's already spinning.
+            // This can cause a big spike and a sudden deceleration while waiting
+            // on the integrator to get wind back up to the right value.
+            // Using the motor's expected volts per rpm constant to add some
+            // voltage when throttle is pulled.
+            if(cntl->BusVoltage > 0.01f) // Avoid dividing by zero
+            {
+                foc->Iq_PID->Ui = config_main.kv_volts_per_ehz * obv->RotorSpeed_eHz / cntl->BusVoltage;
+                if(foc->Iq_PID->Ui > foc->Iq_PID->OutMax) {
+                    foc->Iq_PID->Ui = 0.0f; // Don't bother if it's too large. Probably an error state.
+                }
+                if(foc->Iq_PID->Ui < foc->Iq_PID->OutMin) {
+                    foc->Iq_PID->Ui = 0.0f; // Likewise if it's less than the minimum.
+                }
+            }
 //	    dfsl_pid_resetf(foc->Id_PID);
 //	    dfsl_pid_resetf(foc->Iq_PID);
         }

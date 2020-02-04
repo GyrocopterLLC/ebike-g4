@@ -44,7 +44,7 @@
 #define HALL_NUM_SAMPLES				32 // Number of samples taken of the GPIO
 
 #define HALL_PSC_MIN					15  // 84MHz clock / 16  = 5.25MHz -> 12.5millisec total period
-#define HALL_PSC_MAX					511 // 84MHz clock / 512 = 164kHz -> 0.4sec total period
+#define HALL_PSC_MAX					127 // 84MHz clock / 128 = 656.25kHz -> .0998sec total period
 #define HALL_PSC_CHG_AMT				16
 #define HALL_MIN_CAPTURE				16384 // First 1/4 of the period
 #define HALL_MAX_OVERFLOWS				3
@@ -132,6 +132,7 @@ float HallSensor_Get_Anglef(void);
 uint32_t HallSensor_Get_Speed(void);
 float HallSensor_Get_Speedf(void);
 uint8_t HallSensor_Get_Direction(void);
+uint8_t HallSensor_Is_Valid(void);
 #ifdef TESTING_2X
 uint8_t HallSensor2_Get_State(void);
 void HallSensor2_Inc_Angle(void);

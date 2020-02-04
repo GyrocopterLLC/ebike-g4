@@ -780,6 +780,10 @@ static float HallSensor_CalcMidPoint(float a1, float a2) {
     return retval;
 }
 
+uint8_t HallSensor_Is_Valid(void) {
+    return HallSensor.Valid;
+}
+
 #ifdef TESTING_2X
 static void HallSensor2_CalcSpeed(void) {
     HallSensor_2x.Speed = ((float) HALL_TIMER_INPUT_CLOCK)
@@ -843,6 +847,8 @@ void HallSensor_UpdateCallback(void) {
         HallSensor.Status |= HALL_STOPPED;
         HallSensor.Prescaler = HALL_PSC_MAX;
         HALL_TIMER->PSC = HALL_PSC_MAX;
+        HallSensor.Valid = ANGLE_INVALID;
+        HallSensor.SteadyRotationCount = 0;
 #ifdef TESTING_2X
         // Set speed to zero - stopped motor
         HallSensor_2x.Speed = 0.0f;
@@ -1051,6 +1057,8 @@ void HallSensor_CaptureCallback(void) {
         }
 
     }
+    HallSensor.PreviousSpeed = HallSensor.Speed;
+    HallSensor.PreviousRotationDirection = HallSensor.RotationDirection;
 }
 
 void DMA2_Stream1_IRQHandler(void) {

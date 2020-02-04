@@ -189,7 +189,7 @@ typedef enum _data_type {
 #define DFLT_MOTOR_WHEEL_SIZE       (700.28f) // 700C-40 according to www.cateye.com tire size chart
                                                 // https://www.cateye.com/data/resources/Tire_size_chart_ENG_151106.pdf
                                                 // 2200 mm / pi = 700.28mm
-#define DFLT_MOTOR_KV               (0.0f) // When zero, PI loop feedforward is disabled
+#define DFLT_MOTOR_KV               (7.5f) // When zero, PI loop feedforward is disabled
 
 /*** BMS Interactions ***/
 #define CONFIG_BMS_PREFIX           (0x0600)

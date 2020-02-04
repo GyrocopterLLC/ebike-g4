@@ -34,7 +34,7 @@
 typedef enum _Motor_RunState {
     Motor_Off,		// All switching disabled.
     Motor_SixStep,  // Running in trapezoidal mode
-    Motor_Startup,	// In FOC, but with untrustworthy angle
+    //Motor_Startup,	// In FOC, but with untrustworthy angle
     Motor_AtSpeed,	// Switched to FOC full control
     Motor_OpenLoop, // Open-loop with fixed frequency rotation
     Motor_Debug,    // All three PWMs follow the throttle
