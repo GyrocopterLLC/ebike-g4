@@ -144,6 +144,58 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         break;
 
 
+        /****
+         * This startup routine figures out the zero-level of the current sensors.
+         * Forces 50% duty on all phases for a set number of cycles and
+         * measures the current. Whatever the value is at 50% duty is the
+         * new zero offset.
+         *
+         * Not run if the motor is spinning. Forcing 50% duty on all phases
+         * when the motor is spinning is equivalent to regen braking. Hard.
+         * That would be rather unpleasant.
+         */
+#if 0
+    case Motor_Startup:
+        if (lastRunState != Motor_Startup) {
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
+            PWM_MotorON();
+            StartupCounter = 0;
+            iasum = 0;
+            ibsum = 0;
+            icsum = 0;
+        }
+        // Check if throttle dropped to zero. We should quit if that happens.
+        MLoop_Turn_Off_Check(cntl);
+        // Check if motor is running.
+        if(HallSensor_Get_Speedf() == 0.0f) {
+            // Force outputs all to 50%. This should be zero current.
+            duty->tA = 0.5f;
+            duty->tB = 0.5f;
+            duty->tC = 0.5f;
+            if(StartupCounter >= MLOOP_STARTUP_MIN_IGNORE_COUNT + MLOOP_STARTUP_NUM_SAMPLES){
+                // Finished - get the average and tell the ADC to use it
+                adcSetNull(ADC_IA, (uint16_t)(iasum / MLOOP_STARTUP_NUM_SAMPLES));
+                adcSetNull(ADC_IB, (uint16_t)(ibsum / MLOOP_STARTUP_NUM_SAMPLES));
+                adcSetNull(ADC_IC, (uint16_t)(icsum / MLOOP_STARTUP_NUM_SAMPLES));
+                // Jump to run state
+                cntl->state = Motor_AtSpeed;
+
+            } else if(StartupCounter > MLOOP_STARTUP_MIN_IGNORE_COUNT) {
+                // Only start summing after some initial dead time
+                iasum += adcRaw(ADC_IA);
+                ibsum += adcRaw(ADC_IB);
+                icsum += adcRaw(ADC_IC);
+            }
+        } else {
+            // Just keep the last zero point, and skip to run state.
+            cntl->state = Motor_AtSpeed;
+        }
+
+        break;
+#endif
+
 // Commenting out this startup routine for now. Now taken care of by the Hall
 // sensor keeping track of its own validity instead.
 #if 0
