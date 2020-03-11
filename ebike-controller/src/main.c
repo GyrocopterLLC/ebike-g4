@@ -907,13 +907,46 @@ void User_BasicTIM_IRQ(void) {
     }
 
     // Power calcs
-    Mpc.Ta = Mpwm.tA;
-    Mpc.Tb = Mpwm.tB;
-    Mpc.Tc = Mpwm.tC;
-    Mpc.Vbus = Mctrl.BusVoltage;
-    Mpc.Ialpha = Mfoc.Clarke_Alpha;
-    Mpc.Ibeta = Mfoc.Clarke_Beta;
-    power_calc(&Mpc);
+    if (config_main.ControlMethod == Control_BLDC) {
+        // Different method for six-step
+        // Choose just one current, whichever has the low-side fet turned on
+        switch(Mobv.HallState){
+        case 2:
+        case 6:
+            // Phase A is low
+            Mpc.PhaseCurrent = -Mobv.iA;
+            break;
+        case 4:
+        case 5:
+            // Phase B is low
+            Mpc.PhaseCurrent = -Mobv.iB;
+            break;
+        case 1:
+        case 3:
+            // Phase C is low
+            Mpc.PhaseCurrent = -Mobv.iC;
+            break;
+        default:
+            Mpc.PhaseCurrent = 0.0f;
+            break;
+        }
+        // Battery current is just phase current scaled to duty cycle
+        // All duty cycles (tA, tB, tC) are the same in six-step, so
+        // we can pick any one.
+        Mpc.BatteryCurrent = (Mpwm.tA) * (Mpc.PhaseCurrent);
+        Mpc.Vbus = Mctrl.BusVoltage;
+        // Total power is battery volts * battery amps
+        Mpc.TotalPower = (Mpc.Vbus) * (Mpc.BatteryCurrent);
+
+    } else {
+        Mpc.Ta = Mpwm.tA;
+        Mpc.Tb = Mpwm.tB;
+        Mpc.Tc = Mpwm.tC;
+        Mpc.Vbus = Mctrl.BusVoltage;
+        Mpc.Ialpha = Mfoc.Clarke_Alpha;
+        Mpc.Ibeta = Mfoc.Clarke_Beta;
+        power_calc(&Mpc);
+    }
 
 }
 

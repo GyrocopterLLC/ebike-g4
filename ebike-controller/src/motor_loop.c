@@ -50,6 +50,39 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         FOC_StateVariables* foc, Motor_PWMDuties* duty) {
     float ipark_a, ipark_b;
 
+    // Regardless of control mode, calculate the Clarke transform.
+    // It's outputs are used in power calculations even when the motor isn't
+    // being driven.
+
+    // Error reduction - use only the two most lowest duty cycles.
+    // Why? The current measurement is done on the low side FET. The more
+    // time this FET is turned on, the longer the duration available for
+    // measuring current. Also, since this is a balanced three-phase bridge,
+    // we can calculate one current if we know the other two:
+    // Ia + Ib + Ic = 0
+    //      Ia = -(Ib + Ic), Ib = -(Ia + Ic), Ic = -(Ia + Ib)
+
+    float clark_input_a, clark_input_b;
+    if((obv->iA > obv->iB) && (obv->iA > obv->iC)) {
+        // biggest current is A ==> use B and C
+        clark_input_a = -(obv->iB + obv->iC);
+        clark_input_b = obv->iB;
+    }
+    else if((obv->iB) > (obv->iC)) {
+        // biggest current is B ==> use A and C
+        clark_input_a = obv->iA;
+        clark_input_b = -(obv->iA + obv->iC);
+    }
+    else {
+        // biggest current is C ==> use A and B
+        clark_input_a = obv->iA;
+        clark_input_b = obv->iB;
+    }
+
+    dfsl_clarkef(clark_input_a, clark_input_b, &(foc->Clarke_Alpha),
+            &(foc->Clarke_Beta));
+
+    // Determine what to do next based on the control state
     switch (cntl->state) {
     case Motor_Off:
         // There's no command to give, so we can skip all that fancy processing.
@@ -339,8 +372,9 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         // Running full-fledged FOC algorithm now!
         // **************** FEEDBACK PATH *****************
         // Transform sensor readings
-        dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
-                &(foc->Clarke_Beta));
+        // Clarke transform done above, before the switch statement.
+//        dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
+//                &(foc->Clarke_Beta));
         dfsl_parkf(foc->Clarke_Alpha, foc->Clarke_Beta, obv->RotorAngle,
                 &(foc->Park_D), &(foc->Park_Q));
         // Input feedbacks to the Id and Iq controllers
@@ -363,8 +397,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 //        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
 //                * (cntl->ThrottleCommand) - foc->Park_Q;
         // --- End old version ---
-        //Id_control.Err = 0.0f - Id_Filt.Y;
-        //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
+
         // Don't integrate unless the throttle is active
         if (cntl->ThrottleCommand > 0.0f) {
             dfsl_pidf(foc->Id_PID);
@@ -405,8 +438,9 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         MLoop_Turn_Off_Check(cntl);
         // **************** FEEDBACK PATH *****************
         // Transform sensor readings
-        dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
-                &(foc->Clarke_Beta));
+        // Clarke transform done above, before the switch statement.
+//        dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
+//                &(foc->Clarke_Beta));
         dfsl_parkf(foc->Clarke_Alpha, foc->Clarke_Beta, cntl->RampAngle,
                 &(foc->Park_D), &(foc->Park_Q));
         // Input feedbacks to the Id and Iq controllers
@@ -422,8 +456,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
 //                * (cntl->ThrottleCommand) - foc->Park_D;
 //        foc->Iq_PID->Err = 0.0f - foc->Park_Q;
         // --- End old version ---
-        //Id_control.Err = 0.0f - Id_Filt.Y;
-        //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
+
         // Don't integrate unless the throttle is active
         if (cntl->ThrottleCommand > 0.0f) {
             dfsl_pidf(foc->Id_PID);
