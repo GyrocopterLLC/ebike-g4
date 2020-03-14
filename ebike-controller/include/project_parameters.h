@@ -120,13 +120,13 @@ typedef enum _data_type {
 #define CONFIG_THRT_RISE2           (0x030C) //F32
 /*** Throttle Default Values ***/
 #define DFLT_THRT_TYPE1             (1) // Analog ADC type
-#define DFLT_THRT_MIN1              (0.85f)
+#define DFLT_THRT_MIN1              (0.9f)
 #define DFLT_THRT_MAX1              (2.20f)
 #define DFLT_THRT_HYST1             (0.025f)
 #define DFLT_THRT_FILT1             (2.0f)
 #define DFLT_THRT_RISE1             (0.0005f) // 0->100 in 2 seconds
 #define DFLT_THRT_TYPE2             (0) // None
-#define DFLT_THRT_MIN2              (0.85f)
+#define DFLT_THRT_MIN2              (0.9f)
 #define DFLT_THRT_MAX2              (2.20f)
 #define DFLT_THRT_HYST2             (0.025f)
 #define DFLT_THRT_FILT2             (2.0f)
@@ -295,7 +295,7 @@ typedef enum _data_type {
 //#define THROTTLE_START_TIME         (1000)
 //#define THROTTLE_START_DEADTIME     (500)
 //#define THROTTLE_RANGE_LIMIT        (0.05f)
-#define THROTTLE_MIN_DEFAULT        (0.85f)
+#define THROTTLE_MIN_DEFAULT        (0.9f)
 #define THROTTLE_MAX_DEFAULT        (2.20f)
 //#define THROTTLE_DROPOUT            (0.72f
 

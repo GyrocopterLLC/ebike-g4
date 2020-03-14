@@ -49,6 +49,8 @@ static void MLoop_Turn_Off_Check(Motor_Controls* cntl) {
 void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         FOC_StateVariables* foc, Motor_PWMDuties* duty) {
     float ipark_a, ipark_b;
+    static uint32_t iasum, ibsum, icsum;
+    static uint32_t StartupCounter;
 
     // Regardless of control mode, calculate the Clarke transform.
     // It's outputs are used in power calculations even when the motor isn't
@@ -83,6 +85,16 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
             &(foc->Clarke_Beta));
 
     // Determine what to do next based on the control state
+    // Before we begin, check if we need to skip the startup phase
+    // This startup will cause excessive braking and incorrect current
+    // null value if the motor is already spinning.
+    if(cntl->state == Motor_Startup) {
+        if(fabsf(HallSensor_Get_Speedf()) >= 1.0f) {
+            // Skip straight to FOC
+            cntl->state = Motor_FOC;
+        }
+    }
+
     switch (cntl->state) {
     case Motor_Off:
         // There's no command to give, so we can skip all that fancy processing.
@@ -187,7 +199,7 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
          * when the motor is spinning is equivalent to regen braking. Hard.
          * That would be rather unpleasant.
          */
-#if 0
+
     case Motor_Startup:
         if (lastRunState != Motor_Startup) {
             PHASE_A_PWM();
@@ -201,33 +213,29 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         }
         // Check if throttle dropped to zero. We should quit if that happens.
         MLoop_Turn_Off_Check(cntl);
-        // Check if motor is running.
-        if(HallSensor_Get_Speedf() == 0.0f) {
-            // Force outputs all to 50%. This should be zero current.
-            duty->tA = 0.5f;
-            duty->tB = 0.5f;
-            duty->tC = 0.5f;
-            if(StartupCounter >= MLOOP_STARTUP_MIN_IGNORE_COUNT + MLOOP_STARTUP_NUM_SAMPLES){
-                // Finished - get the average and tell the ADC to use it
-                adcSetNull(ADC_IA, (uint16_t)(iasum / MLOOP_STARTUP_NUM_SAMPLES));
-                adcSetNull(ADC_IB, (uint16_t)(ibsum / MLOOP_STARTUP_NUM_SAMPLES));
-                adcSetNull(ADC_IC, (uint16_t)(icsum / MLOOP_STARTUP_NUM_SAMPLES));
-                // Jump to run state
-                cntl->state = Motor_AtSpeed;
 
-            } else if(StartupCounter > MLOOP_STARTUP_MIN_IGNORE_COUNT) {
-                // Only start summing after some initial dead time
-                iasum += adcRaw(ADC_IA);
-                ibsum += adcRaw(ADC_IB);
-                icsum += adcRaw(ADC_IC);
-            }
-        } else {
-            // Just keep the last zero point, and skip to run state.
-            cntl->state = Motor_AtSpeed;
+        // Force outputs all to 50%. This should be zero current.
+        duty->tA = 0.5f;
+        duty->tB = 0.5f;
+        duty->tC = 0.5f;
+        if(StartupCounter >= MLOOP_STARTUP_MIN_IGNORE_COUNT + MLOOP_STARTUP_NUM_SAMPLES){
+            // Finished - get the average and tell the ADC to use it
+            adcSetNull(ADC_IA, (uint16_t)(iasum / MLOOP_STARTUP_NUM_SAMPLES));
+            adcSetNull(ADC_IB, (uint16_t)(ibsum / MLOOP_STARTUP_NUM_SAMPLES));
+            adcSetNull(ADC_IC, (uint16_t)(icsum / MLOOP_STARTUP_NUM_SAMPLES));
+            // Jump to run state
+            cntl->state = Motor_FOC;
+        } else if(StartupCounter > MLOOP_STARTUP_MIN_IGNORE_COUNT) {
+            // Only start summing after some initial dead time
+            iasum += adcRaw(ADC_IA);
+            ibsum += adcRaw(ADC_IB);
+            icsum += adcRaw(ADC_IC);
         }
+        StartupCounter++;
+
 
         break;
-#endif
+
 
 // Commenting out this startup routine for now. Now taken care of by the Hall
 // sensor keeping track of its own validity instead.
@@ -336,12 +344,12 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
                     HallSensor_GetStateMidpoint(obv->HallState)
                             - obv->RotorAngle) < config_main.SwitchEpsilon)
 //          if (fabsf(HallStateToDriveFloat[obv->HallState] - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
-                cntl->state = Motor_AtSpeed;
+                cntl->state = Motor_FOC;
         }
         break;
 #endif
-    case Motor_AtSpeed:
-        if (lastRunState != Motor_AtSpeed) {
+    case Motor_FOC:
+        if (lastRunState != Motor_FOC) {
             PHASE_A_PWM();
             PHASE_B_PWM();
             PHASE_C_PWM();

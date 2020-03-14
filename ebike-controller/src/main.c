@@ -865,8 +865,8 @@ void User_BasicTIM_IRQ(void) {
     // Check if we should change out of standby
     if ((Mctrl.ThrottleCommand > 0.0f) && (Mctrl.state == Motor_Off)) {
         if (config_main.ControlMethod == Control_FOC)
-//            Mctrl.state = Motor_Startup;
-            Mctrl.state = Motor_AtSpeed;
+            Mctrl.state = Motor_Startup;
+//            Mctrl.state = Motor_FOC;
         if (config_main.ControlMethod == Control_BLDC)
             Mctrl.state = Motor_SixStep;
         if(config_main.ControlMethod == Control_Debug)

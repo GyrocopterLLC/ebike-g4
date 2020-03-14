@@ -49,6 +49,7 @@ Throttle_PAS_Type *psPasThrottles[2] = { &sPasThrottle1, &sPasThrottle2 };
 
 static void throttle_hyst_and_rate_limiting(Throttle_Type *thr);
 static void throttle_set_scale(Throttle_Analog_Type* thr);
+static uint8_t throttle_detect_stuck(Throttle_Analog_Type* thr, float thr_in);
 //static void throttle_detect_min_max(uint8_t thrnum); // Currently unused
 
 void throttle_init(void) {
@@ -190,8 +191,18 @@ void throttle_process(uint8_t thrnum) {
         // Only need to process if analog throttle type
         // The PAS throttle type is taken care of with interrupt / timer callbacks
         float temp_cmd = 0.0f;
+        // Perform the startup check
+        if(throttle_detect_stuck(psAnalogThrottles[thrnum-1], adcGetThrottle(thrnum))) {
+            // Throttle is okay. Or at least it started up okay.
+            pThrottle_filts[thrnum - 1]->X = adcGetThrottle(thrnum);
+        } else {
+            // Throttle might be stuck on
+            // Set input to zero
+            pThrottle_filts[thrnum - 1]->X = 0.0f;
+        }
+
         // Filter the raw throttle voltage
-        pThrottle_filts[thrnum - 1]->X = adcGetThrottle(thrnum);
+//        pThrottle_filts[thrnum - 1]->X = adcGetThrottle(thrnum); // Done above during startup check
         dfsl_biquadf(pThrottle_filts[thrnum - 1]);
 
         // Regular throttle processing
@@ -209,7 +220,7 @@ void throttle_process(uint8_t thrnum) {
 
     /** PAS Throttle type **/
     else if (psThrottles[thrnum - 1]->throttle_type == THROTTLE_TYPE_PAS) {
-        // Just do the hysterisis and rate limiting at this known update rate
+        // Just do the hysteresis and rate limiting at this known update rate
         // Pedaling speed calculation is done separately, triggered whenever the
         // PAS sensor switches
         throttle_hyst_and_rate_limiting(psThrottles[thrnum - 1]);
@@ -246,6 +257,50 @@ static void throttle_hyst_and_rate_limiting(Throttle_Type *thr) {
 
 static void throttle_set_scale(Throttle_Analog_Type* thr) {
     thr->scale_factor = (1.0f) / ((thr->max) - (thr->min));
+}
+
+/**
+ * @brief  Determines if the throttle position is stuck at startup.
+ *
+ * If the throttle becomes disconnected, the motor controller might
+ * instead see a fixed throttle command and start ramping up the motor
+ * uncontrollably. This is difficult to detect while running,
+ * but at startup we can check for it easily.
+ * When the throttle module starts up, check if the throttle position
+ * is above the minimum value. If it is, wait for it to go below the
+ * minimum cutoff before actually applying any throttle.
+ * The throttle needs to stay below the minimum for some duration
+ * before we trust it. If it passes above the minimum before the
+ * end of that duration, we reset the counter.
+ *
+ * @param  thr - Analog throttle structure containing the throttle to
+ *               validate.
+ * @param  thr_in - float that holds the present analog value of the
+ *                  throttle command.
+ * @retval uint8_t - If throttle should be zeroed due to a stuck throttle,
+ *                   returns 0. Otherwise returns 1.
+ */
+static uint8_t throttle_detect_stuck(Throttle_Analog_Type* thr, float thr_in) {
+    // Check startup flags. If we've already finished startup, don't perform
+    // any checks.
+    if((thr->flags & (THR_FLAG_STARTUP_COMPLETE)) == 0) {
+        if(thr_in > (thr->min)) {
+            // We are stuck on. Need to wait for throttle to drop below min for
+            // some duration.
+            // Reset the counter
+            thr->startup_counter = 0;
+
+        } else {
+            // Increment the timer
+            thr->startup_counter = thr->startup_counter + 1;
+            if(thr->startup_counter >= THR_STARTUP_TIMER_DURATION) {
+                thr->flags |= THR_FLAG_STARTUP_COMPLETE;
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 1;
 }
 /*
  static void throttle_detect_min_max(uint8_t thrnum) {

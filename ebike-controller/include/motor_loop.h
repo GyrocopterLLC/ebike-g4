@@ -34,12 +34,15 @@
 typedef enum _Motor_RunState {
     Motor_Off,		// All switching disabled.
     Motor_SixStep,  // Running in trapezoidal mode
-    //Motor_Startup,	// In FOC, but with untrustworthy angle
-    Motor_AtSpeed,	// Switched to FOC full control
+    Motor_Startup,	// Determine current offsets
+    Motor_FOC,	// Switched to FOC full control
     Motor_OpenLoop, // Open-loop with fixed frequency rotation
     Motor_Debug,    // All three PWMs follow the throttle
     Motor_Fault		// Something fd up
 } Motor_RunState;
+
+#define MLOOP_STARTUP_MIN_IGNORE_COUNT          (100) // Ignores the first 100*50us=5ms of samples
+#define MLOOP_STARTUP_NUM_SAMPLES               (512) // Sums over the next 512*50us = 25.6ms of samples
 
 typedef struct _Motor_Controls {
     Motor_RunState state;

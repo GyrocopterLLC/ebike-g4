@@ -52,11 +52,17 @@ typedef struct _throttle_type {
 } Throttle_Type;
 
 typedef struct _throttle_analog {
-    uint32_t startup_count;
+    uint16_t flags;
+    uint16_t startup_counter;
     float min;
     float max;
     float scale_factor;
 } Throttle_Analog_Type;
+
+// Definition of flags for analog throttle
+#define THR_FLAG_STARTUP_COMPLETE       (0x0001)
+// Duration of time (in throttle ticks - usually 1ms) to wait for throttle to steady out
+#define THR_STARTUP_TIMER_DURATION      (300)
 
 typedef struct _throttle_pas {
     float filtered_speed;
@@ -66,7 +72,7 @@ typedef struct _throttle_pas {
 #define THROTTLE_DEFAULTS         {THROTTLE_TYPE_ANALOG, 0, 0.0f, 0.0f, \
                                     THROTTLE_HYST_DEFAULT, THROTTLE_FILT_DEFAULT, \
                                     THROTTLE_RISE_DEFAULT}
-#define THROTTLE_ANALOG_DEFAULTS	{0, 0.0f, 0.0f, 1.0f}
+#define THROTTLE_ANALOG_DEFAULTS	{0, 0, 0.0f, 0.0f, 1.0f}
 #define THROTTLE_PAS_DEFAULTS     {0.0f, 0.015f}
 #define PAS_FILTER                (0.125f) // LPF of 1/8
 
