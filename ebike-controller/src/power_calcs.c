@@ -30,33 +30,39 @@
 #include "power_calcs.h"
 
 void power_calc(PowerCalcs* pc) {
-    // Step 1 - calculate the voltages for each phase to neutral
+    // From "Permanent Magnet Synchronous and Brushless DC Motors" by Ramu Krishnan
+    // Chapter 3.5, Power Equivalence
+    // Power in = Power out
+    // For the three-phase motor, power out = Van*Ia + Vbn*Ib + Vcn*Ic
+    // For a two-phase equivalent, power out = (3/2) * (Valpha*Ialpha + Vbeta*Ibeta)
+    // The (3/2) comes from the three-to-two-phase conversion.
+
+    // Calculate the voltages for each phase to neutral
     // Vx = Tx * Vbus, x = a,b,c
     // Vn = (Va + Vb + Vc)/3
     // Van = Va - Vn = (2*Va - Vb - Vc) / 3
     // ...similar for Vbn, Vcn
-    float Van, Vbn, Vbeta, phaseVolts;
+    // But we don't need Vcn for the balanced Clarke transform, so it's skipped
+    float Van, Vbn, Vbeta;
     Van = pc->Vbus * ((2.0f * pc->Ta) - (pc->Tb) - (pc->Tc)) / 3.0f;
     Vbn = pc->Vbus * ((2.0f * pc->Tb) - (pc->Ta) - (pc->Tc)) / 3.0f;
 
-    // Step 2 - Clarke transform from 3-phase to 2-phase
+    // Clarke transform from 3-phase to 2-phase
     // Valpha = Van (keeping the same name)
     Vbeta = (2.0f * Vbn + Van) * (ONE_OVER_SQRT3_F);
 
-    // Step 3 - Calculate magnitude of phase current
-    // I_mag = (3/2) * sqrt(Ialpha^2 + Ibeta^2)
-    pc->PhaseCurrent = 1.5f
-            * sqrtf((pc->Ialpha) * (pc->Ialpha) + (pc->Ibeta) * (pc->Ibeta));
+    // Calculate total power
+    pc->TotalPower = (1.5f)*((pc->Ialpha)*Van + (pc->Ibeta)*Vbeta);
 
-    // Step 4 - Calculate magnitude of phase voltage
-    phaseVolts = sqrtf(Van * Van + Vbeta * Vbeta);
+    // Calculate battery current using Pin = Pout, and Pin = Vbattery*Ibattery
+    if(pc->Vbus > 0.01f) {
+        // Avoid divide by zero errors
+        pc->BatteryCurrent = pc->TotalPower / pc->Vbus;
+    } else {
+        pc->BatteryCurrent = 0.0f;
+    }
 
-    // Step 5 - Calculate total power
-    pc->TotalPower = phaseVolts * pc->PhaseCurrent;
-
-    // Step 6 - Calculate battery current
-    // Conservation of power:
-    //      Total power = V_phase*I_phase = V_battery*I_battery
-    pc->BatteryCurrent = pc->TotalPower / pc->Vbus;
+    // Also calculate the phase current using the magnitude of Ialpha/Ibeta
+    pc->PhaseCurrent = sqrtf((pc->Ialpha) * (pc->Ialpha) + (pc->Ibeta) * (pc->Ibeta));
 
 }

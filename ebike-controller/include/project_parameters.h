@@ -43,7 +43,7 @@ typedef enum _data_type {
 #define CONFIG_ADC_THERM_R25        (0x0004) //F32: Temp sensor resistance at 25degC
 #define CONFIG_ADC_THERM_B          (0x0005) //F32: Temp sensor beta value
 /*** ADC Default Values ***/
-#define DFLT_ADC_INV_TIA_GAIN       (20.0f) // 0.001 Ohms, 50x INA213 gain, 1/(50*.001) = 20
+#define DFLT_ADC_INV_TIA_GAIN       (60.0f) // 0.00033 Ohms, 50x INA213 gain, 1/(50*.00033) = 60
 #define DFLT_ADC_VBUS_RATIO         (33.36246f) // 1 / (3.09kOhm / (100 + 3.09kOhm)) = 33.36246
 #define DFLT_ADC_THERM_FIXED_R      (10000.0f) // 10k resistor
 #define DFLT_ADC_THERM_R25          (10000.0f) // Thermistor is 10k at 25degC
@@ -151,12 +151,12 @@ typedef enum _data_type {
 /*** Limit Default Values ***/
 #define DFLT_LMT_VOLT_FAULT_MIN     (44.8f) // 2.8 x 16 cells
 #define DFLT_LMT_VOLT_FAULT_MAX     (70.4f) // 4.4 x 16 cells
-#define DFLT_LMT_CUR_FAULT_MAX      (24.0f) // Just below max sensing level
+#define DFLT_LMT_CUR_FAULT_MAX      (74.0f) // Just below max sensing level
 #define DFLT_LMT_VOLT_SOFTCAP       (10.0f) // For testing, just apply 12V or more
 #define DFLT_LMT_VOLT_HARDCAP       (8.0f)
-#define DFLT_LMT_PHASE_CUR_MAX      (20.0f)
+#define DFLT_LMT_PHASE_CUR_MAX      (60.0f)
 #define DFLT_LMT_PHASE_REGEN_MAX    (5.0f)
-#define DFLT_LMT_BATT_CUR_MAX       (20.0f)
+#define DFLT_LMT_BATT_CUR_MAX       (30.0f)
 #define DFLT_LMT_BATT_REGEN_MAX     (5.0f)
 #define DFLT_LMT_FET_TEMP_SOFTCAP   (75.0f)
 #define DFLT_LMT_FET_TEMP_HARDCAP   (90.0f)

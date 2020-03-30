@@ -65,12 +65,12 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
     //      Ia = -(Ib + Ic), Ib = -(Ia + Ic), Ic = -(Ia + Ib)
 
     float clark_input_a, clark_input_b;
-    if((obv->iA > obv->iB) && (obv->iA > obv->iC)) {
+    if((duty->tA > duty->tB) && (duty->tA > duty->tC)) {
         // biggest current is A ==> use B and C
         clark_input_a = -(obv->iB + obv->iC);
         clark_input_b = obv->iB;
     }
-    else if((obv->iB) > (obv->iC)) {
+    else if((duty->tB) > (duty->tC)) {
         // biggest current is B ==> use A and C
         clark_input_a = obv->iA;
         clark_input_b = -(obv->iA + obv->iC);
@@ -237,117 +237,13 @@ void Motor_Loop(Motor_Controls* cntl, Motor_Observations* obv,
         break;
 
 
-// Commenting out this startup routine for now. Now taken care of by the Hall
-// sensor keeping track of its own validity instead.
-#if 0
-    case Motor_Startup:
-        // During this startup routine, the FOC is active but the angle
-        // of the motor is discontinuous (similar to 6-step)
-        // Driven angle is 90deg ahead of the midpoint of the Hall state
-        if (lastRunState != Motor_Startup) {
-            PHASE_A_PWM();
-            PHASE_B_PWM();
-            PHASE_C_PWM();
-            PWM_MotorON();
-            // The PIDs should be reset. If the motor is spinning already,
-            // this will cause a huge regenerative braking spike.
-            // Zero output on the three phases is like putting out zero
-            // volts, and the motor will be acting like a generator
-            // with its back-emf. We need to apply voltage at least equal
-            // to the back-emf (or a close estimate!) as our true zero-current
-            // starting point.
-            /*** TODO: Check what the steady-state value of Ui_q tends to be,
-             *         see if it's a linear relationship to speed, find the formula.
-             *
-             *         Seems to be! Looks pretty consistent as a ratio between UI_Q*DCvolts :: speed
-             *   TODO: Only do this startup routine when speed is well known (PLL locked)
-             *
-             *         Well, PLL locks right away even if the speed=0. So that's useless.
-             *         */
-            foc->Iq_PID->Ui = config_main.kv_volts_per_ehz * obv->RotorSpeed_eHz / cntl->BusVoltage;
-            if(foc->Iq_PID->Ui > foc->Iq_PID->OutMax) {
-                foc->Iq_PID->Ui = 0.0f; // Don't bother if it's too large. Probably an error state.
-            }
-            if(foc->Iq_PID->Ui < foc->Iq_PID->OutMin) {
-                foc->Iq_PID->Ui = 0.0f; // Likewise if it's less than the minimum.
-            }
-
-        }
-        MLoop_Turn_Off_Check(cntl);
-        if ((obv->HallState > 6) || (obv->HallState < 1)) {
-            cntl->state = Motor_Fault;
-            duty->tA = 0.0f;
-            duty->tB = 0.0f;
-            duty->tC = 0.0f;
-            PWM_MotorOFF();
-        }
-
-        // Clarke transform to 2-phase stationary system
-        dfsl_clarkef(obv->iA, obv->iB, &(foc->Clarke_Alpha),
-                &(foc->Clarke_Beta));
-        dfsl_parkf(foc->Clarke_Alpha, foc->Clarke_Beta,
-//                HallStateToDriveFloat[obv->HallState], &(foc->Park_D),
-                HallSensor_GetStateMidpoint(obv->HallState), &(foc->Park_D),
-                &(foc->Park_Q));
-        // Pass filtered current to the PI(D)s
-        // Error signals are normalized to 1.0. This allows us to use the same
-        // PID gains regardless of current scaling.
-        foc->Id_PID->Err = 0.0f
-                - ((foc->Park_D) * (config_main.inv_max_phase_current));
-        foc->Iq_PID->Err = cntl->ThrottleCommand
-                - ((foc->Park_Q) * (config_main.inv_max_phase_current));
-        // --- Old version, no normalizing ---
-//        foc->Id_PID->Err = 0.0f - foc->Park_D;
-//        foc->Iq_PID->Err = (config_main.MaxPhaseCurrent)
-//                * (cntl->ThrottleCommand) - foc->Park_Q;
-        // --- End old version ---
-        //Id_control.Err = 0.0f - Id_Filt.Y;
-        //Iq_control.Err = (3.0f)*Throttle_cmd - Iq_Filt.Y;
-        // Don't integrate unless the throttle is active
-        if (cntl->ThrottleCommand > 0.0f) {
-            dfsl_pidf(foc->Id_PID);
-            dfsl_pidf(foc->Iq_PID);
-        }
-
-        // **************** FORWARD PATH *****************
-        // Feed to inverse Park
-        dfsl_iparkf(foc->Id_PID->Out, foc->Iq_PID->Out,
-//                HallStateToDriveFloat[obv->HallState], &ipark_a, &ipark_b);
-                HallSensor_GetStateMidpoint(obv->HallState), &ipark_a,
-                &ipark_b);
-        // Saturate inputs to unit-length vector
-        // Is magnitude of ipark greater than 1?
-        if (((ipark_a * ipark_a) + (ipark_b * ipark_b)) > 1.0f) {
-            // Trim by scaling by 1.0 / mag(ipark)
-            float inv_mag_ipark = 1.0f
-                    / sqrtf((ipark_a * ipark_a) + (ipark_b * ipark_b));
-            ipark_a = ipark_a * inv_mag_ipark;
-            ipark_b = ipark_b * inv_mag_ipark;
-        }
-        // Inverse Park outputs to space vector modulation, output three-phase waveforms
-        dfsl_svmf(ipark_a, ipark_b, &(duty->tA), &(duty->tB), &(duty->tC));
-
-        // Check if we're ready for regular run mode
-//        if (HallSensor_Get_Speedf() > MIN_SPEED_TO_FOC) {
-        if (HallSensor_Get_Speedf() > config_main.SpeedToFOC) {
-            cntl->speed_cycle_integrator = cntl->speed_cycle_integrator + 1;
-        } else {
-            if (cntl->speed_cycle_integrator > 0) {
-                cntl->speed_cycle_integrator = cntl->speed_cycle_integrator - 1;
-            }
-        }
-//        if (cntl->speed_cycle_integrator > SPEED_COUNTS_TO_FOC) {
-        if (cntl->speed_cycle_integrator > config_main.CountsToFOC) {
-            // Hold off on changing to FOC until the angle is pretty darn close
-            // to lining up.
-            if (fabsf(
-                    HallSensor_GetStateMidpoint(obv->HallState)
-                            - obv->RotorAngle) < config_main.SwitchEpsilon)
-//          if (fabsf(HallStateToDriveFloat[obv->HallState] - obv->RotorAngle) < FOC_SWITCH_ANGLE_EPS)
-                cntl->state = Motor_FOC;
-        }
-        break;
-#endif
+// The FOC mode will run either in traditional FOC or a pseudo-trapezoidal mode
+// depending on if the motor angle can be trusted. The Hall sensor code
+// will make a decision if the angle is continuous (more like FOC) or
+// discontinuous, which outputs only 6 possible angles (60 deg apart)
+// corresponding to a Hall state. The Hall state is "trusted" if multiple
+// state changes have been observed in a row, with relatively similar speed,
+// and all in the same rotation direction.
     case Motor_FOC:
         if (lastRunState != Motor_FOC) {
             PHASE_A_PWM();
