@@ -738,7 +738,7 @@ void User_PWMTIM_IRQ(void) {
     usbdacvals[18] = HallSensor2_Get_Anglef();
 #endif // TESTING_2X
 #ifdef TESTING_PLL
-    usbdacvals[18] = HallSensor_Is_Valid();
+    usbdacvals[18] = (float) HallSensor_Is_Valid();
     // Show the PLL unless it's invalid, then just show hall state
 //    if(HallSensorPLL_Is_Valid() == PLL_LOCKED)
 //        usbdacvals[18] = HallSensorPLL_Get_Anglef();

@@ -29,6 +29,10 @@
 #include "arm_math.h"
 #include "power_calcs.h"
 
+// Needs some filtering on the magnitude of power and current
+// Using a simple low-pass filter, about 20Hz bandwidth
+#define POWER_CALCS_LPF_MULTIPLIER      (0.07f)
+
 void power_calc(PowerCalcs* pc) {
     // From "Permanent Magnet Synchronous and Brushless DC Motors" by Ramu Krishnan
     // Chapter 3.5, Power Equivalence
@@ -52,7 +56,8 @@ void power_calc(PowerCalcs* pc) {
     Vbeta = (2.0f * Vbn + Van) * (ONE_OVER_SQRT3_F);
 
     // Calculate total power
-    pc->TotalPower = (1.5f)*((pc->Ialpha)*Van + (pc->Ibeta)*Vbeta);
+    pc->TotalPower = (1.0f - POWER_CALCS_LPF_MULTIPLIER) * (pc->TotalPower) +
+            POWER_CALCS_LPF_MULTIPLIER * ( (1.5f)*((pc->Ialpha)*Van + (pc->Ibeta)*Vbeta) );
 
     // Calculate battery current using Pin = Pout, and Pin = Vbattery*Ibattery
     if(pc->Vbus > 0.01f) {
@@ -62,7 +67,8 @@ void power_calc(PowerCalcs* pc) {
         pc->BatteryCurrent = 0.0f;
     }
 
-    // Also calculate the phase current using the magnitude of Ialpha/Ibeta
-    pc->PhaseCurrent = sqrtf((pc->Ialpha) * (pc->Ialpha) + (pc->Ibeta) * (pc->Ibeta));
+    // Also calculate the phase current using the magnitude of Ialpha & Ibeta
+    pc->PhaseCurrent = (1.0f - POWER_CALCS_LPF_MULTIPLIER) * (pc->PhaseCurrent) +
+            POWER_CALCS_LPF_MULTIPLIER * sqrtf(((pc->Ialpha) * (pc->Ialpha)) + ((pc->Ibeta) * (pc->Ibeta)));
 
 }
