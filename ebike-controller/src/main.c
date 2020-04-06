@@ -914,17 +914,20 @@ void User_BasicTIM_IRQ(void) {
         case 2:
         case 6:
             // Phase A is low
-            Mpc.PhaseCurrent = -Mobv.iA;
+            Mpc.PhaseCurrent = (1.0f-POWER_CALCS_LPF_MULTIPLIER)*Mpc.PhaseCurrent
+                                - (POWER_CALCS_LPF_MULTIPLIER*Mobv.iA);
             break;
         case 4:
         case 5:
             // Phase B is low
-            Mpc.PhaseCurrent = -Mobv.iB;
+            Mpc.PhaseCurrent = (1.0f-POWER_CALCS_LPF_MULTIPLIER)*Mpc.PhaseCurrent
+                                - (POWER_CALCS_LPF_MULTIPLIER*Mobv.iB);
             break;
         case 1:
         case 3:
             // Phase C is low
-            Mpc.PhaseCurrent = -Mobv.iC;
+            Mpc.PhaseCurrent = (1.0f-POWER_CALCS_LPF_MULTIPLIER)*Mpc.PhaseCurrent
+                                - (POWER_CALCS_LPF_MULTIPLIER*Mobv.iC);
             break;
         default:
             Mpc.PhaseCurrent = 0.0f;

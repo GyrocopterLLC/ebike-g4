@@ -27,6 +27,9 @@
 #define _POWER_CALCS_H_
 
 #define ONE_OVER_SQRT3_F  (0.57735026918962576451f)
+// Needs some filtering on the magnitude of power and current
+// Using a simple low-pass filter, about 20Hz bandwidth
+#define POWER_CALCS_LPF_MULTIPLIER      (0.07f)
 
 typedef struct _PowerCalcs {
     // Inputs
