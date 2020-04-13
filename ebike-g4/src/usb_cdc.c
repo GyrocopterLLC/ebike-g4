@@ -3,7 +3,7 @@
  * Description: Communication device class (CDC) driver for USB.
  ******************************************************************************
 
- Copyright (c) 2019 David Miller
+ Copyright (c) 2020 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,7 @@
  SOFTWARE.
  */
 
-#include "stm32g4xx.h"
-#include "usb.h"
-#include "usb_cdc.h"
+#include "main.h"
 #include <string.h>
 
 USB_ClassDescTypedef USB_CDC_ClassDesc = { CDC_DeviceDescriptor,

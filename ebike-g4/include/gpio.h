@@ -2,7 +2,7 @@
  * Filename: gpio.h
  ******************************************************************************
 
- Copyright (c) 2019 David Miller
+ Copyright (c) 2020 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,12 @@
 #define EXTI_Falling        ((uint8_t)0x02)
 #define EXTI_Rising_Falling (EXTI_Rising | EXTI_Falling)
 
+typedef enum _PuPd_Type {
+  PuPd_NoPull,
+  PuPd_PullUp,
+  PuPd_PullDown
+} PuPd_Type;
+
 void GPIO_Clk(GPIO_TypeDef* gpio);
 void GPIO_Output(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_Input(GPIO_TypeDef* gpio, uint8_t pin);
@@ -40,7 +46,7 @@ void GPIO_InputPD(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_InputPU(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_Analog(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af);
-void GPIO_Pulldown_Unused(void);
+void GPIO_SetPUPD(GPIO_TypeDef* gpio, uint8_t pin, PuPd_Type pullupdn);
 void GPIO_EXTI_Config(GPIO_TypeDef* gpio, uint8_t pin,
         uint8_t rise_fall_select);
 

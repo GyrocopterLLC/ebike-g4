@@ -3,7 +3,7 @@
  * Description: Helper functions for GPIO initialization.
  ******************************************************************************
 
- Copyright (c) 2019 David Miller
+ Copyright (c) 2020 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  */
-#include "stm32g4xx.h"
-#include "gpio.h"
-#include "pinconfig.h"
+#include "main.h"
 
 /**
  * @brief  Enables the clock in the RCC for this GPIO port.
@@ -135,6 +133,41 @@ void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af) {
         gpio->AFR[0] &= ~((0x0F) << (pin * 4));
         gpio->AFR[0] |= (af << (pin * 4));
     }
+}
+
+/**
+ * @brief  Configures the pullup for a given GPIO pin.
+ *         Does not modify any other settings.
+ * @param  gpio: The GPIO Port to be modified
+ *         pin: The pin to alter pullup settings
+ *         pullupdn: enum (see gpio.h) of applicable settings
+ * @retval None
+ */
+void GPIO_SetPUPD(GPIO_TypeDef* gpio, uint8_t pin, PuPd_Type pullupdn) {
+    // Clear pullup/down register
+    gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+
+    switch(pullupdn) {
+    case PuPd_PullUp:
+        // Clear the PUPDR reg
+        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+        // Set pull-up
+        gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_0 << (pin * 2));
+        break;
+    case PuPd_PullDown:
+        // Clear the PUPDR reg
+        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+        // Set pull-down
+        gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
+        break;
+    case PuPd_NoPull:
+    default:
+        // Clear the PUPDR reg
+        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+        break;
+    }
+    // Apply pull down
+    gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
 }
 
 // Configures the External Interrupt on the selected pin

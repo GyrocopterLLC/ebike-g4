@@ -1,6 +1,8 @@
 /******************************************************************************
  * Filename: usb.c
  * Description: Low-level driver for the Universal Serial Bus (USB) device.
+ *              Aimed for the USB device peripheral on the STM32G4 series
+ *              microcontrollers.
  ******************************************************************************
 
  Copyright (c) 2020 David Miller
@@ -24,13 +26,7 @@
  SOFTWARE.
  */
 
-#include "stm32g4xx.h"
-#include "Timer.h"
-#include "usb.h"
-#include "usb_cdc.h"
-#include "gpio.h"
-#include "pinconfig.h"
-#include "project_parameters.h"
+ #include "main.h"
 
 // Shortcut to the Packet Memory Area at offset 0x400
 #define USB_PMA_BASE_ADDR                       ((uint32_t) (USB_BASE + 0x400U))

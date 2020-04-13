@@ -33,6 +33,8 @@
 #include "diag/Trace.h"
 #include "Timer.h"
 
+#include "main.h"
+
 // ----------------------------------------------------------------------------
 //
 // Print a greeting message on the trace device and enter a loop
