@@ -39,6 +39,9 @@ typedef enum _PuPd_Type {
   PuPd_PullDown
 } PuPd_Type;
 
+#define GPIO_High(gpio, pin)        ((gpio->BSRR) = (0x01U << pin))
+#define GPIO_Low(gpio, pin)         ((gpio->BRR) = (0x01U << pin))
+
 void GPIO_Clk(GPIO_TypeDef* gpio);
 void GPIO_Output(GPIO_TypeDef* gpio, uint8_t pin);
 void GPIO_Input(GPIO_TypeDef* gpio, uint8_t pin);

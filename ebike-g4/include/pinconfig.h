@@ -41,7 +41,7 @@
 #define SPI_PORT            GPIOB
 #define SPI_MOSI_PIN        5
 #define SPI_MISO_PIN        4
-#define SPI_SCK_PIN        3
+#define SPI_SCK_PIN         3
 #define SPI_CS_PIN          9
 #define SPI_AF              (5U) // SPI1_MISO/MOSI/SCK
 

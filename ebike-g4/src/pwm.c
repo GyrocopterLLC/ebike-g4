@@ -1,6 +1,6 @@
 /******************************************************************************
  * Filename: pwm.c
- * Description: Initializes timer hardware on the STM32F4 for pulse width
+ * Description: Initializes timer hardware on the STM32G4 for pulse width
  *              modulation (PWM) output. This PWM is configured specifically
  *              for motor control: 6 outputs in 3 complementary (high-side and
  *              low-side) channels.

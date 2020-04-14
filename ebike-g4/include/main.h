@@ -35,6 +35,7 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 #include "pwm.h"
+#include "drv8353.h"
 #include "Timer.h" // TODO: make my own version of this guy
 #include "usb.h"
 #include "usb_cdc.h"

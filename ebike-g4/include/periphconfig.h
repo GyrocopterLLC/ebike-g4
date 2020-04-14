@@ -54,7 +54,8 @@
  * RTC - Temporary save variables into BKPSRAM to command bootloader resets
  *
  * *** ANALOG ***
- * ADC1,2,3,4,5 - Measure motor current, battery voltage, and throttle
+ * ADC1,2,3,4 - Measure motor current, battery voltage, and throttle
+ * ADC5 -
  * DAC1 - Debugging analog outputs for viewing with an oscilloscope
  * DAC2 -
  * COMP -
