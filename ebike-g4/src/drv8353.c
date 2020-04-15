@@ -57,7 +57,7 @@ void DRV8353_Init(void) {
     GPIO_AF(SPI_PORT, SPI_MOSI_PIN, SPI_AF);
     GPIO_AF(SPI_PORT, SPI_MISO_PIN, SPI_AF);
     GPIO_AF(SPI_PORT, SPI_SCK_PIN, SPI_AF);
-    GPIO_Output(SPI_PORT, SPI_CS_PIN, SPI_AF);
+    GPIO_Output(SPI_PORT, SPI_CS_PIN);
     GPIO_High(SPI_PORT, SPI_CS_PIN);
     // Enable pin
     GPIO_Output(DRV_EN_PORT, DRV_EN_PIN);
@@ -158,7 +158,7 @@ void DRV8353_Init(void) {
  */
 uint16_t DRV8353_Transaction(uint16_t DataOut) {
     uint32_t timeout_tracker;
-    uint16_t retval;
+    uint16_t retval = 0xFFFFU;
     // First pull chip select line low.
     GPIO_Low(SPI_PORT, SPI_CS_PIN);
 
@@ -176,7 +176,6 @@ uint16_t DRV8353_Transaction(uint16_t DataOut) {
         timeout_tracker--;
         if(timeout_tracker == 0) {
             break;
-            retval = 0xFFFFU;
         }
     }
     if((DRV_SPI->SR & SPI_SR_RXNE) != 0) {

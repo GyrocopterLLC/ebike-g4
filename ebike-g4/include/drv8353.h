@@ -172,4 +172,10 @@ typedef enum _DRV_Gain {
 
 #define DRVBIT_CAL_MODE         0x001 // set to use internal auto-calibration routine
 
+void DRV8353_Init(void);
+uint16_t DRV8353_Transaction(uint16_t DataOut);
+uint16_t DRV8353_Read(uint8_t reg_addr);
+uint16_t DRV8353_Write(uint8_t reg_addr, uint16_t reg_value);
+void DRV8353_SetGain(DRV_Gain gain);
+
 #endif // __SPI_H

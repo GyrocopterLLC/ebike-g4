@@ -37,8 +37,8 @@ float adc_vref;
 
 Config_ADC config_adc;
 
-static void ADC_TurnOn(void);
-
+static void ADC_Enable(ADC_TypeDef* adc);
+static void ADC_CalcVref(void);
 /**
  * @brief Initialize the ADC peripherals
  *
@@ -71,7 +71,7 @@ static void ADC_TurnOn(void);
 void ADC_Init(void) {
 
     // Load from eeprom
-    adcLoadVariables();
+    ADC_LoadVariables();
 
     // Enable all the GPIO clocks
     GPIO_Clk(ADC_MTEMP_PORT); GPIO_Clk(ADC_FTEMP_PORT);
@@ -260,7 +260,7 @@ void ADC_Init(void) {
 /**
  * @brief  Converts Vrefint to determine value of VDDA/VREF+
  */
-void ADC_CalcVref(void) {
+static void ADC_CalcVref(void) {
     // Save current values of things we're gonna change.
     uint32_t temp_smpr2 = ADC1->SMPR2;
     uint32_t temp_sqr1 = ADC1->SQR1;
@@ -367,7 +367,7 @@ float ADC_ConvertToAmps(int32_t rawCurrentReading) {
 }
 
 float ADC_GetCurrent(uint8_t which_cur) {
-    return adcConvertToAmps(
+    return ADC_ConvertToAmps(
             (int32_t) (adc_conv[which_cur])
                     - (int32_t) (adc_current_null[which_cur]));
 }

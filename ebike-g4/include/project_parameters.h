@@ -351,22 +351,6 @@ typedef enum _data_type {
 #define F32_300_DEG     (0.833333f)
 #define F32_330_DEG     (0.916667f)
 
-// Interrupt priority settings
-// Lowest number takes precedence
-// Multiple interrupt sources can use the same priority level,
-// but only a lower number interrupt will override a currently
-// responding IRQ function.
-#define PRIO_SYSTICK    (3)
-#define PRIO_PWM        (0)
-#define PRIO_HALL       (1)
-#define PRIO_ADC        (2)
-#define PRIO_APPTIMER   (3)
-#define PRIO_HBD_UART   (4)
-#define PRIO_BMS_UART   (4)
-#define PRIO_PAS        (5)
-#define PRIO_USB        (6)
-#define PRIO_DATA_PACKET_TIMER  (7)
-
 
 #if 0
 // Hall state change table
