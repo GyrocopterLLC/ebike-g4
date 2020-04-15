@@ -1,7 +1,9 @@
 /******************************************************************************
- * Filename: main.h
- * Description: Combine all the necessary include files, so that most
- *              other *.c files can just include this one header.
+ * Filename: delay.c
+ * Description: Provides an easy millisecond delay routine. Also includes a
+ *              tick counter of milliseconds elapsed since power on, or since
+ *              the last 32-bit counter rollover (about 4.3 million seconds,
+ *              or 1,193 hours)
  ******************************************************************************
 
  Copyright (c) 2020 David Miller
@@ -25,28 +27,27 @@
  SOFTWARE.
  */
 
-#ifndef __MAIN_H
-#define __MAIN_H
+#include "main.h"
 
-#include "stm32g4xx.h"
-#include "adc.h"
-#include "crc.h"
-#include "delay.h"
-#include "drv8353.h"
-#include "eeprom_emulation.h"
-#include "gpio.h"
-#include "periphconfig.h"
-#include "pinconfig.h"
-#include "project_parameters.h"
-#include "pwm.h"
-#include "Timer.h" // TODO: make my own version of this guy
-#include "uart.h"
-#include "usb_cdc.h"
-#include "usb.h"
-#include "wdt.h"
+uint32_t g_SysTick;
 
-// Basic definitions used in many files
-#define RETVAL_OK           (1)
-#define RETVAL_FAIL         (0)
+void DelayInit(void) {
+    g_SysTick = 0;
+    SysTick_Config(SYS_CLK / 1000u);
+    NVIC_SetPriority(SysTick_IRQn, PRIO_SYSTICK);
+}
 
-#endif //__MAIN_H
+void Delay(__IO uint32_t Delay) {
+    uint32_t tickstart = 0;
+    tickstart = g_SysTick;
+    while ((g_SysTick - tickstart) < Delay) {
+    }
+}
+
+uint32_t GetTick(void) {
+    return g_SysTick;
+}
+
+void SYSTICK_IRQHandler(void) {
+    g_SysTick++;
+}

@@ -1,7 +1,5 @@
 /******************************************************************************
- * Filename: main.h
- * Description: Combine all the necessary include files, so that most
- *              other *.c files can just include this one header.
+ * Filename: uart.h
  ******************************************************************************
 
  Copyright (c) 2020 David Miller
@@ -25,28 +23,47 @@
  SOFTWARE.
  */
 
-#ifndef __MAIN_H
-#define __MAIN_H
+// Used resources:
+// USART2, USART3
+#ifndef UART_H_
+#define UART_H_
 
-#include "stm32g4xx.h"
-#include "adc.h"
-#include "crc.h"
-#include "delay.h"
-#include "drv8353.h"
-#include "eeprom_emulation.h"
-#include "gpio.h"
-#include "periphconfig.h"
-#include "pinconfig.h"
-#include "project_parameters.h"
-#include "pwm.h"
-#include "Timer.h" // TODO: make my own version of this guy
-#include "uart.h"
-#include "usb_cdc.h"
-#include "usb.h"
-#include "wdt.h"
+#define HBD_BAUDRATE            (38400)
+#define HBD_USARTDIV            (4427) // about 0.002% error (170MHz / 4427 = 38.4007kHz)
+#define HBD_OVER8               (0)
+#define HBD_BRR                 (4427)
 
-// Basic definitions used in many files
-#define RETVAL_OK           (1)
-#define RETVAL_FAIL         (0)
+#define BMS_BAUDRATE			115200
+#define BMS_USARTDIV            (1476) // about 0.02% error (170MHz / 1476 = 115.176kHz)
+#define BMS_OVER8               (0)
+#define BMS_BRR                 (1476)
 
-#endif //__MAIN_H
+#define HBD_BUFFER_LENGTH		128
+#define HBD_TXMT_TIMEOUT		3 // ms
+
+#define BMS_BUFFER_LENGTH       128
+#define BMS_TXMT_TIMEOUT        3 // ms
+
+typedef enum _uart_sel{
+    SELECT_HBD_UART,
+    SELECT_BMS_UART
+} UART_Sel;
+
+typedef struct _uart_buffer{
+    uint8_t Buffer[HBD_BUFFER_LENGTH];
+    uint8_t RdPos, WrPos;
+    uint8_t Done;
+} UARTBuffer_Type;
+
+
+uint16_t UART_CalcBRR(uint32_t fck, uint32_t baud, uint8_t over8);
+
+void UART_Init(void);
+int32_t UART_InWaiting(UART_Sel uart);
+uint8_t UART_IsFinishedTx(UART_Sel uart);
+int32_t UART_Read(UART_Sel uart, void* buf, uint32_t count);
+int32_t UART_Write(UART_Sel uart, void* buf, uint32_t count);
+
+void UART_IRQ(UART_Sel uart);
+
+#endif // UART_H_

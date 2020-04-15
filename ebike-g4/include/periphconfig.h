@@ -125,31 +125,31 @@
 // Hall Sensors
 #define HALL_TIMER              TIM4
 #define HALL_CLK                APB1_CLK
-#define HALL_TIM_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_TIM4EN
+#define HALL_TIM_CLK_ENABLE()   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN
 #define HALL_IRQn               TIM4_IRQn
 
 // Pedal Assist Throttle (PAS) Timer
 #define PAS_TIM                 TIM5
 #define PAS_CLK                 APB1_CLK
-#define PAS_TIM_CLK_ENABLE()    RCC->APB1ENR |= RCC_APB1ENR_TIM5EN
+#define PAS_TIM_CLK_ENABLE()    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM5EN
 #define PAS_IRQn                TIM5_IRQn
 
 // Application timer
 #define APP_TIM                 TIM6
 #define APP_CLK                 APB1_CLK
-#define APP_TIMER_CLK_ENABLE()  RCC->APB1ENR |= RCC_APB1ENR_TIM6EN
+#define APP_TIMER_CLK_ENABLE()  RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN
 #define APP_IRQn                TIM6_DAC_IRQn
 
 // HBD
 #define HBD_UART                USART2
 #define HBD_CLK                 APB1_CLK
-#define HBD_UART_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_USART2EN
+#define HBD_UART_CLK_ENABLE()   RCC->APB1ENR1 |= RCC_APB1ENR1_USART2EN
 #define HBD_IRQn                USART2_IRQn
 
 // BMS
 #define BMS_UART                USART3
 #define BMS_CLK                 APB1_CLK
-#define BMS_UART_CLK_ENABLE()   RCC->APB1ENR |= RCC_APB1ENR_USART3EN
+#define BMS_UART_CLK_ENABLE()   RCC->APB1ENR1 |= RCC_APB1ENR1_USART3EN
 #define BMS_IRQn                USART3_IRQn
 
 // DRV8353 Control

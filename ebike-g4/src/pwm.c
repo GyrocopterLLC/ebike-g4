@@ -239,7 +239,7 @@ int32_t PWM_GetFreq(void) {
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC) {
     // scale from 65536 to the maximum counter value, PWM_PERIOD
     uint32_t temp;
-    temp = tB * PWM_TIMER->ARR / 65536;
+    temp = tC * PWM_TIMER->ARR / 65536;
     PWM_TIMER->CCR1 = temp;
     temp = tB * PWM_TIMER->ARR / 65536;
     PWM_TIMER->CCR2 = temp;

@@ -72,13 +72,13 @@ static void USB_CoreReset(void) {
     USB->CNTR |= (uint16_t)(USB_CNTR_FRES | USB_CNTR_PDWN);
 
     // Delay to let reset take effect
-    timer_sleep(2);
+    Delay(2);
 
     // Clear the power down
     USB->CNTR &= (uint16_t)(~(USB_CNTR_PDWN));
 
     // Delay to allow for startup of regulators
-    timer_sleep(2);
+    Delay(2);
 
     // Clear the reset
     USB->CNTR &= (uint16_t)(~(USB_CNTR_FRES));

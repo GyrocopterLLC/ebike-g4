@@ -26,6 +26,8 @@
 #ifndef USB_CDC_H_
 #define USB_CDC_H_
 
+#include "usb.h"
+
 #define DATA_OUT_EP		1
 #define DATA_IN_EP		1
 #define CMD_IN_EP		2

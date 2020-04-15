@@ -1,7 +1,5 @@
 /******************************************************************************
- * Filename: main.h
- * Description: Combine all the necessary include files, so that most
- *              other *.c files can just include this one header.
+ * Filename: delay.h
  ******************************************************************************
 
  Copyright (c) 2020 David Miller
@@ -25,28 +23,13 @@
  SOFTWARE.
  */
 
-#ifndef __MAIN_H
-#define __MAIN_H
+#ifndef __DELAY_H
+#define __DELAY_H
 
-#include "stm32g4xx.h"
-#include "adc.h"
-#include "crc.h"
-#include "delay.h"
-#include "drv8353.h"
-#include "eeprom_emulation.h"
-#include "gpio.h"
-#include "periphconfig.h"
-#include "pinconfig.h"
-#include "project_parameters.h"
-#include "pwm.h"
-#include "Timer.h" // TODO: make my own version of this guy
-#include "uart.h"
-#include "usb_cdc.h"
-#include "usb.h"
-#include "wdt.h"
+void DelayInit(void);
+void Delay(__IO uint32_t Delay);
+uint32_t GetTick(void);
+void SYSTICK_IRQHandler(void);
 
-// Basic definitions used in many files
-#define RETVAL_OK           (1)
-#define RETVAL_FAIL         (0)
 
-#endif //__MAIN_H
+#endif //__DELAY_H
