@@ -28,15 +28,20 @@
 #include "main.h"
 #include <math.h>
 
+uint32_t adc12_raw_regular_results[8];
+uint32_t adc34_raw_regular_results[8];
+
 uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[NUM_CUR_CH];
 float adc_vref;
 
 Config_ADC config_adc;
 
-static void ADC_AverageInitialValue(void);
+static void ADC_TurnOn(void);
 
 /**
+ * @brief Initialize the ADC peripherals
+ *
  * Initializes two or four ADC units for regular and injected conversion modes.
  * All ADCs are triggered by TIM1 TRGO (should be set to CCR4)
  * In two channel mode:
@@ -197,10 +202,59 @@ void ADC_Init(void) {
     // of TIM1_TRGO2 (set to oc5ref in TIM1)
     ADC1->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
 
-    // Interrupts - injected and regular end of queues enabled
-    ADC1->IER = ADC_IER_JEOSIE | ADC_IER_EOSIE;
+    /*
+     * Dual ADC mode settings
+     * Both ADC1&2 and ADC3&4 are set in injected simultaneous + regular simultaneous modes. That
+     * means that the triggers are really only read by ADC1 and ADC3 When the injected channels
+     * are finished, the master JEOS interrupt willread both sets of JDR data registers. Since
+     * the conversions are the same length, they will be finished at the same time. For regular
+     * channels, DMA is enabled in dual mode. The DMA request is triggered on the master ADC, but
+     *  only after both EOC flags are set. The data is pulled from the common data register to allow
+     *  for just a single DMA channel read for both conversions. So 2 DMA channels are needed for 4 ADCs.
+     */
+    // Enable DMA clock
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
+    // Configure settings on DMA channels, except for enabling the channel. That's later.
+    //  --- 32-bit transfers (both MSIZE and PSIZE), memory increment mode, but not peripheral increment
+    //  --- and circular mode. Direction is read from peripheral (bit is zero)
+    ADC1_DMACHANNEL->CCR = DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC3_DMACHANNEL->CCR = DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC1_DMACHANNEL->CNDTR = 8; // each regular sequence is 8 conversions
+    ADC3_DMACHANNEL->CNDTR = 8;
+    ADC1_DMACHANNEL->CMAR = (uint32_t)(&adc12_raw_regular_results);
+    ADC3_DMACHANNEL->CMAR = (uint32_t)(&adc34_raw_regular_results);
+    ADC1_DMACHANNEL->CPAR = (uint32_t)(&(ADC12_COMMON->CDR));
+    ADC3_DMACHANNEL->CPAR = (uint32_t)(&(ADC345_COMMON->CDR));
+    // Configure settings on DMAMUX. Just set the channel selection for channel 1 to ADC1, channel 2 to ADC3
+    // None of the other special features (like synchronization) are needed
+    ADC1_DMAMUXCHANNEL->CCR = ADC1_DMAMUX_REQ;
+    ADC3_DMAMUXCHANNEL->CCR = ADC3_DMAMUX_REQ;
+    // Setup the ADC common register to enable dual mode, DMA requests, and circular DMA mode.
+    ADC12_COMMON->CCR |= ADC_CCR_DUAL_0 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
+    ADC345_COMMON->CCR |= ADC_CCR_DUAL_0 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
+
+    // Interrupts - injected end of queue enabled
+    ADC1->IER = ADC_IER_JEOSIE;
     NVIC_SetPriority(ADC1_2_IRQn, PRIO_ADC);
     NVIC_EnableIRQ(ADC1_2_IRQn);
+    ADC3->IER = ADC_IER_JEOSIE;
+    NVIC_SetPriority(ADC3_IRQn, PRIO_ADC);
+    NVIC_EnableIRQ(ADC3_IRQn);
+
+    // DMA interrupts - end of transfer enabled. Also enable the DMA now.
+    ADC1_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
+    ADC3_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
+    NVIC_SetPriority(DMA1_Channel1_IRQn, PRIO_ADC);
+    NVIC_SetPriority(DMA1_Channel2_IRQn, PRIO_ADC);
+    NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+    NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+
+    // AAAAAND FINALLY enable the ADCs
+    ADC_Enable(ADC1);
+    ADC_Enable(ADC2);
+    ADC_Enable(ADC3);
+    ADC_Enable(ADC4);
 }
 
 /**
@@ -239,13 +293,8 @@ void ADC_CalcVref(void) {
     }
 
     // Turn on ADC1, it will be used alone for this
-    if((ADC1->CR & ADC_CR_ADEN) == 0) {
-        ADC1->ISR |= ADC_ISR_ADRDY;
-        ADC1->CR |= ADC_CR_ADEN;
-        while((ADC1->ISR & ADC_ISR_ADRDY) == 0){
-            // pass
-        }
-    }
+    ADC_Enable(ADC1);
+
     // Sampling time for Vrefint has to be at least 4us
     // 247.5 cycles at 42.5MHz = 5.82us
     ADC1->SMPR2 = (0x06) << ((ADC_VREFINT_CH-10U) * 3U);
@@ -283,6 +332,20 @@ void ADC_ConvComplete(void) {
     adc_conv[ADC_THR2] = ADC3->JDR3;
     adc_conv[ADC_TEMP] = ADC2->JDR3;
     adc_conv[ADC_VREFINT] = (ADC1->JDR2 + ADC1->JDR3) >> 1;
+}
+
+/**
+ * @brief Enables an ADC, checking that the ready bit shows it's good to go.
+ * @param adc The ADC peripheral to enable.
+ */
+static void ADC_Enable(ADC_TypeDef* adc) {
+    if((adc->CR & ADC_CR_ADEN) == 0) {
+        adc->ISR |= ADC_ISR_ADRDY;
+        adc->CR |= ADC_CR_ADEN;
+        while((adc->ISR & ADC_ISR_ADRDY) == 0){
+            // pass
+        }
+    }
 }
 
 void ADC_AverageInitialValue(void) {

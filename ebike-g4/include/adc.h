@@ -32,6 +32,14 @@
 #define NUM_ADC_CH		10
 #define NUM_CUR_CH		3
 
+// DMA settings
+#define ADC1_DMAMUX_REQ     5
+#define ADC3_DMAMUX_REQ     37
+#define ADC1_DMACHANNEL     DMA1_Channel1
+#define ADC3_DMACHANNEL     DMA1_Channel2
+#define ADC1_DMAMUXCHANNEL  DMAMUX1_Channel0
+#define ADC3_DMAMUXCHANNEL  DMAMUX1_Channel1
+
 // Channel definitions
 // Two versions are given -
 // Version A only uses ADC1 and ADC2, this is compatible with the STM32G4x1 series
@@ -87,7 +95,6 @@
 
 #endif
 
-
 #define VREFINTDEFAULT	(1.212f) // From the STM32G4 spec sheet
 #define VREFINTCAL_MIN	(1570) // Approximately 1.15V. Spec sheet minimum is 1.182V
 #define VREFINTCAL_MAX	(1734) // Approximately 1.27V. Spec sheet maximum is 1.232V
@@ -116,29 +123,30 @@ typedef enum {
     ADC_VREFINT = 7
 } ADC_OutputTypeDef;
 
-void adcConvComplete(void);
-void adcInit(void);
-float adcGetCurrent(uint8_t which_cur);
-uint16_t adcRaw(uint8_t which_cur);
-float adcConvertToAmps(int32_t rawCurrentReading);
-float adcGetThrottle(uint8_t thrnum);
-float adcGetVbus(void);
-float adcGetVref(void);
-void adcSetNull(uint8_t which_cur, uint16_t nullVal);
-float adcGetTempDegC(void);
 
-uint8_t adcSetInverseTIAGain(float new_gain);
-float adcGetInverseTIAGain(void);
-uint8_t adcSetVbusRatio(float new_ratio);
-float adcGetVbusRatio(void);
-uint8_t adcSetThermFixedR(float new_fixed_r);
-float adcGetThermFixedR(void);
-uint8_t adcSetThermR25(float new_r25);
-float adcGetThermR25(void);
-uint8_t adcSetThermBeta(float new_beta);
-float adcGetThermBeta(void);
+void ADC_ConvComplete(void);
+void ADC_Init(void);
+float ADC_GetCurrent(uint8_t which_cur);
+uint16_t ADC_Raw(uint8_t which_cur);
+float ADC_ConvertToAmps(int32_t rawCurrentReading);
+float ADC_GetThrottle(uint8_t thrnum);
+float ADC_GetVbus(void);
+float ADC_GetVref(void);
+void ADC_SetNull(uint8_t which_cur, uint16_t nullVal);
+float ADC_GetTempDegC(void);
 
-void adcSaveVariables(void);
-void adcLoadVariables(void);
+uint8_t ADC_SetInverseTIAGain(float new_gain);
+float ADC_GetInverseTIAGain(void);
+uint8_t ADC_SetVbusRatio(float new_ratio);
+float ADC_GetVbusRatio(void);
+uint8_t ADC_SetThermFixedR(float new_fixed_r);
+float ADC_GetThermFixedR(void);
+uint8_t ADC_SetThermR25(float new_r25);
+float ADC_GetThermR25(void);
+uint8_t ADC_SetThermBeta(float new_beta);
+float ADC_GetThermBeta(void);
+
+void ADC_SaveVariables(void);
+void ADC_LoadVariables(void);
 
 #endif /* ADC_H_ */
