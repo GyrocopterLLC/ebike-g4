@@ -35,7 +35,7 @@
 #define IWDG_PSC        ((uint32_t)0x00000000u) // For about 125usec granularity (32kHz/4)
 #define IWDG_REL_VAL    ((uint32_t)400) // 125usec * 400 = 50msec
 
-void WDT_init(void);
-void WDT_feed(void);
+void WDT_Init(void);
+void WDT_Feed(void);
 
 #endif //WDT_H_

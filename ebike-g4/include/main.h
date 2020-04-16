@@ -39,7 +39,6 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 #include "pwm.h"
-#include "Timer.h" // TODO: make my own version of this guy
 #include "uart.h"
 #include "usb_cdc.h"
 #include "usb.h"
@@ -48,5 +47,10 @@
 // Basic definitions used in many files
 #define RETVAL_OK           (1)
 #define RETVAL_FAIL         (0)
+
+// Bootloader locations
+#define BOOTLOADER_TOP_OF_STACK     ((uint32_t)0x1FFF0000)
+#define BOOTLOADER_RESET_VECTOR     ((uint32_t)0x1FFF0004)
+#define BOOTLOADER_RESET_FLAG       ((uint32_t)0x7441634F) // "tAcO"
 
 #endif //__MAIN_H

@@ -511,7 +511,7 @@ static FLASH_Status FLASH_ErasePage(uint32_t FLASH_Page, uint8_t FLASH_Bank) {
         }
         FLASH->CR |= FLASH_Page << 3u;
 
-        WDT_feed(); // Ensure there is no reset
+        WDT_Feed(); // Ensure there is no reset
         FLASH->CR |= FLASH_CR_STRT;
 
         // Wait for last operation to be completed

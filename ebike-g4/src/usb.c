@@ -193,6 +193,16 @@ void USB_Init(void) {
     RCC->AHB2ENR |= RCC_AHB2ENR_GPIOAEN; // GPIO clock
     RCC->APB1ENR1 |= RCC_APB1ENR1_USBEN; // USB clock
 
+    // Initialize the clock recovery system for crystalless USB operation.
+    // This calibrates the internal 48MHz oscillator using the USB host's
+    // Start-of-Frame (SOF) packet, which arrives every 1ms.
+    RCC->APB1ENR1 |= RCC_APB1ENR1_CRSEN; // Clock the peripheral
+    // Source of the sync is USB SOF, error limit is 34, divider is 47999 (48MHz / 1kHz - 1)
+    CRS->CFGR = 0x2022BB7F; // This is the default value anyway
+    CRS->CR |= CRS_CR_AUTOTRIMEN; // Turns on auto trimming
+    CRS->CR |= CRS_CR_CEN; // Enables the counter, effectively enables the CRS
+
+
     // Set port pins for USB to analog
     GPIO_Analog(USB_PORT, USB_DM_PIN);
     GPIO_Analog(USB_PORT, USB_DP_PIN);

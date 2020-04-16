@@ -34,7 +34,7 @@
 
 #include "main.h"
 
-void WDT_init(void) {
+void WDT_Init(void) {
     // Timer is stopped in debug (e.g. breakpoints)
     DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_IWDG_STOP;
     // Unlock registers
@@ -51,6 +51,6 @@ void WDT_init(void) {
     IWDG->KR = IWDG_START;
 }
 
-void WDT_feed(void) {
+void WDT_Feed(void) {
     IWDG->KR = IWDG_RELOAD;
 }
