@@ -28,9 +28,6 @@
 
 /********** Timer defines ***********/
 
-#define PWM_TIMER           TIM1
-
-#define PWM_TIMER_FREQ      (170000000L)
 #define PWM_MIN_FREQ        (5000)
 #define PWM_MAX_FREQ        (40000)
 
@@ -76,64 +73,64 @@ int32_t PWM_GetFreq(void);
 
 /* Defines for directly changing PWM outputs */
 
-#define PWM_MotorON()       PWM_TIMER->BDTR |= (TIM_BDTR_MOE)
-#define PWM_MotorOFF()      PWM_TIMER->BDTR &= ~(TIM_BDTR_MOE)
+#define PWM_MotorON()       PWM_TIM->BDTR |= (TIM_BDTR_MOE)
+#define PWM_MotorOFF()      PWM_TIM->BDTR &= ~(TIM_BDTR_MOE)
 
 // PWM: OC mode is "PWM Mode 1", outputs enabled
 inline void PHASE_C_PWM(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1);
-    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1);
+    PWM_TIM->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
 }
 // Low side on: OC mode is "Force inactive level", outputs enabled
 inline void PHASE_C_LOW(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2);
-    PWM_TIMER->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC1M_2);
+    PWM_TIM->CCER |= (TIM_CCER_CC1E | TIM_CCER_CC1NE);
 }
 // Phase off: OC mode is "Force inactive", high-side output disabled, low-side enabled (will be outputting low)
 inline void PHASE_C_OFF(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC1M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC1M_2);
-    PWM_TIMER->CCER &= ~(TIM_CCER_CC1E);
-    PWM_TIMER->CCER |= (TIM_CCER_CC1NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC1M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC1M_2);
+    PWM_TIM->CCER &= ~(TIM_CCER_CC1E);
+    PWM_TIM->CCER |= (TIM_CCER_CC1NE);
 }
 
 inline void PHASE_B_PWM(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1);
-    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1);
+    PWM_TIM->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
 }
 inline void PHASE_B_LOW(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2);
-    PWM_TIMER->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC2M_2);
+    PWM_TIM->CCER |= (TIM_CCER_CC2E | TIM_CCER_CC2NE);
 }
 
 inline void PHASE_B_OFF(void) {
-    PWM_TIMER->CCMR1 &= ~(TIM_CCMR1_OC2M);
-    PWM_TIMER->CCMR1 |= (TIM_CCMR1_OC2M_2);
-    PWM_TIMER->CCER &= ~(TIM_CCER_CC2E);
-    PWM_TIMER->CCER |= (TIM_CCER_CC2NE);
+    PWM_TIM->CCMR1 &= ~(TIM_CCMR1_OC2M);
+    PWM_TIM->CCMR1 |= (TIM_CCMR1_OC2M_2);
+    PWM_TIM->CCER &= ~(TIM_CCER_CC2E);
+    PWM_TIM->CCER |= (TIM_CCER_CC2NE);
 }
 
 inline void PHASE_A_PWM(void) {
-    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
-    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1);
-    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
+    PWM_TIM->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIM->CCMR2 |= (TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1);
+    PWM_TIM->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
 }
 
 inline void PHASE_A_LOW(void) {
-    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
-    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2);
-    PWM_TIMER->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
+    PWM_TIM->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIM->CCMR2 |= (TIM_CCMR2_OC3M_2);
+    PWM_TIM->CCER |= (TIM_CCER_CC3E | TIM_CCER_CC3NE);
 }
 
 inline void PHASE_A_OFF(void) {
-    PWM_TIMER->CCMR2 &= ~(TIM_CCMR2_OC3M);
-    PWM_TIMER->CCMR2 |= (TIM_CCMR2_OC3M_2);
-    PWM_TIMER->CCER &= ~(TIM_CCER_CC3E);
-    PWM_TIMER->CCER |= (TIM_CCER_CC3NE);
+    PWM_TIM->CCMR2 &= ~(TIM_CCMR2_OC3M);
+    PWM_TIM->CCMR2 |= (TIM_CCMR2_OC3M_2);
+    PWM_TIM->CCER &= ~(TIM_CCER_CC3E);
+    PWM_TIM->CCER |= (TIM_CCER_CC3NE);
 }
 
 #endif /* PWM_H_ */

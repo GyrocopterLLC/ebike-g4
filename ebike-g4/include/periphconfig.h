@@ -117,13 +117,13 @@
 #define IWDG_CLK        LSI_VALUE
 
 // PWM
-#define PWM_TIMER               TIM1
+#define PWM_TIM                 TIM1
 #define PWM_CLK                 APB2_CLK
 #define PWM_TIM_CLK_ENABLE()    RCC->APB2ENR |= RCC_APB2ENR_TIM1EN
 #define PWM_IRQn                TIM1_UP_TIM16_IRQn
 
 // Hall Sensors
-#define HALL_TIMER              TIM4
+#define HALL_TIM                TIM4
 #define HALL_CLK                APB1_CLK
 #define HALL_TIM_CLK_ENABLE()   RCC->APB1ENR1 |= RCC_APB1ENR1_TIM4EN
 #define HALL_IRQn               TIM4_IRQn

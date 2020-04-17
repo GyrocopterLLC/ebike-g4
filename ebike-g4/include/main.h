@@ -35,6 +35,7 @@
 #include "drv8353.h"
 #include "eeprom_emulation.h"
 #include "gpio.h"
+#include "hall_sensor.h"
 #include "periphconfig.h"
 #include "pinconfig.h"
 #include "project_parameters.h"

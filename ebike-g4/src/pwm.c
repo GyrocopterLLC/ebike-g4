@@ -59,7 +59,7 @@
 
 #include "main.h"
 
-float pwm_timer_arr_f = PWM_PERIOD_F;
+float PWM_TIM_arr_f = PWM_PERIOD_F;
 
 uint16_t PWM_DT_ns_to_reg(uint32_t dtns);
 uint32_t PWM_DT_reg_to_ns(uint16_t dtreg);
@@ -131,40 +131,40 @@ void PWM_Init(int32_t freq) {
     PWM_TIM_CLK_ENABLE();
 
     PWM_SetFreq(freq);
-    PWM_TIMER->PSC = 0; // No prescaler
-    PWM_TIMER->RCR = 1; // Update occurs every full cycle of the PWM timer
-    PWM_TIMER->CR1 = TIM_CR1_CMS_0; // Center aligned 1 mode
-    PWM_TIMER->CR2 = (TIM_CR2_MMS_2 | TIM_CR2_MMS_1 | TIM_CR2_MMS_0); // OC4REF is trigger out
-    PWM_TIMER->CR2 |= (TIM_CR2_MMS2_3); // OC5REF is trigger out 2
+    PWM_TIM->PSC = 0; // No prescaler
+    PWM_TIM->RCR = 1; // Update occurs every full cycle of the PWM timer
+    PWM_TIM->CR1 = TIM_CR1_CMS_0; // Center aligned 1 mode
+    PWM_TIM->CR2 = (TIM_CR2_MMS_2 | TIM_CR2_MMS_1 | TIM_CR2_MMS_0); // OC4REF is trigger out
+    PWM_TIM->CR2 |= (TIM_CR2_MMS2_3); // OC5REF is trigger out 2
     // Set Capture/Compare mode to PWM mode 1 (active from zero to CCRx, inactive from CCRx to ARR)
-    PWM_TIMER->CCMR1 = TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC2M_1
+    PWM_TIM->CCMR1 = TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC2M_1
             | TIM_CCMR1_OC2M_2;
     // Preload enable, CCR1/CCR2 take effect at update events
-    PWM_TIMER->CCMR1 |= TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE;
+    PWM_TIM->CCMR1 |= TIM_CCMR1_OC1PE | TIM_CCMR1_OC2PE;
     // Set Capture/Compare mode to PWM mode 1
-    PWM_TIMER->CCMR2 = TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC4M_1
+    PWM_TIM->CCMR2 = TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC4M_1
             | TIM_CCMR2_OC4M_2;
     // Preload enable, CCR3/CCR4 take effect at update events
-    PWM_TIMER->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC4PE;
+    PWM_TIM->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC4PE;
     // Set Capture/Compare mode to PWM mode 1
-    PWM_TIMER->CCMR3 = TIM_CCMR3_OC5M_1 | TIM_CCMR3_OC5M_2;
+    PWM_TIM->CCMR3 = TIM_CCMR3_OC5M_1 | TIM_CCMR3_OC5M_2;
     // Preload enable, CCR5 takes effect at update events
-    PWM_TIMER->CCMR3 |= TIM_CCMR3_OC5PE;
+    PWM_TIM->CCMR3 |= TIM_CCMR3_OC5PE;
     // Enable Channels 1, 2, and 3 both complementary outputs
-    PWM_TIMER->CCER = TIM_CCER_CC1E | TIM_CCER_CC1NE | TIM_CCER_CC2E
+    PWM_TIM->CCER = TIM_CCER_CC1E | TIM_CCER_CC1NE | TIM_CCER_CC2E
             | TIM_CCER_CC2NE |
             TIM_CCER_CC3E | TIM_CCER_CC3NE;
     // Dead time selection, and drive outputs low when Motor Enable (MOE) bit is zero
-    PWM_TIMER->BDTR = PWM_DEFAULT_DT_REG | TIM_BDTR_OSSI;
+    PWM_TIM->BDTR = PWM_DEFAULT_DT_REG | TIM_BDTR_OSSI;
     // Break input 1 enable
-    PWM_TIMER->BDTR |= TIM_BDTR_BKE;
-    PWM_TIMER->AF1 = TIM1_AF1_BKINE | TIM1_AF1_BKINP;
+    PWM_TIM->BDTR |= TIM_BDTR_BKE;
+    PWM_TIM->AF1 = TIM1_AF1_BKINE | TIM1_AF1_BKINP;
 
-    PWM_TIMER->CCR1 = PWM_PERIOD / 2 + 1;
-    PWM_TIMER->CCR2 = PWM_PERIOD / 2 + 1;
-    PWM_TIMER->CCR3 = PWM_PERIOD / 2 + 1;
-    PWM_TIMER->CCR4 = PWM_PERIOD - 1; // Triggers during downcounting, just after reload
-    PWM_TIMER->CCR5 = 1; // Triggers during downcounting, just before hitting zero
+    PWM_TIM->CCR1 = PWM_PERIOD / 2 + 1;
+    PWM_TIM->CCR2 = PWM_PERIOD / 2 + 1;
+    PWM_TIM->CCR3 = PWM_PERIOD / 2 + 1;
+    PWM_TIM->CCR4 = PWM_PERIOD - 1; // Triggers during downcounting, just after reload
+    PWM_TIM->CCR5 = 1; // Triggers during downcounting, just before hitting zero
 
     NVIC_SetPriority(PWM_IRQn, PRIO_PWM); // Highest priority
     NVIC_EnableIRQ(PWM_IRQn);
@@ -174,44 +174,44 @@ void PWM_Init(int32_t freq) {
     // If RCR written before launching the timer, UEV happens on underflow.
     // Otherwise, UEV happens on overflow.
 
-    PWM_TIMER->RCR = 1;
-    PWM_TIMER->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
-    PWM_TIMER->CR1 |= TIM_CR1_CEN; // Start the timer
+    PWM_TIM->RCR = 1;
+    PWM_TIM->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
+    PWM_TIM->CR1 |= TIM_CR1_CEN; // Start the timer
 
-    PWM_TIMER->SR = ~(TIM_SR_UIF); // Clear update interrupt (if it was triggered)
-    PWM_TIMER->DIER = TIM_DIER_UIE | TIM_DIER_BIE; // Enable update interrupt and break interrupt
+    PWM_TIM->SR = ~(TIM_SR_UIF); // Clear update interrupt (if it was triggered)
+    PWM_TIM->DIER = TIM_DIER_UIE | TIM_DIER_BIE; // Enable update interrupt and break interrupt
 
     /* NOTE: MOE bit is still zero, so outputs are at their inactive level. */
 }
 
 uint8_t PWM_SetDeadTime(int32_t newDT) {
-    uint32_t temp_bdtr = PWM_TIMER->BDTR;
+    uint32_t temp_bdtr = PWM_TIM->BDTR;
     temp_bdtr &= 0xFFFFFF00U; // Clear DTG[7:0] bits
     temp_bdtr |= PWM_DT_ns_to_reg(newDT);
-    PWM_TIMER->BDTR = temp_bdtr;
+    PWM_TIM->BDTR = temp_bdtr;
     return RETVAL_OK;
 }
 int32_t PWM_GetDeadTime(void) {
-    uint32_t temp_bdtr = PWM_TIMER->BDTR & (0x000000FF);
+    uint32_t temp_bdtr = PWM_TIM->BDTR & (0x000000FF);
     return PWM_DT_reg_to_ns(temp_bdtr);
 }
 
 uint8_t PWM_SetFreq(int32_t newFreq) {
-    int32_t temp = PWM_TIMER_FREQ;
+    int32_t temp = PWM_CLK;
     int32_t tempcr1;
     int32_t tempbdtr;
     if((newFreq >= PWM_MIN_FREQ) && (newFreq <= PWM_MAX_FREQ)) {
         temp = temp / newFreq;
         temp = temp / 2;
         temp = temp - 1;
-        tempbdtr = PWM_TIMER->BDTR;
+        tempbdtr = PWM_TIM->BDTR;
         PWM_MotorOFF();
-        tempcr1 = PWM_TIMER->CR1; // Save current CR1 value
-        PWM_TIMER->CR1 &= ~TIM_CR1_CEN; // Stop the timer if it's running
-        PWM_TIMER->ARR = temp;
-        PWM_TIMER->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
-        PWM_TIMER->CR1 = tempcr1; // Restart the timer if it was running
-        PWM_TIMER->BDTR = tempbdtr; // Turn on outputs if they were on
+        tempcr1 = PWM_TIM->CR1; // Save current CR1 value
+        PWM_TIM->CR1 &= ~TIM_CR1_CEN; // Stop the timer if it's running
+        PWM_TIM->ARR = temp;
+        PWM_TIM->EGR |= TIM_EGR_UG; // Generate an update event to latch in all the settings
+        PWM_TIM->CR1 = tempcr1; // Restart the timer if it was running
+        PWM_TIM->BDTR = tempbdtr; // Turn on outputs if they were on
 
         return RETVAL_OK;
     }
@@ -220,8 +220,8 @@ uint8_t PWM_SetFreq(int32_t newFreq) {
 }
 
 int32_t PWM_GetFreq(void) {
-    int32_t temp = PWM_TIMER_FREQ;
-    temp = temp / ((PWM_TIMER->ARR) + 1);
+    int32_t temp = PWM_CLK;
+    temp = temp / ((PWM_TIM->ARR) + 1);
     return temp;
 }
 
@@ -239,17 +239,17 @@ int32_t PWM_GetFreq(void) {
 void PWM_SetDuty(uint16_t tA, uint16_t tB, uint16_t tC) {
     // scale from 65536 to the maximum counter value, PWM_PERIOD
     uint32_t temp;
-    temp = tC * PWM_TIMER->ARR / 65536;
-    PWM_TIMER->CCR1 = temp;
-    temp = tB * PWM_TIMER->ARR / 65536;
-    PWM_TIMER->CCR2 = temp;
-    temp = tA * PWM_TIMER->ARR / 65536;
-    PWM_TIMER->CCR3 = temp;
+    temp = tC * PWM_TIM->ARR / 65536;
+    PWM_TIM->CCR1 = temp;
+    temp = tB * PWM_TIM->ARR / 65536;
+    PWM_TIM->CCR2 = temp;
+    temp = tA * PWM_TIM->ARR / 65536;
+    PWM_TIM->CCR3 = temp;
 }
 
 void PWM_SetDutyF(float tA, float tB, float tC) {
-    PWM_TIMER->CCR1 = (uint16_t) (tC * pwm_timer_arr_f);
-    PWM_TIMER->CCR2 = (uint16_t) (tB * pwm_timer_arr_f);
-    PWM_TIMER->CCR3 = (uint16_t) (tA * pwm_timer_arr_f);
+    PWM_TIM->CCR1 = (uint16_t) (tC * PWM_TIM_arr_f);
+    PWM_TIM->CCR2 = (uint16_t) (tB * PWM_TIM_arr_f);
+    PWM_TIM->CCR3 = (uint16_t) (tA * PWM_TIM_arr_f);
 }
 
