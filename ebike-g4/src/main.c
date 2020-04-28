@@ -27,12 +27,20 @@
 
 #include "main.h"
 
+uint16_t VirtAddVarTab[TOTAL_EE_VARS];
+uint32_t DebuggingFlags=0;
+
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
 
-int main (int argc, char* argv[])
+int main (
+        __attribute__((unused)) int argc,
+        __attribute__((unused)) char* argv[])
 {
+
     uint32_t led_timer = 0;
+    uint32_t drv_en_timer = 0;
+    float angle, sin, cos;
 
     // First check if we need to change to the bootloader.
     //
@@ -61,38 +69,59 @@ int main (int argc, char* argv[])
 
     // Initialize peripherals
     ADC_Init();
+    CORDIC_Init();
     CRC_Init();
     DRV8353_Init();
     PWM_Init(DFLT_FOC_PWM_FREQ);
     UART_Init();
     USB_Init();
+    // Start up the EEPROM emulation, and fetch stored values from it
+    EE_Config_Addr_Table(VirtAddVarTab);
+    EE_Init(VirtAddVarTab);
 
     // Enable the USB CRC class
     USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
     USB_Start();
 
     // LED init
+    GPIO_Clk(LED_PORT);
     GPIO_Output(LED_PORT, GLED_PIN);
     GPIO_Output(LED_PORT, RLED_PIN);
+    GPIO_Output(DRV_EN_PORT, DRV_EN_PIN);
     GPIO_High(LED_PORT, GLED_PIN);
     GPIO_Low(LED_PORT, RLED_PIN);
+    GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
 
     // Start the watchdog
     WDT_Init();
-
+    angle = 0.0f;
     // Infinite loop, never return.
     while (1)
     {
         WDT_Feed();
         Delay(10);
         led_timer++;
+        drv_en_timer++;
         if(led_timer == 50) {
             GPIO_Low(LED_PORT, GLED_PIN);
         }
         if(led_timer >= 100) {
-            GPIO_Low(LED_PORT, GLED_PIN);
+            GPIO_High(LED_PORT, GLED_PIN);
             led_timer = 0;
         }
+        if(drv_en_timer == 500) {
+            GPIO_High(DRV_EN_PORT, DRV_EN_PIN);
+        }
+        if(drv_en_timer >= 1000) {
+            GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
+            drv_en_timer = 0;
+        }
+
+        // CORDIC testing
+        angle += 0.076f; // Something that doesn't fit cleanly into 1.0 so it gives lots of different values
+        if(angle >= 1.0f) angle -= 2.0f; // Wrap between -1 and 1
+        CORDIC_CalcSinCos(angle, &sin, &cos);
+
     }
 }
 
@@ -128,7 +157,8 @@ static void MAIN_InitializeClocks(void) {
     // Change Flash latency to the required amount
     RCC->AHB1ENR |= RCC_AHB1ENR_FLASHEN;
     // Instruction and data caches enabled, prefetch enabled, 8 wait states
-    FLASH->ACR = FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_8WS;
+    FLASH->ACR &= ~(FLASH_ACR_LATENCY);
+    FLASH->ACR |= FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_8WS;
     // Make sure it has taken effect by re-reading the register
     while((FLASH->ACR & FLASH_ACR_LATENCY) != FLASH_ACR_LATENCY_8WS) { } // wait for latency to take effect
 

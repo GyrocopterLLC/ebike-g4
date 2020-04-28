@@ -119,19 +119,19 @@ void ADC_Init(void) {
     Delay(ADC_VREG_STARTUP_DELAY);
 
     // Perform calibrations
-    ADC1->CR = ADC_CR_ADCAL;
+    ADC1->CR |= ADC_CR_ADCAL;
     while((ADC1->CR & ADC_CR_ADCAL) != 0) {
         // pass
     }
-    ADC2->CR = ADC_CR_ADCAL;
+    ADC2->CR |= ADC_CR_ADCAL;
     while((ADC2->CR & ADC_CR_ADCAL) != 0) {
         // pass
     }
-    ADC3->CR = ADC_CR_ADCAL;
+    ADC3->CR |= ADC_CR_ADCAL;
     while((ADC3->CR & ADC_CR_ADCAL) != 0) {
         // pass
     }
-    ADC4->CR = ADC_CR_ADCAL;
+    ADC4->CR |= ADC_CR_ADCAL;
     while((ADC4->CR & ADC_CR_ADCAL) != 0) {
         // pass
     }
@@ -143,10 +143,10 @@ void ADC_Init(void) {
     // CFGR settings:   JQDIS = 1 (queue is disabled for injected conversions)
     //                  DMAEN = 1 (DMA is enabled to generate DMA requests)
     //                  DMACFG = 1 (DMA in circular mode)
-    ADC1->CFGR = ADC_CFGR_JQM | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
-    ADC2->CFGR = ADC_CFGR_JQM | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
-    ADC3->CFGR = ADC_CFGR_JQM | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
-    ADC4->CFGR = ADC_CFGR_JQM | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
+    ADC1->CFGR = ADC_CFGR_JQDIS | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
+    ADC2->CFGR = ADC_CFGR_JQDIS | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
+    ADC3->CFGR = ADC_CFGR_JQDIS | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
+    ADC4->CFGR = ADC_CFGR_JQDIS | ADC_CFGR_DMAEN | ADC_CFGR_DMACFG;
     ADC1->CFGR2 = 0;
     ADC2->CFGR2 = 0;
     ADC3->CFGR2 = 0;
@@ -201,16 +201,22 @@ void ADC_Init(void) {
     // External trigger selection (regular sequence): hardware trigger on rising edge
     // of TIM1_TRGO2 (set to oc5ref in TIM1)
     ADC1->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
-
+    ADC2->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    ADC3->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    ADC4->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
     /*
      * Dual ADC mode settings
-     * Both ADC1&2 and ADC3&4 are set in injected simultaneous + regular simultaneous modes. That
-     * means that the triggers are really only read by ADC1 and ADC3 When the injected channels
-     * are finished, the master JEOS interrupt willread both sets of JDR data registers. Since
-     * the conversions are the same length, they will be finished at the same time. For regular
-     * channels, DMA is enabled in dual mode. The DMA request is triggered on the master ADC, but
-     *  only after both EOC flags are set. The data is pulled from the common data register to allow
-     *  for just a single DMA channel read for both conversions. So 2 DMA channels are needed for 4 ADCs.
+     * ADC1&2 is set in injected simultaneous + regular simultaneous modes. That means that the
+     * triggers are really only read by ADC1. When the injected channels are finished, the master
+     * JEOS interrupt will read both sets of JDR data registers. Since the conversions are the
+     * same length, they will be finished at the same time. For regular channels, DMA is enabled
+     * in dual mode. The DMA request is triggered on the master ADC, but only after both EOC flags
+     * are set. The data is pulled from the common data register to allow for just a single DMA
+     * channel read for both conversions. So 2 DMA channels are needed for 4 ADCs.
+     *
+     * ADC3&4 are set in regular simultaneous only. The injected channels on ADC3 are run solo,
+     * since ADC4 doesn't have any injected channels assigned. The regular sequence for ADC3&4
+     * works the same way as ADC1&2.
      */
     // Enable DMA clock
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
@@ -232,7 +238,7 @@ void ADC_Init(void) {
     ADC3_DMAMUXCHANNEL->CCR = ADC3_DMAMUX_REQ;
     // Setup the ADC common register to enable dual mode, DMA requests, and circular DMA mode.
     ADC12_COMMON->CCR |= ADC_CCR_DUAL_0 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
-    ADC345_COMMON->CCR |= ADC_CCR_DUAL_0 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
+    ADC345_COMMON->CCR |= ADC_CCR_DUAL_2 | ADC_CCR_DUAL_1 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
 
     // Interrupts - injected end of queue enabled
     ADC1->IER = ADC_IER_JEOSIE;
@@ -250,11 +256,18 @@ void ADC_Init(void) {
     NVIC_EnableIRQ(DMA1_Channel1_IRQn);
     NVIC_EnableIRQ(DMA1_Channel2_IRQn);
 
-    // AAAAAND FINALLY enable the ADCs
+    // enable the ADCs
     ADC_Enable(ADC1);
     ADC_Enable(ADC2);
     ADC_Enable(ADC3);
     ADC_Enable(ADC4);
+
+    // Start conversions. Note that no conversions will take place until the hardware triggers
+    // start coming in from the PWM timer.
+    ADC1->CR |= ADC_CR_ADSTART | ADC_CR_JADSTART;
+    ADC2->CR |= ADC_CR_ADSTART | ADC_CR_JADSTART;
+    ADC3->CR |= ADC_CR_ADSTART | ADC_CR_JADSTART;
+    ADC4->CR |= ADC_CR_ADSTART;
 }
 
 /**

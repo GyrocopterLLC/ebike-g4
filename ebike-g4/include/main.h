@@ -30,6 +30,7 @@
 
 #include "stm32g4xx.h"
 #include "adc.h"
+#include "cordic_sin_cos.h"
 #include "crc.h"
 #include "delay.h"
 #include "drv8353.h"

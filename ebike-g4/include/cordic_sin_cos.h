@@ -1,12 +1,8 @@
 /******************************************************************************
- * Filename: delay.c
- * Description: Provides an easy millisecond delay routine. Also includes a
- *              tick counter of milliseconds elapsed since power on, or since
- *              the last 32-bit counter rollover (about 4.3 million seconds,
- *              or 1,193 hours)
+ * Filename: cordic_sin_cos.h
  ******************************************************************************
 
- Copyright (c) 2020 David Miller
+ Copyright (c) 2019 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,27 +23,12 @@
  SOFTWARE.
  */
 
-#include "main.h"
+#ifndef _CORDIC_SIN_COS_H
+#define _CORDIC_SIN_COS_H
 
-volatile uint32_t g_SysTick;
+void CORDIC_Init(void);
+void CORDIC_CalcSinCos(float theta, float* sin, float* cos) ;
+void CORDIC_CalcSinCosNoWait(float theta);
+void CORDIC_GetResults(float* sin, float* cos);
 
-void DelayInit(void) {
-    g_SysTick = 0;
-    SysTick_Config(SYS_CLK / 1000u);
-    NVIC_SetPriority(SysTick_IRQn, PRIO_SYSTICK);
-}
-
-void Delay(__IO uint32_t Delay) {
-    volatile uint32_t tickstart = 0;
-    tickstart = g_SysTick;
-    while ((g_SysTick - tickstart) < Delay) {
-    }
-}
-
-uint32_t GetTick(void) {
-    return g_SysTick;
-}
-
-void SYSTICK_IRQHandler(void) {
-    g_SysTick++;
-}
+#endif

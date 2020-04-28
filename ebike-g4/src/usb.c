@@ -26,6 +26,18 @@
  SOFTWARE.
  */
 
+/****
+ * TODO:
+ *
+ * I appear to be NAK'ing all of the Status packets sent after Setup - Data In
+ * transactions. The USB Host keeps retrying the Status packet until I ACK it.
+ * But I never do, so it hangs. Eventually restarting the bus. But then the same
+ * thing happens again anyway.
+ */
+
+
+
+
  #include "main.h"
 
 // Shortcut to the Packet Memory Area at offset 0x400
@@ -33,8 +45,8 @@
 #define USB_BTABLE_ADDR                         ((uint16_t) 0U)
 #define USB_BTABLE_SIZE                         ((uint16_t) 0x40U)
 #define USB_EPnR(EpNum)                         (*(volatile uint16_t *)(USB_BASE + ((uint32_t)EpNum * 4U)))
-#define USB_Set_EPnR(EpNum, RegVal)             (*(volatile uint16_t *)(USB_BASE + ((uint32_t)EpNum * 4U)) = (uint16_t)(RegVal))
-#define USB_Get_EPnR(EpNum)                     (*(volatile uint16_t *)(USB_BASE + ((uint32_t)EpNum * 4U)))
+//#define USB_Set_EPnR(EpNum, RegVal)             (*(volatile uint16_t *)(USB_BASE + ((uint32_t)EpNum * 4U)) = (uint16_t)(RegVal))
+//#define USB_Get_EPnR(EpNum)                     (*(volatile uint16_t *)(USB_BASE + ((uint32_t)EpNum * 4U)))
 
 #define USB_EnableGlobalInterrupts()            USB->CNTR |= (uint16_t)(USB_CNTR_CTRM | USB_CNTR_WKUPM \
                                                                         | USB_CNTR_SUSPM | USB_CNTR_ERRM \
@@ -63,6 +75,17 @@ uint8_t USB_DevState;
 uint32_t USB_CurrentConfig;
 uint32_t USB_ConfigStatus;
 uint8_t USB_OUTEP0_Buffer[USB_MAX_EP0_SIZE * 2];
+
+static void USB_Set_EPnR(uint8_t EpNum, uint16_t RegVal) {
+    volatile uint16_t* reg = (uint16_t*)(USB_BASE + ((uint32_t)EpNum)*4U);
+    *reg = RegVal;
+
+}
+
+static uint16_t USB_Get_EPnR(uint8_t EpNum) {
+    volatile uint16_t* reg = (uint16_t*)(USB_BASE + ((uint32_t)EpNum)*4U);
+    return *reg;
+}
 
 static void USB_CoreReset(void) {
     // Disable USB interrupts
@@ -214,12 +237,6 @@ void USB_Init(void) {
     // USB Core reset
     USB_CoreReset();
 
-    // Stop the USB PHY by disabling pull-up/-down resistors on D+/D- pins
-    USB->BCDR &= (uint16_t)(~USB_BCDR_DPPU);
-
-    USB_ActivateINEP(0, USB_EP_TYPE_CTRL, USB_MAX_EP0_SIZE, 2*USB_MAX_EP0_SIZE);
-    USB_ActivateOUTEP(0, USB_EP_TYPE_CTRL, USB_MAX_EP0_SIZE, 2*USB_MAX_EP0_SIZE);
-
     USB_ClassDescData = NULLPTR;
     USB_ClassCallbackData = NULLPTR;
     USB_DevState = USB_STATE_DEFAULT;
@@ -239,6 +256,9 @@ void USB_Start(void) {
     // Allow all functions to respond and reset address to zero
     USB->DADDR = USB_DADDR_EF;
 
+    USB_ActivateINEP(0, USB_EP_TYPE_CTRL, USB_MAX_EP0_SIZE, 2*USB_MAX_EP0_SIZE);
+    USB_ActivateOUTEP(0, USB_EP_TYPE_CTRL, USB_MAX_EP0_SIZE, 2*USB_MAX_EP0_SIZE);
+
     // Globally enable USB interrupts
     USB_EnableGlobalInterrupts();
 }
@@ -256,37 +276,37 @@ void USB_IRQ(void) {
     }
     if((USB->ISTR & USB_ISTR_PMAOVR) != 0) {
         // Packet memory area overrun interrupt
-        USB->ISTR &= (~USB_ISTR_PMAOVR);
+        USB->ISTR = (~USB_ISTR_PMAOVR);
     }
-    if((USB->ISTR &= USB_ISTR_ERR) != 0) {
+    if((USB->ISTR & USB_ISTR_ERR) != 0) {
         // Error interrupt
-        USB->ISTR &= (~USB_ISTR_ERR);
+        USB->ISTR = (~USB_ISTR_ERR);
     }
-    if((USB->ISTR &= USB_ISTR_WKUP) != 0) {
+    if((USB->ISTR & USB_ISTR_WKUP) != 0) {
         // Wakeup interrupt
-        USB->ISTR &= (~USB_ISTR_WKUP);
+        USB->ISTR = (~USB_ISTR_WKUP);
 
     }
-    if((USB->ISTR &= USB_ISTR_SUSP) != 0) {
+    if((USB->ISTR & USB_ISTR_SUSP) != 0) {
         // Suspend interrupt
-        USB->ISTR &= (~USB_ISTR_SUSP);
+        USB->ISTR = (~USB_ISTR_SUSP);
     }
     if((USB->ISTR & USB_ISTR_RESET) != 0) {
         // Reset interrupt
-        USB->ISTR &= (~USB_ISTR_RESET);
+        USB->ISTR = (~USB_ISTR_RESET);
         USB_Reset_IRQ();
     }
     if((USB->ISTR & USB_ISTR_SOF) != 0) {
         // Start of Frame interrupt
-        USB->ISTR &= (~USB_ISTR_SOF);
+        USB->ISTR = (~USB_ISTR_SOF);
     }
     if((USB->ISTR & USB_ISTR_ESOF) != 0) {
         // Expected Start of Frame interrupt
-        USB->ISTR &= (~USB_ISTR_ESOF);
+        USB->ISTR = (~USB_ISTR_ESOF);
     }
     if((USB->ISTR & USB_ISTR_L1REQ) != 0) {
         // Low power mode request interrupt
-        USB->ISTR &= (~USB_ISTR_L1REQ);
+        USB->ISTR = (~USB_ISTR_L1REQ);
     }
 }
 
@@ -327,6 +347,8 @@ void USB_CorrectTransfer_IRQ(void) {
                 } else {
                     USB_OutEPs[0].xfer_len = USB_Get_PMA_Endpoint_Rx_Count(0);
                     USB_ReadPacket(USB_OutEPs[0].xfer_buffer, 0, USB_OutEPs[0].xfer_len);
+                    USB_Clear_EPnR_Rx_CTR(0);
+                    USB_DataOUTCallback(0);
                 }
 
             }
@@ -360,7 +382,7 @@ void USB_Reset_IRQ(void) {
                 && (USB_ClassCallbackData->DeInit != NULLPTR)) {
         USB_ClassCallbackData->DeInit();
     }
-    USB_Init();
+//    USB_Init();
     USB_Start();
 }
 
@@ -434,13 +456,15 @@ void USB_DataINCallback(uint8_t epnum) {
                     temp_epnr = USB_Get_EPnR(0) & USB_EPREG_MASK;
                     temp_epnr |= USB_EP_KIND;
                     USB_Set_EPnR(0, temp_epnr);
+                    // And make sure that the next packet gets acked
+                    USB_Start_OUTEP0_Transfer();
                 }
             }
         } else if(USB_EP0_State == USB_EP0_STATUS_IN){
 
             // Check if address was assigned - we can now safely set own address
             if(USB_NewAddr != 0) {
-                USB->DADDR = (USB_NewAddr & 0x7FU) & USB_DADDR_EF;
+                USB->DADDR |= (USB_NewAddr & 0x7FU) ;
                 USB_NewAddr = 0;
             }
             USB_EP0_State = USB_EP0_IDLE;
@@ -883,6 +907,7 @@ void USB_ActivateINEP(uint8_t epnum, uint8_t eptype, uint32_t maxpacketsize, uin
         buffer_begin += USB_OutEPs[i].buffersize;
     }
     USB_Set_PMA_Endpoint_Tx_Address(epnum, buffer_begin);
+//    USB_Set_PMA_Endpoint_Tx_Count(epnum, maxpacketsize);
     USB_InEPs[epnum].pmaaddr = buffer_begin;
 
     // Settings in EPnR
@@ -1008,9 +1033,9 @@ void USB_SendData(uint8_t *pbuf, uint8_t epnum, uint16_t len) {
     USB_InEPs[epnum].xfer_done_count = 0;
 
     if (epnum == 0)
-        USB_Start_INEP0_Transfer(len);
+        USB_Start_INEP0_Transfer(USB_InEPs[epnum].xfer_len);
     else
-        USB_Start_INEP_Transfer(epnum, len);
+        USB_Start_INEP_Transfer(epnum, USB_InEPs[epnum].xfer_len);
 }
 
 void USB_PrepareRead(uint8_t *pbuf, uint8_t epnum, uint16_t len) {
@@ -1032,7 +1057,7 @@ void USB_PrepareCtrlRead(uint8_t *pbuf, uint16_t len) {
 }
 
 void USB_ReadPacket(uint8_t* buf, uint8_t epnum, uint16_t len) {
-    uint16_t* pmabuf = (uint16_t*)((uint32_t)(USB_InEPs[epnum].pmaaddr) + (uint32_t)(USB_PMA_BASE_ADDR));
+    uint16_t* pmabuf = (uint16_t*)((uint32_t)(USB_OutEPs[epnum].pmaaddr) + (uint32_t)(USB_PMA_BASE_ADDR));
 
     for(uint16_t i = len; i > 0U; ) {
         *buf = (uint8_t)((*pmabuf) & 0x00FF);
@@ -1043,6 +1068,7 @@ void USB_ReadPacket(uint8_t* buf, uint8_t epnum, uint16_t len) {
             buf++;
             i --;
         }
+        pmabuf++;
     }
 }
 

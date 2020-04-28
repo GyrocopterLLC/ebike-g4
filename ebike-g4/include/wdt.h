@@ -28,7 +28,7 @@
 #ifndef WDT_H_
 #define WDT_H_
 
-#define IWDG_RELOAD     ((uint32_t)0x00005555u)
+#define IWDG_RELOAD     ((uint32_t)0x0000AAAAu)
 #define IWDG_KEY        ((uint32_t)0x00005555u)
 #define IWDG_START      ((uint32_t)0x0000CCCCu)
 

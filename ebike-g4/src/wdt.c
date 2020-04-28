@@ -37,6 +37,8 @@
 void WDT_Init(void) {
     // Timer is stopped in debug (e.g. breakpoints)
     DBGMCU->APB1FZR1 |= DBGMCU_APB1FZR1_DBG_IWDG_STOP;
+    // Start/enable the countdown timer
+    IWDG->KR = IWDG_START;
     // Unlock registers
     IWDG->KR = IWDG_KEY;
     // Set prescaler
@@ -44,11 +46,14 @@ void WDT_Init(void) {
     // Set reload value
     IWDG->RLR = IWDG_REL_VAL;
     // Wait for it all to take effect
-    while((IWDG->SR) != ((uint32_t)0)) {
+    // This gets stuck. I think it needs to get a reload before it updates?
+    // I don't really care about waiting for it to take effect.
+    // If the reload register ends up being stuck at default, the IWDG will still work
+    // but will reset after ~510 msec instead of 50 msec.
+//    while((IWDG->SR) != ((uint32_t)0)) {
         // pass
-    }
-    // Start the countdown timer
-    IWDG->KR = IWDG_START;
+//    }
+
 }
 
 void WDT_Feed(void) {

@@ -69,27 +69,27 @@ void EE_Config_Addr_Table(uint16_t* addrTab) {
 
     // Add ADC variables
     for (uint32_t i = 0; i < (CONFIG_ADC_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_ADC_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_ADC_PREFIX + i);
     }
     // Add FOC variables
     for (uint32_t i = 0; i < (CONFIG_FOC_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_FOC_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_FOC_PREFIX + i);
     }
     // Add MAIN variables
     for (uint32_t i = 0; i < (CONFIG_MAIN_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_MAIN_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_MAIN_PREFIX + i);
     }
     // Add THRT variables
     for (uint32_t i = 0; i < (CONFIG_THRT_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_THRT_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_THRT_PREFIX + i);
     }
     // Add LMT variables
     for (uint32_t i = 0; i < (CONFIG_LMT_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_LMT_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_LMT_PREFIX + i);
     }
     // Add MOTOR variables
     for (uint32_t i = 0; i < (CONFIG_MOTOR_NUMVARS); i++) {
-        addrTab[tabptr++] = (CONFIG_MOTOR_PREFIX + i);
+        addrTab[tabptr++] = (1 + CONFIG_MOTOR_PREFIX + i);
     }
 }
 
@@ -593,7 +593,18 @@ static FLASH_Status FLASH_CheckErasedAndFix(uint32_t Address) {
             // Which page is this?
             page_num = (Address - FLASH_START_ADDRESS) / PAGE_SIZE_SINGLE;
             if(page_num <= 127) {
-                return FLASH_ErasePage(page_num, 0);
+                // Check the entire page. If any byte isn't 0xFF, we erase.
+                // Otherwise the page was erased correctly and we don't have to
+                // spend erase cycles with no reason.
+                // Checking 32 bits at a time.
+                for(uint32_t i = 0; i < PAGE_SIZE_SINGLE; i += 4) {
+                    if((*((uint32_t*)Address)) != FLASH_ERASED) {
+                        return FLASH_ErasePage(page_num, 0);
+                    } else {
+                        Address += 4;
+                    }
+                }
+                return FLASH_COMPLETE; // Everything was 0xFF, erase was good!
             } else {
                 return FLASH_ERROR_PROGRAM; // Out of range
             }
@@ -609,7 +620,14 @@ static FLASH_Status FLASH_CheckErasedAndFix(uint32_t Address) {
                 // Bank2
                 page_num = (Address - BANK2_START_ADDRESS) / PAGE_SIZE_DUAL;
                 if(page_num <= 127) {
-                    return FLASH_ErasePage(page_num, 1);
+                    for(uint32_t i = 0; i < PAGE_SIZE_DUAL; i += 4) {
+                        if((*((uint32_t*)Address)) != FLASH_ERASED) {
+                            return FLASH_ErasePage(page_num, 1);
+                        } else {
+                            Address += 4;
+                        }
+                    }
+                    return FLASH_COMPLETE;
                 } else {
                     return FLASH_ERROR_PROGRAM; // Out of range
                 }
