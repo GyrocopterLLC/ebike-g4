@@ -59,6 +59,7 @@ typedef enum _DRV_Gain {
 #define DRV_RW              0x8000
 // Address bits
 #define DRV_ADDR            0x7800
+#define DRV_ADDR_SHIFT      (11u)
 // Data bits
 #define DRV_DATA            0x07FF
 

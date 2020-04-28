@@ -27,8 +27,11 @@
 
 #include "main.h"
 
+#define DBG_USB_BUF_LEN 128
+
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
-uint32_t DebuggingFlags=0;
+uint32_t DBG_Flags=0;
+uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
 
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
@@ -41,6 +44,7 @@ int main (
     uint32_t led_timer = 0;
     uint32_t drv_en_timer = 0;
     float angle, sin, cos;
+    uint32_t vcp_bytes;
 
     // First check if we need to change to the bootloader.
     //
@@ -99,6 +103,20 @@ int main (
     while (1)
     {
         WDT_Feed();
+
+        // Loop back any received USB characters
+        vcp_bytes = VCP_InWaiting();
+        if(vcp_bytes > 0) {
+            if(vcp_bytes > DBG_USB_BUF_LEN) {
+                VCP_Read(DBG_Usb_Buffer, DBG_USB_BUF_LEN);
+            } else {
+                VCP_Read(DBG_Usb_Buffer, vcp_bytes);
+            }
+
+            // Send the same thing back now
+            VCP_Write(DBG_Usb_Buffer, vcp_bytes);
+        }
+
         Delay(10);
         led_timer++;
         drv_en_timer++;

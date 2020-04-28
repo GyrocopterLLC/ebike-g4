@@ -225,6 +225,7 @@ void USB_StallOUTEP(uint8_t epnum);
 void USB_ClrStallINEP(uint8_t epnum);
 void USB_ClrStallOUTEP(uint8_t epnum);
 void USB_CtrlError(void);
+void USB_ClrCtrlError(void);
 uint32_t USB_GetRxDataSize(uint8_t epnum);
 void USB_SendData(uint8_t *pbuf, uint8_t epnum, uint16_t len);
 void USB_SendCtrlStatus(void);

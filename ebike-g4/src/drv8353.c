@@ -60,12 +60,13 @@ void DRV8353_Init(void) {
     GPIO_Output(SPI_PORT, SPI_CS_PIN);
     GPIO_High(SPI_PORT, SPI_CS_PIN);
     // Enable pin
+    GPIO_Clk(DRV_EN_PORT);
     GPIO_Output(DRV_EN_PORT, DRV_EN_PIN);
     GPIO_Low(DRV_EN_PORT, DRV_EN_PIN); // make sure it's reset for now
 
     // Configure SPI
     DRV_SPI->CR1 = SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
-    if(SPI_LSBFIRST == 0) {
+    if(SPI_LSBFIRST != 0) {
         DRV_SPI->CR1 |= SPI_CR1_LSBFIRST;
     }
     switch(SPI_CLKDIV) {
@@ -194,7 +195,10 @@ uint16_t DRV8353_Transaction(uint16_t DataOut) {
  * @retval The 16-bit read data, only bits 10 to 0 are meaningful.
  */
 uint16_t DRV8353_Read(uint8_t reg_addr) {
-    return DRV8353_Transaction(DRV_RW | ((reg_addr & 0x0FU) < 11U));
+    uint16_t spi_out_val = (reg_addr & 0x0F);
+    spi_out_val <<= DRV_ADDR_SHIFT;
+    spi_out_val += DRV_RW;
+    return DRV8353_Transaction(spi_out_val);
 }
 
 /**
@@ -204,7 +208,10 @@ uint16_t DRV8353_Read(uint8_t reg_addr) {
  * @retval The 16-bit read data (previous register value), only bits 10 to 0 are meaningful.
  */
 uint16_t DRV8353_Write(uint8_t reg_addr, uint16_t reg_value) {
-    return DRV8353_Transaction(((reg_addr & 0x0FU) < 11U) | (reg_value & 0x3FFU));
+    uint16_t spi_out_val = (reg_addr & 0x0F);
+    spi_out_val <<= DRV_ADDR_SHIFT;
+    spi_out_val += (reg_value & DRV_DATA);
+    return DRV8353_Transaction(spi_out_val);
 }
 
 /**

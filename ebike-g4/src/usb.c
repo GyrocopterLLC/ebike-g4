@@ -29,10 +29,8 @@
 /****
  * TODO:
  *
- * I appear to be NAK'ing all of the Status packets sent after Setup - Data In
- * transactions. The USB Host keeps retrying the Status packet until I ACK it.
- * But I never do, so it hangs. Eventually restarting the bus. But then the same
- * thing happens again anyway.
+ * Check out NAK/ACK status on EP0_OUT
+ * Seems to be doing a lot of NAKing.
  */
 
 
@@ -338,14 +336,18 @@ void USB_CorrectTransfer_IRQ(void) {
                 // DIR = 1, OUT, reception is done
                 // Was this a setup packet? Special rules apply
                 if(active_epnr & USB_EP_SETUP) {
+                    // In case there was a previous stall, make sure it's cleared.
+                    USB_ClrCtrlError();
                     // Get number of bytes
                     USB_OutEPs[0].xfer_len = USB_Get_PMA_Endpoint_Rx_Count(0);
+                    USB_OutEPs[0].xfer_done_count += USB_OutEPs[0].xfer_len;
                     // Read from the PMA buffer
                     USB_ReadPacket((uint8_t*)USB_Setup_Buffer, 0, USB_OutEPs[0].xfer_len);
                     USB_Clear_EPnR_Rx_CTR(0);
                     USB_SetupCallback();
                 } else {
                     USB_OutEPs[0].xfer_len = USB_Get_PMA_Endpoint_Rx_Count(0);
+                    USB_OutEPs[0].xfer_done_count += USB_OutEPs[0].xfer_len;
                     USB_ReadPacket(USB_OutEPs[0].xfer_buffer, 0, USB_OutEPs[0].xfer_len);
                     USB_Clear_EPnR_Rx_CTR(0);
                     USB_DataOUTCallback(0);
@@ -468,6 +470,7 @@ void USB_DataINCallback(uint8_t epnum) {
                 USB_NewAddr = 0;
             }
             USB_EP0_State = USB_EP0_IDLE;
+            USB_ClrCtrlError();
         }
     } else {
         // All other endpoints
@@ -507,6 +510,7 @@ void USB_DataOUTCallback(uint8_t epnum) {
     USB_EndpointType *pep;
     int32_t bytes_to_receive;
     pep = &USB_OutEPs[epnum];
+    uint16_t temp_epnr;
 
     if (epnum == 0) {
         if (USB_EP0_State == USB_EP0_DATA_OUT) {
@@ -526,6 +530,12 @@ void USB_DataOUTCallback(uint8_t epnum) {
         } else if(USB_EP0_State == USB_EP0_STATUS_OUT) {
             // Status transaction is now complete
             USB_EP0_State = USB_EP0_IDLE;
+            // Make sure to clear the EP_KIND bit!
+            // Otherwise it will stall this endpoint when any
+            // OUT packet is received with non-zero data length.
+            temp_epnr = USB_Get_EPnR(0) & ( USB_EP_CTR_RX | USB_EP_T_FIELD | USB_EP_CTR_TX | USB_EPADDR_FIELD);
+            USB_Set_EPnR(0, temp_epnr);
+            USB_ClrCtrlError();
         }
     } else if ((USB_ClassCallbackData->DataOut != NULLPTR)
             && (USB_DevState == USB_STATE_CONFIGURED)) {
@@ -944,7 +954,7 @@ void USB_ActivateOUTEP(uint8_t epnum, uint8_t eptype, uint32_t maxpacketsize, ui
     buffer_begin += USB_InEPs[epnum].buffersize;
     USB_Set_PMA_Endpoint_Rx_Address(epnum, buffer_begin);
     USB_OutEPs[epnum].pmaaddr = buffer_begin;
-    USB_Set_PMA_Endpoint_Rx_BufSize(epnum, maxpacketsize);
+    USB_Set_PMA_Endpoint_Rx_BufSize(epnum, buffersize);
     // Settings in EPnR
     switch(eptype) {
     case USB_EP_TYPE_CTRL:
@@ -1008,6 +1018,13 @@ void USB_CtrlError(void) {
     USB_EP0_State = USB_EP0_STALL;
     USB_StallINEP(0);
     USB_StallOUTEP(0);
+}
+
+void USB_ClrCtrlError(void) {
+    // Remove the stall status from both IN and OUT status endpoints
+    USB_ClrStallINEP(0);
+    USB_ClrStallOUTEP(0);
+//    USB_Set_EPnR_Rx_Stat(0, USB_EP_RX_NAK);
 }
 
 uint32_t USB_GetRxDataSize(uint8_t epnum) {

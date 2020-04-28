@@ -35,9 +35,9 @@
 #define DATA_ENDPOINT_FIFO_SIZE		64
 #define CMD_ENDPOINT_FIFO_SIZE		8
 
-#define         DEVICE_ID1          (0x1FFF7A10)
-#define         DEVICE_ID2          (0x1FFF7A14)
-#define         DEVICE_ID3          (0x1FFF7A18)
+#define         DEVICE_ID1          (0x1FFF7590)
+#define         DEVICE_ID2          (0x1FFF7594)
+#define         DEVICE_ID3          (0x1FFF7598)
 
 #define  USB_SIZ_STRING_SERIAL       0x1A
 
