@@ -28,8 +28,10 @@
 #include "main.h"
 #include <math.h>
 
-uint32_t adc12_raw_regular_results[8];
-uint32_t adc34_raw_regular_results[8];
+uint16_t adc1_raw_regular_results[8];
+uint16_t adc2_raw_regular_results[8];
+uint16_t adc3_raw_regular_results[8];
+uint16_t adc4_raw_regular_results[8];
 
 uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[NUM_CUR_CH];
@@ -69,6 +71,8 @@ static void ADC_CalcVref(void);
  * for either injected or regular mode.
  */
 void ADC_Init(void) {
+
+    // TODO: What the heck is going on with ADC2? The data of the last conversion is repeated. Dunno why.
 
     // Load from eeprom
     ADC_LoadVariables();
@@ -200,10 +204,11 @@ void ADC_Init(void) {
 
     // External trigger selection (regular sequence): hardware trigger on rising edge
     // of TIM1_TRGO2 (set to oc5ref in TIM1)
-    ADC1->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
-    ADC2->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
-    ADC3->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
-    ADC4->CFGR |= (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    // Also ignore overruns due to weird DMA crap.
+    ADC1->CFGR |= ADC_CFGR_OVRMOD | (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    ADC2->CFGR |= ADC_CFGR_OVRMOD | (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    ADC3->CFGR |= ADC_CFGR_OVRMOD | (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
+    ADC4->CFGR |= ADC_CFGR_OVRMOD | (10U << 5U) | (1U << 10U); // EXTSEL = 01010, EXTEN = 01
     /*
      * Dual ADC mode settings
      * ADC1&2 is set in injected simultaneous + regular simultaneous modes. That means that the
@@ -222,23 +227,33 @@ void ADC_Init(void) {
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
     RCC->AHB1ENR |= RCC_AHB1ENR_DMAMUX1EN;
     // Configure settings on DMA channels, except for enabling the channel. That's later.
-    //  --- 32-bit transfers (both MSIZE and PSIZE), memory increment mode, but not peripheral increment
+    //  --- 16-bit transfers (both MSIZE and PSIZE), memory increment mode, but not peripheral increment
     //  --- and circular mode. Direction is read from peripheral (bit is zero)
-    ADC1_DMACHANNEL->CCR = DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC;
-    ADC3_DMACHANNEL->CCR = DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_1 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC1_DMACHANNEL->CCR = DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC2_DMACHANNEL->CCR = DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC3_DMACHANNEL->CCR = DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC;
+    ADC4_DMACHANNEL->CCR = DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 | DMA_CCR_MINC | DMA_CCR_CIRC;
     ADC1_DMACHANNEL->CNDTR = 8; // each regular sequence is 8 conversions
+    ADC2_DMACHANNEL->CNDTR = 8;
     ADC3_DMACHANNEL->CNDTR = 8;
-    ADC1_DMACHANNEL->CMAR = (uint32_t)(&adc12_raw_regular_results);
-    ADC3_DMACHANNEL->CMAR = (uint32_t)(&adc34_raw_regular_results);
-    ADC1_DMACHANNEL->CPAR = (uint32_t)(&(ADC12_COMMON->CDR));
-    ADC3_DMACHANNEL->CPAR = (uint32_t)(&(ADC345_COMMON->CDR));
+    ADC4_DMACHANNEL->CNDTR = 8;
+    ADC1_DMACHANNEL->CMAR = (uint32_t)(&adc1_raw_regular_results);
+    ADC2_DMACHANNEL->CMAR = (uint32_t)(&adc2_raw_regular_results);
+    ADC3_DMACHANNEL->CMAR = (uint32_t)(&adc3_raw_regular_results);
+    ADC4_DMACHANNEL->CMAR = (uint32_t)(&adc4_raw_regular_results);
+    ADC1_DMACHANNEL->CPAR = (uint32_t)(&(ADC1->DR));
+    ADC2_DMACHANNEL->CPAR = (uint32_t)(&(ADC2->DR));
+    ADC3_DMACHANNEL->CPAR = (uint32_t)(&(ADC3->DR));
+    ADC4_DMACHANNEL->CPAR = (uint32_t)(&(ADC4->DR));
     // Configure settings on DMAMUX. Just set the channel selection for channel 1 to ADC1, channel 2 to ADC3
     // None of the other special features (like synchronization) are needed
     ADC1_DMAMUXCHANNEL->CCR = ADC1_DMAMUX_REQ;
+    ADC2_DMAMUXCHANNEL->CCR = ADC2_DMAMUX_REQ;
     ADC3_DMAMUXCHANNEL->CCR = ADC3_DMAMUX_REQ;
-    // Setup the ADC common register to enable dual mode, DMA requests, and circular DMA mode.
-    ADC12_COMMON->CCR |= ADC_CCR_DUAL_0 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
-    ADC345_COMMON->CCR |= ADC_CCR_DUAL_2 | ADC_CCR_DUAL_1 | ADC_CCR_MDMA_1 | ADC_CCR_DMACFG;
+    ADC4_DMAMUXCHANNEL->CCR = ADC4_DMAMUX_REQ;
+    // Setup the ADC common register to enable dual mode.
+    ADC12_COMMON->CCR |= ADC_CCR_DUAL_0;
+    ADC345_COMMON->CCR |= ADC_CCR_DUAL_2 | ADC_CCR_DUAL_1;
 
     // Interrupts - injected end of queue enabled
     ADC1->IER = ADC_IER_JEOSIE;
@@ -250,11 +265,17 @@ void ADC_Init(void) {
 
     // DMA interrupts - end of transfer enabled. Also enable the DMA now.
     ADC1_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
+    ADC2_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
     ADC3_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
+    ADC4_DMACHANNEL->CCR |= DMA_CCR_TCIE | DMA_CCR_EN;
     NVIC_SetPriority(DMA1_Channel1_IRQn, PRIO_ADC);
     NVIC_SetPriority(DMA1_Channel2_IRQn, PRIO_ADC);
+    NVIC_SetPriority(DMA1_Channel3_IRQn, PRIO_ADC);
+    NVIC_SetPriority(DMA1_Channel4_IRQn, PRIO_ADC);
     NVIC_EnableIRQ(DMA1_Channel1_IRQn);
     NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+    NVIC_EnableIRQ(DMA1_Channel3_IRQn);
+    NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
     // enable the ADCs
     ADC_Enable(ADC1);
@@ -334,17 +355,24 @@ static void ADC_CalcVref(void) {
     ADC1->CFGR = temp_cfgr;
     ADC1->CFGR2 = temp_cfgr2;
     ADC1->IER = temp_ier;
+
 }
 
-void ADC_ConvComplete(void) {
+void ADC_InjSeqComplete(void) {
     adc_conv[ADC_IA] = ADC3->JDR1;
     adc_conv[ADC_IB] = ADC2->JDR1;
     adc_conv[ADC_IC] = ADC1->JDR1;
-    adc_conv[ADC_VBUS] = ADC3->JDR2;
-    adc_conv[ADC_THR1] = ADC2->JDR2;
-    adc_conv[ADC_THR2] = ADC3->JDR3;
-    adc_conv[ADC_TEMP] = ADC2->JDR3;
-    adc_conv[ADC_VREFINT] = (ADC1->JDR2 + ADC1->JDR3) >> 1;
+
+}
+
+void ADC_RegSeqComplete(void) {
+    adc_conv[ADC_VBUS] = adc4_raw_regular_results[0];
+    adc_conv[ADC_THR] = adc2_raw_regular_results[4];
+    adc_conv[ADC_FTEMP] = adc2_raw_regular_results[6];
+    adc_conv[ADC_MTEMP] = adc1_raw_regular_results[0];
+    adc_conv[ADC_VA] = adc2_raw_regular_results[0];
+    adc_conv[ADC_VB] = adc2_raw_regular_results[2];
+    adc_conv[ADC_VC] = adc3_raw_regular_results[0];
 }
 
 /**
@@ -393,9 +421,9 @@ float ADC_GetThrottle(uint8_t thrnum) {
     float temp_throttle = 0.0f;
     if (thrnum == 1) {
         // Convert 12-bit adc result to floating point
-        temp_throttle = ((float) adc_conv[ADC_THR1]) / MAXCOUNTF;
+        temp_throttle = ((float) adc_conv[ADC_THR]) / MAXCOUNTF;
     } else if (thrnum == 2) {
-        temp_throttle = ((float) adc_conv[ADC_THR2]) / MAXCOUNTF;
+        temp_throttle = 0.0f;
     }
     // Convert to volts using reference measurement
     temp_throttle *= adc_vref;
@@ -421,7 +449,7 @@ void ADC_SetNull(uint8_t which_cur, uint16_t nullVal) {
     adc_current_null[which_cur] = nullVal;
 }
 
-float ADC_GetTempDegC(void) {
+float ADC_GetFetTempDegC(void) {
     
     // Step 1: Calculate thermistor resistance right now
     // Fixed resistor is at the bottom of the voltage divider,
@@ -435,7 +463,7 @@ float ADC_GetTempDegC(void) {
     // Rt = Rf*(1-adc)/adc, which simplifies to Rf*(1/adc - 1)
     
     // Convert 12-bit to float
-    float temp = ((float) adc_conv[ADC_TEMP]) / MAXCOUNTF;
+    float temp = ((float) adc_conv[ADC_FTEMP]) / MAXCOUNTF;
     // Calculate resistance
 //    temp = TEMP_FIXED_RESISTOR * (1.0f/temp - 1.0f);
     temp = config_adc.Thermistor_Fixed_R * (1.0f/temp - 1.0f);

@@ -47,7 +47,7 @@ typedef enum _data_type {
 #define DFLT_ADC_VBUS_RATIO         (33.36246f) // 1 / (3.09kOhm / (100 + 3.09kOhm)) = 33.36246
 #define DFLT_ADC_THERM_FIXED_R      (10000.0f) // 10k resistor
 #define DFLT_ADC_THERM_R25          (10000.0f) // Thermistor is 10k at 25degC
-#define DFLT_ADC_THERM_B            (3984.0f) // Thermistor Beta value (NTCALUG02A103G)
+#define DFLT_ADC_THERM_B            (4250.0f) // Thermistor Beta value (NTCALUG02A103G)
 
 /*** FOC Variable IDs ***/
 #define CONFIG_FOC_PREFIX           (0x0100)

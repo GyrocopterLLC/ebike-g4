@@ -26,6 +26,8 @@
  */
 
 #include "main.h"
+#include <string.h>
+#include <stdio.h>
 
 #define DBG_USB_BUF_LEN 128
 
@@ -35,6 +37,7 @@ uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
 
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
+static void MAIN_GoToBootloader(void);
 
 int main (
         __attribute__((unused)) int argc,
@@ -42,8 +45,8 @@ int main (
 {
 
     uint32_t led_timer = 0;
-    uint32_t drv_en_timer = 0;
     float angle, sin, cos;
+    float fet_temp;
     uint32_t vcp_bytes;
 
     // First check if we need to change to the bootloader.
@@ -94,7 +97,13 @@ int main (
     GPIO_Output(DRV_EN_PORT, DRV_EN_PIN);
     GPIO_High(LED_PORT, GLED_PIN);
     GPIO_Low(LED_PORT, RLED_PIN);
-    GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
+//    GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
+
+    // Use the DAC for any old analog value
+    RCC->AHB2ENR |= RCC_AHB2ENR_DAC1EN;
+    DAC1->CR |= DAC_CR_EN1 | DAC_CR_EN2;
+    DAC1->DHR8R1 = 0x40; // About 0.825 V
+    DAC1->DHR8R2 = 0x80; // About 1.65 V
 
     // Start the watchdog
     WDT_Init();
@@ -113,13 +122,25 @@ int main (
                 VCP_Read(DBG_Usb_Buffer, vcp_bytes);
             }
 
-            // Send the same thing back now
-            VCP_Write(DBG_Usb_Buffer, vcp_bytes);
+
+
+            if(strstr(DBG_Usb_Buffer,"ftemp?") != 0) {
+                // Convert and send Fet temp
+                fet_temp = ADC_GetFetTempDegC();
+                sprintf(DBG_Usb_Buffer,"T=%d\n",(int16_t)fet_temp);
+                VCP_Write(DBG_Usb_Buffer, strlen(DBG_Usb_Buffer));
+            } else if(strstr(DBG_Usb_Buffer, "boot") != 0) {
+                // Disable USB
+                USB->CNTR |= USB_CNTR_FRES; // Force a reset
+                MAIN_GoToBootloader();
+            } else {
+                // Send the same thing back instead
+                VCP_Write(DBG_Usb_Buffer, vcp_bytes);
+            }
         }
 
         Delay(10);
         led_timer++;
-        drv_en_timer++;
         if(led_timer == 50) {
             GPIO_Low(LED_PORT, GLED_PIN);
         }
@@ -127,18 +148,15 @@ int main (
             GPIO_High(LED_PORT, GLED_PIN);
             led_timer = 0;
         }
-        if(drv_en_timer == 500) {
-            GPIO_High(DRV_EN_PORT, DRV_EN_PIN);
-        }
-        if(drv_en_timer >= 1000) {
-            GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
-            drv_en_timer = 0;
-        }
 
         // CORDIC testing
         angle += 0.076f; // Something that doesn't fit cleanly into 1.0 so it gives lots of different values
         if(angle >= 1.0f) angle -= 2.0f; // Wrap between -1 and 1
         CORDIC_CalcSinCos(angle, &sin, &cos);
+
+        // ADC conversions
+        ADC_InjSeqComplete();
+        ADC_RegSeqComplete();
 
     }
 }
@@ -258,3 +276,15 @@ static void MAIN_CheckBootloader(void) {
     }
 }
 
+
+static void MAIN_GoToBootloader(void) {
+    // Enable access to backup registers
+    RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN; // Enable power control
+    PWR->CR1 |= PWR_CR1_DBP; // Enable access to backup domain
+
+    TAMP->BKP0R = BOOTLOADER_RESET_FLAG;
+
+    // Reboot
+    NVIC_SystemReset();
+
+}

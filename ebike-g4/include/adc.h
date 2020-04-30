@@ -34,11 +34,17 @@
 
 // DMA settings
 #define ADC1_DMAMUX_REQ     5
+#define ADC2_DMAMUX_REQ     36
 #define ADC3_DMAMUX_REQ     37
+#define ADC4_DMAMUX_REQ     38
 #define ADC1_DMACHANNEL     DMA1_Channel1
-#define ADC3_DMACHANNEL     DMA1_Channel2
+#define ADC2_DMACHANNEL     DMA1_Channel2
+#define ADC3_DMACHANNEL     DMA1_Channel3
+#define ADC4_DMACHANNEL     DMA1_Channel4
 #define ADC1_DMAMUXCHANNEL  DMAMUX1_Channel0
-#define ADC3_DMAMUXCHANNEL  DMAMUX1_Channel1
+#define ADC2_DMAMUXCHANNEL  DMAMUX1_Channel1
+#define ADC3_DMAMUXCHANNEL  DMAMUX1_Channel2
+#define ADC4_DMAMUXCHANNEL  DMAMUX1_Channel3
 
 // Channel definitions
 // Two versions are given -
@@ -66,7 +72,9 @@
 #define ADC_THR_CH          12
 #define ADC_VBUS_ADC        ADC1
 #define ADC_VBUS_CH         11
+
 #else
+
 #define ADC_MTEMP_ADC       ADC1
 #define ADC_MTEMP_CH        10
 #define ADC_FTEMP_ADC       ADC2
@@ -88,12 +96,13 @@
 #define ADC_VBUS_ADC        ADC4
 #define ADC_VBUS_CH         3
 
+#endif
+
 // Common for all ADCs
 #define ADC_VTS_CH          16
 #define ADC_VBAT_CH         17
 #define ADC_VREFINT_CH      18
 
-#endif
 
 #define VREFINTDEFAULT	(1.212f) // From the STM32G4 spec sheet
 #define VREFINTCAL_MIN	(1570) // Approximately 1.15V. Spec sheet minimum is 1.182V
@@ -114,17 +123,20 @@ typedef struct _config_adc {
 
 typedef enum {
     ADC_IA = 0,
-    ADC_IB = 1,
-    ADC_IC = 2,
-    ADC_VBUS = 3,
-    ADC_TEMP = 4,
-    ADC_THR1 = 5,
-    ADC_THR2 = 6,
-    ADC_VREFINT = 7
+    ADC_IB,
+    ADC_IC,
+    ADC_VA,
+    ADC_VB,
+    ADC_VC,
+    ADC_VBUS,
+    ADC_FTEMP,
+    ADC_MTEMP,
+    ADC_THR,
 } ADC_OutputTypeDef;
 
 
-void ADC_ConvComplete(void);
+void ADC_InjSeqComplete(void);
+void ADC_RegSeqComplete(void);
 void ADC_Init(void);
 float ADC_GetCurrent(uint8_t which_cur);
 uint16_t ADC_Raw(uint8_t which_cur);
@@ -133,7 +145,7 @@ float ADC_GetThrottle(uint8_t thrnum);
 float ADC_GetVbus(void);
 float ADC_GetVref(void);
 void ADC_SetNull(uint8_t which_cur, uint16_t nullVal);
-float ADC_GetTempDegC(void);
+float ADC_GetFetTempDegC(void);
 
 uint8_t ADC_SetInverseTIAGain(float new_gain);
 float ADC_GetInverseTIAGain(void);

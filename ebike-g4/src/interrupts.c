@@ -73,8 +73,22 @@ void DMA1_Channel1_IRQHandler(void) {
 
 void DMA1_Channel2_IRQHandler(void) {
     if((DMA1->ISR & DMA_ISR_TCIF2) != 0) {
-        // Transfer complete channel 1
+        // Transfer complete channel 2
         DMA1->IFCR |= DMA_IFCR_CTCIF2; // Clear the flag by writing 1
+    }
+}
+
+void DMA1_Channel3_IRQHandler(void) {
+    if((DMA1->ISR & DMA_ISR_TCIF3) != 0) {
+        // Transfer complete channel 3
+        DMA1->IFCR |= DMA_IFCR_CTCIF3; // Clear the flag by writing 1
+    }
+}
+
+void DMA1_Channel4_IRQHandler(void) {
+    if((DMA1->ISR & DMA_ISR_TCIF4) != 0) {
+        // Transfer complete channel 4
+        DMA1->IFCR |= DMA_IFCR_CTCIF4; // Clear the flag by writing 1
     }
 }
 
