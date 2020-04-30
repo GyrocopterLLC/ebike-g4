@@ -51,6 +51,8 @@
 #define RETVAL_FAIL         (0)
 
 // Bootloader locations
+#define BOOTLOADER_REMAPPED_TOP_OF_STACK        ((uint32_t)0x00000000)
+#define BOOTLOADER_REMAPPED_RESET_VECTOR        ((uint32_t)0x00000004)
 #define BOOTLOADER_TOP_OF_STACK     ((uint32_t)0x1FFF0000)
 #define BOOTLOADER_RESET_VECTOR     ((uint32_t)0x1FFF0004)
 #define BOOTLOADER_RESET_FLAG       ((uint32_t)0x7441634F) // "tAcO"

@@ -26,6 +26,7 @@
  */
 
 #include "main.h"
+#include <math.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -127,7 +128,8 @@ int main (
             if(strstr(DBG_Usb_Buffer,"ftemp?") != 0) {
                 // Convert and send Fet temp
                 fet_temp = ADC_GetFetTempDegC();
-                sprintf(DBG_Usb_Buffer,"T=%d\n",(int16_t)fet_temp);
+                // printf function library doesn't have float support. Doing it manually with 3 decimals
+                sprintf(DBG_Usb_Buffer,"T=%d.%03d\n",(int16_t)fet_temp,(int16_t)(1000.0f*fabsf(fet_temp-truncf(fet_temp))));
                 VCP_Write(DBG_Usb_Buffer, strlen(DBG_Usb_Buffer));
             } else if(strstr(DBG_Usb_Buffer, "boot") != 0) {
                 // Disable USB
@@ -258,7 +260,7 @@ static void MAIN_InitializeClocks(void) {
 static void MAIN_CheckBootloader(void) {
     // Set the bootloader entry point as a function pointer. The value is stored at
     // the reset vector location in system memory.
-    void (*bootloader)(void) = (void(*)(void)) *((uint32_t *)(BOOTLOADER_RESET_VECTOR));
+    void (*bootloader)(void);
 
     // The backup registers are not modified by a software reset, so if application code
     // changes this register and resets the processor, we will know that a bootloader
@@ -270,8 +272,12 @@ static void MAIN_CheckBootloader(void) {
         PWR->CR1 |= PWR_CR1_DBP; // Enable access to backup domain
         // Reset the backup register so we don't get stuck forever restarting in bootloader mode
         TAMP->BKP0R = 0;
+        // Remap the system memory to address 0x00000000
+        SYSCFG->MEMRMP &= ~(SYSCFG_MEMRMP_MEM_MODE);
+        SYSCFG->MEMRMP |= SYSCFG_MEMRMP_MEM_MODE_0; // MEM_MODE = 001b, System Flash memory mapped to 0x00000000
         // And now, load the bootloader
-        __set_MSP(*((uint32_t *)(BOOTLOADER_TOP_OF_STACK))); // Change stack pointer to the end of ram.
+        __set_MSP(*((uint32_t *)(BOOTLOADER_REMAPPED_TOP_OF_STACK))); // Change stack pointer to the end of ram.
+        bootloader = (void(*)(void)) *((uint32_t *)(BOOTLOADER_REMAPPED_RESET_VECTOR)); // Set bootloader entry point
         bootloader();// Call the bootloader.
     }
 }
