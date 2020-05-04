@@ -113,6 +113,7 @@
 #define ADC_NUM_INTEG_SAMPLES (128) // Number of samples to integrate when measuring at startup
 
 typedef struct _config_adc {
+    float Shunt_Resistance;
     float Inverse_TIA_Gain;
     float Vbus_Ratio;
     float Thermistor_Fixed_R;
@@ -147,8 +148,8 @@ float ADC_GetVref(void);
 void ADC_SetNull(uint8_t which_cur, uint16_t nullVal);
 float ADC_GetFetTempDegC(void);
 
-uint8_t ADC_SetInverseTIAGain(float new_gain);
-float ADC_GetInverseTIAGain(void);
+uint8_t ADC_SetRShunt(float new_rshunt);
+float ADC_GetRShunt(void);
 uint8_t ADC_SetVbusRatio(float new_ratio);
 float ADC_GetVbusRatio(void);
 uint8_t ADC_SetThermFixedR(float new_fixed_r);

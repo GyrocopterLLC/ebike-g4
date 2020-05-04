@@ -157,7 +157,7 @@ void PWM_Init(int32_t freq) {
     // Dead time selection, and drive outputs low when Motor Enable (MOE) bit is zero
     PWM_TIM->BDTR = PWM_DEFAULT_DT_REG | TIM_BDTR_OSSI;
     // Break input 1 enable
-    PWM_TIM->BDTR |= TIM_BDTR_BKE;
+    PWM_TIM->BDTR |= TIM_BDTR_BKE | TIM_BDTR_BKP;
     PWM_TIM->AF1 = TIM1_AF1_BKINE | TIM1_AF1_BKINP;
 
     PWM_TIM->CCR1 = PWM_PERIOD / 2 + 1;

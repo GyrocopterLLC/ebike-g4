@@ -32,9 +32,12 @@
 #include "adc.h"
 #include "cordic_sin_cos.h"
 #include "crc.h"
+#include "data_commands.h"
+#include "data_packet.h"
 #include "delay.h"
 #include "drv8353.h"
 #include "eeprom_emulation.h"
+#include "foc_lib.h"
 #include "gpio.h"
 #include "hall_sensor.h"
 #include "periphconfig.h"
@@ -43,6 +46,7 @@
 #include "pwm.h"
 #include "uart.h"
 #include "usb_cdc.h"
+#include "usb_data_comm.h"
 #include "usb.h"
 #include "wdt.h"
 
@@ -56,5 +60,34 @@
 #define BOOTLOADER_TOP_OF_STACK     ((uint32_t)0x1FFF0000)
 #define BOOTLOADER_RESET_VECTOR     ((uint32_t)0x1FFF0004)
 #define BOOTLOADER_RESET_FLAG       ((uint32_t)0x7441634F) // "tAcO"
+
+// Various settings
+#define APP_TIM_RATE        (1000) // 1kHz update rate
+
+typedef enum _main_limit_type {
+    Main_Limit_PhaseCurrent,
+    Main_Limit_PhaseRegenCurrent,
+    Main_Limit_BattCurrent,
+    Main_Limit_BattRegenCurrent,
+    Main_Limit_SoftVoltage,
+    Main_Limit_HardVoltage,
+    Main_Limit_SoftFetTemp,
+    Main_Limit_HardFetTemp,
+    Main_Limit_SoftMotorTemp,
+    Main_Limit_HardMotorTemp,
+    Main_Limit_MinVoltFault,
+    Main_Limit_MaxVoltFault,
+    Main_Limit_CurrentFault
+} Main_Limit_Type;
+
+// Exported functions
+
+uint8_t MAIN_GetDashboardData(uint8_t* data); // Returns live values
+uint8_t MAIN_EnableDebugPWM(void); // Turn on PWM outputs
+uint8_t MAIN_DisableDebugPWM(void); // Turn off PWM outputs
+void MAIN_Reboot(void); // Restart processor
+void MAIN_GoToBootloader(void); // Restart and go to bootloader at startup
+void MAIN_AppTimerISR(void); // Called periodically to do housekeeping functions
+void MAIN_MotorISR(void); // Called periodically to perform motor control functions
 
 #endif //__MAIN_H

@@ -34,8 +34,8 @@
 #define DRV_EN_PORT         GPIOC
 #define DRV_EN_PIN          13
 #define LED_PORT            GPIOC
-#define GLED_PIN            14
-#define RLED_PIN            15
+#define GLED_PIN            15
+#define RLED_PIN            14
 
 // SPI
 #define SPI_PORT            GPIOB

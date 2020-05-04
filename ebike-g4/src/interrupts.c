@@ -54,6 +54,8 @@ void ADC1_2_IRQHandler(void) {
     if((ADC1->ISR & ADC_ISR_JEOC) != 0) {
         // Injected end of conversion
         ADC1->ISR |= ADC_ISR_JEOC; // Clear the flag by writing 1 to it
+        // Call the motor control loop
+        MAIN_MotorISR();
     }
 }
 
@@ -111,6 +113,19 @@ void TIM4_IRQHandler(void) {
         HALL_CaptureCallback();
     }
 
+}
+
+/**
+ * Handler for application timer.
+ * One interrupt:
+ *  - TIM6 Update (UIF)
+ */
+void TIM6_DAC_IRQHandler(void) {
+    if((TIM6->SR & TIM_SR_UIF) != 0) {
+        // Update (timer rollover)
+        TIM6->SR &= ~(TIM_SR_UIF); // Clear by writing 0
+        MAIN_AppTimerISR(); // Call the application timer ISR in main
+    }
 }
 
 /**

@@ -33,22 +33,21 @@
 #define DBG_USB_BUF_LEN 128
 
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
+#define DBG_FLAG_PWM_ENABLE 0x00000001
 uint32_t DBG_Flags=0;
 uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
 
+float DBG_RampAngle;
+float DBG_RampIncrement;
+
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
-static void MAIN_GoToBootloader(void);
+static void MAIN_StartAppTimer(void);
 
 int main (
         __attribute__((unused)) int argc,
         __attribute__((unused)) char* argv[])
 {
-
-    uint32_t led_timer = 0;
-    float angle, sin, cos;
-    float fet_temp;
-    uint32_t vcp_bytes;
 
     // First check if we need to change to the bootloader.
     //
@@ -91,6 +90,8 @@ int main (
     USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
     USB_Start();
 
+    USB_Data_Comm_Init();
+
     // LED init
     GPIO_Clk(LED_PORT);
     GPIO_Output(LED_PORT, GLED_PIN);
@@ -100,67 +101,123 @@ int main (
     GPIO_Low(LED_PORT, RLED_PIN);
 //    GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
 
-    // Use the DAC for any old analog value
+    // Use the DAC for some SVM prettiness
     RCC->AHB2ENR |= RCC_AHB2ENR_DAC1EN;
     DAC1->CR |= DAC_CR_EN1 | DAC_CR_EN2;
-    DAC1->DHR8R1 = 0x40; // About 0.825 V
-    DAC1->DHR8R2 = 0x80; // About 1.65 V
+
+    // Initialize a ramp
+    DBG_RampIncrement = FOC_RampCtrl(20000.0f, 25.0f); // Called at 20kHz, 25Hz wave.
+
+    // Start the app timer
+    MAIN_StartAppTimer();
 
     // Start the watchdog
     WDT_Init();
-    angle = 0.0f;
     // Infinite loop, never return.
     while (1)
     {
         WDT_Feed();
 
-        // Loop back any received USB characters
-        vcp_bytes = VCP_InWaiting();
-        if(vcp_bytes > 0) {
-            if(vcp_bytes > DBG_USB_BUF_LEN) {
-                VCP_Read(DBG_Usb_Buffer, DBG_USB_BUF_LEN);
-            } else {
-                VCP_Read(DBG_Usb_Buffer, vcp_bytes);
-            }
+        USB_Data_Comm_OneByte_Check();
 
-
-
-            if(strstr(DBG_Usb_Buffer,"ftemp?") != 0) {
-                // Convert and send Fet temp
-                fet_temp = ADC_GetFetTempDegC();
-                // printf function library doesn't have float support. Doing it manually with 3 decimals
-                sprintf(DBG_Usb_Buffer,"T=%d.%03d\n",(int16_t)fet_temp,(int16_t)(1000.0f*fabsf(fet_temp-truncf(fet_temp))));
-                VCP_Write(DBG_Usb_Buffer, strlen(DBG_Usb_Buffer));
-            } else if(strstr(DBG_Usb_Buffer, "boot") != 0) {
-                // Disable USB
-                USB->CNTR |= USB_CNTR_FRES; // Force a reset
-                MAIN_GoToBootloader();
-            } else {
-                // Send the same thing back instead
-                VCP_Write(DBG_Usb_Buffer, vcp_bytes);
-            }
-        }
-
-        Delay(10);
-        led_timer++;
-        if(led_timer == 50) {
-            GPIO_Low(LED_PORT, GLED_PIN);
-        }
-        if(led_timer >= 100) {
-            GPIO_High(LED_PORT, GLED_PIN);
-            led_timer = 0;
-        }
-
-        // CORDIC testing
-        angle += 0.076f; // Something that doesn't fit cleanly into 1.0 so it gives lots of different values
-        if(angle >= 1.0f) angle -= 2.0f; // Wrap between -1 and 1
-        CORDIC_CalcSinCos(angle, &sin, &cos);
-
-        // ADC conversions
-        ADC_InjSeqComplete();
-        ADC_RegSeqComplete();
+//        // Loop back any received USB characters
+//        vcp_bytes = VCP_InWaiting();
+//        if(vcp_bytes > 0) {
+//            if(vcp_bytes > DBG_USB_BUF_LEN) {
+//                VCP_Read(DBG_Usb_Buffer, DBG_USB_BUF_LEN);
+//            } else {
+//                VCP_Read(DBG_Usb_Buffer, vcp_bytes);
+//            }
+//
+//
+//
+//            if(strstr((char*)DBG_Usb_Buffer,"ftemp?") != 0) {
+//                // Convert and send Fet temp
+//                fet_temp = ADC_GetFetTempDegC();
+//                // printf function library doesn't have float support. Doing it manually with 3 decimals
+//                sprintf((char*)DBG_Usb_Buffer,"T=%d.%03d\n",(int16_t)fet_temp,(int16_t)(1000.0f*fabsf(fet_temp-truncf(fet_temp))));
+//                VCP_Write(DBG_Usb_Buffer, strlen((char*)DBG_Usb_Buffer));
+//            } else if(strstr((char*)DBG_Usb_Buffer, "boot") != 0) {
+//                // Disable USB
+//                USB->CNTR |= USB_CNTR_FRES; // Force a reset of USB
+//                MAIN_GoToBootloader();
+//            } else if(strstr((char*)DBG_Usb_Buffer, "dbgpwm") != 0) {
+//                DBG_Flags ^= DBG_FLAG_PWM_ENABLE;
+//            } else {
+//
+//                // Send the same thing back instead
+//                VCP_Write(DBG_Usb_Buffer, vcp_bytes);
+//            }
+//        }
+//
+//        Delay(10);
+//        led_timer++;
+//        if(led_timer == 50) {
+//            GPIO_Low(LED_PORT, GLED_PIN);
+//            if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0) {
+//                // turn on pwm outputs!
+//                PWM_TIM->BDTR |= TIM_BDTR_MOE;
+//            }
+//        }
+//        if(led_timer >= 100) {
+//            GPIO_High(LED_PORT, GLED_PIN);
+//            led_timer = 0;
+//            if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0) {
+//                // turn off pwm outputs!
+//                PWM_TIM->BDTR &= ~(TIM_BDTR_MOE);
+//            }
+//        }
+//
+//
 
     }
+}
+
+// Called at 1kHz
+void MAIN_AppTimerISR(void) {
+    static uint16_t led_timer = 0;
+    led_timer++;
+    if(led_timer == 500) {
+        GPIO_Low(LED_PORT, GLED_PIN);
+    }
+    if(led_timer >= 1000) {
+        GPIO_High(LED_PORT, GLED_PIN);
+        led_timer = 0;
+    }
+
+    // ADC conversions
+    ADC_InjSeqComplete();
+    ADC_RegSeqComplete();
+
+    // PWM output
+    if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0 ) {
+        PWM_TIM->BDTR |= TIM_BDTR_MOE;
+    } else {
+        PWM_TIM->BDTR &= ~(TIM_BDTR_MOE);
+    }
+}
+
+// Called at 20kHz
+void MAIN_MotorISR(void) {
+    float alpha, beta;
+    float sin, cos;
+    float Ta, Tb, Tc;
+    uint16_t dac1, dac2;
+
+    // Increment the ramp angle
+    FOC_RampGen(&DBG_RampAngle, DBG_RampIncrement);
+    // Calculate the Sin/Cos using CORDIC
+    CORDIC_CalcSinCos(DBG_RampAngle*2.0f-1.0f, &sin, &cos);
+    // Make some waves
+    FOC_Ipark(0.75f, 0.0f, sin, cos, &alpha, &beta);
+    FOC_SVM(alpha, beta, &Ta, &Tb, &Tc);
+    // Show Ta and Tb on the DAC outputs
+    dac1 = (uint16_t)(65535.0f*Ta);
+    dac2 = (uint16_t)(65535.0f*Tb);
+    DAC1->DHR12LD = (uint32_t)(dac1) + ((uint32_t)(dac2) << 16);
+
+    // Also apply Ta, Tb, and Tc to the PWM outputs
+    PWM_SetDutyF(Ta, Tb, Tc);
 }
 
 
@@ -282,8 +339,24 @@ static void MAIN_CheckBootloader(void) {
     }
 }
 
+/**
+ * @brief  Initializes a 1kHz application timer and enables its interrupt.
+ * @retval None
+ */
+static void MAIN_StartAppTimer(void) {
+    RCC->APB1ENR1 |= RCC_APB1ENR1_TIM6EN;
+    APP_TIM->PSC = (APP_CLK / 1000000u) - 1; // Clocked at 1MHz, 170MHz is too fast for a 1kHz update with a 16-bit register
+    APP_TIM->ARR = (1000000u / APP_TIM_RATE) - 1;
+    APP_TIM->DIER = TIM_DIER_UIE; // Enable update interrupt
 
-static void MAIN_GoToBootloader(void) {
+    NVIC_SetPriority(APP_IRQn, PRIO_APPTIMER);
+    NVIC_EnableIRQ(APP_IRQn);
+
+    APP_TIM->CR1 = TIM_CR1_CEN; // Enable counting
+}
+
+
+void MAIN_GoToBootloader(void) {
     // Enable access to backup registers
     RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN; // Enable power control
     PWR->CR1 |= PWR_CR1_DBP; // Enable access to backup domain
@@ -292,5 +365,58 @@ static void MAIN_GoToBootloader(void) {
 
     // Reboot
     NVIC_SystemReset();
+}
 
+void MAIN_Reboot(void) {
+    // Reboot
+    NVIC_SystemReset();
+}
+
+uint8_t MAIN_EnableDebugPWM(void) {
+    DBG_Flags |= DBG_FLAG_PWM_ENABLE;
+    return RETVAL_OK;
+}
+
+uint8_t MAIN_DisableDebugPWM(void) {
+    DBG_Flags &= ~(DBG_FLAG_PWM_ENABLE);
+    return RETVAL_OK;
+}
+
+uint8_t MAIN_GetDashboardData(uint8_t* data) {
+    // Param1: F32: Throttle position (%)
+    // Param2: F32: Speed (rpm)
+    // Param3: F32: Phase Amps
+    // Param4: F32: Battery Amps
+    // Param5: F32: Battery Volts
+    // Param6: F32: Controller FET Temperature (degC)
+    // Param7: F32: Motor Temperature (degC)
+    // Param8: I32: Fault Code
+
+    // MPH = eHz * wheel circ *3600 / polepairs
+    // RPM = eHz * 60 / polepairs
+//    float rpm_conversion = 60.0f * config_main.inv_pole_pairs;
+
+//    data_packet_pack_float(data, Mctrl.ThrottleCommand);
+    data_packet_pack_float(data, 0.0f);
+    data+=4;
+//    data_packet_pack_float(data, rpm_conversion*HallSensor_Get_Speedf());
+    data_packet_pack_float(data, 0.0f);
+    data+=4;
+//    data_packet_pack_float(data, Mpc.PhaseCurrent);
+    data_packet_pack_float(data, 0.0f);
+    data+=4;
+//    data_packet_pack_float(data, Mpc.BatteryCurrent);
+    data_packet_pack_float(data, 0.0f);
+    data+=4;
+    data_packet_pack_float(data, ADC_GetVbus());
+    data+=4;
+    data_packet_pack_float(data, ADC_GetFetTempDegC());
+    data+=4;
+//    data_packet_pack_float(data, g_MotorTemp);
+    data_packet_pack_float(data, 0.0f);
+    data+=4;
+//    data_packet_pack_32b(data, g_errorCode);
+    data_packet_pack_32b(data, 0);
+
+    return RETVAL_OK;
 }

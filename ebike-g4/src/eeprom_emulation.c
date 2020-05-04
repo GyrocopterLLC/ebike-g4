@@ -91,6 +91,10 @@ void EE_Config_Addr_Table(uint16_t* addrTab) {
     for (uint32_t i = 0; i < (CONFIG_MOTOR_NUMVARS); i++) {
         addrTab[tabptr++] = (1 + CONFIG_MOTOR_PREFIX + i);
     }
+    // Add DRV variables
+    for (uint32_t i = 0; i < (CONFIG_DRV_NUMVARS); i++) {
+        addrTab[tabptr++] = (1 + CONFIG_DRV_PREFIX + i);
+    }
 }
 
 /**

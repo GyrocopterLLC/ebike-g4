@@ -144,30 +144,24 @@ void GPIO_AF(GPIO_TypeDef* gpio, uint8_t pin, uint8_t af) {
  * @retval None
  */
 void GPIO_SetPUPD(GPIO_TypeDef* gpio, uint8_t pin, PuPd_Type pullupdn) {
-    // Clear pullup/down register
+    // Clear the PUPDR reg
     gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
-
     switch(pullupdn) {
     case PuPd_PullUp:
-        // Clear the PUPDR reg
-        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+
         // Set pull-up
         gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_0 << (pin * 2));
         break;
     case PuPd_PullDown:
-        // Clear the PUPDR reg
-        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
         // Set pull-down
         gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
         break;
     case PuPd_NoPull:
     default:
-        // Clear the PUPDR reg
-        gpio->PUPDR &= ~(GPIO_PUPDR_PUPDR0 << (pin * 2));
+
         break;
     }
-    // Apply pull down
-    gpio->PUPDR |= (GPIO_PUPDR_PUPDR0_1 << (pin * 2));
+
 }
 
 // Configures the External Interrupt on the selected pin

@@ -44,11 +44,35 @@
 
 // Settings for shunt amplifier gain
 typedef enum _DRV_Gain {
-    DRV_Gain_5,
-    DRV_Gain_10,
-    DRV_Gain_20,
-    DRV_Gain_40
+    DRV_Gain_5 = 0,
+    DRV_Gain_10 = 1,
+    DRV_Gain_20 = 2,
+    DRV_Gain_40 = 3,
+    DRV_Gain_Unknown = 99
 } DRV_Gain;
+
+// Settings for VDS fault limit
+typedef enum _DRV_VDS_Limit {
+    DRV_VDS_0p06 = 0x0,
+    DRV_VDS_0p07 = 0x1,
+    DRV_VDS_0p08 = 0x2,
+    DRV_VDS_0p09 = 0x3,
+    DRV_VDS_0p1  = 0x4,
+    DRV_VDS_0p2  = 0x5,
+    DRV_VDS_0p3  = 0x6,
+    DRV_VDS_0p4  = 0x7,
+    DRV_VDS_0p5  = 0x8,
+    DRV_VDS_0p6  = 0x9,
+    DRV_VDS_0p7  = 0xA,
+    DRV_VDS_0p8  = 0xB,
+    DRV_VDS_0p9  = 0xC,
+    DRV_VDS_1    = 0xD,
+    DRV_VDS_1p5  = 0xE,
+    DRV_VDS_2    = 0xF,
+    DRV_VDS_Unknown = 99
+} DRV_VDS_Limit;
+
+#define DEFAULT_CSA_GAIN        (20.0f) // Value at restart
 
 // Settings for shunt amplifier calibration
 #define DRV_CHANNEL_A_CAL       0x01
@@ -161,6 +185,7 @@ typedef enum _DRV_Gain {
 #define DRVBIT_CSA_VREFDIV      0x200 // 0 - Vref (unidirectional), 1 - Vref/2 (bidirectional)
 #define DRVBIT_CSA_LSREF        0x100 // 0 - VDS_OCP measured from SH to SP, 1 - measured from SH to SN
 #define DRVBIT_CSA_GAIN         0x0C0 // 00 - 5V/V, 01 - 10V/V, 10 - 20V/V, 11 - 40V/V
+#define DRVBIT_CSA_GAIN_SHIFT       6
 #define DRVBIT_CSA_GAIN_1           0x080
 #define DRVBIT_CSA_GAIN_0           0x040
 #define DRVBIT_CSA_DISSEN       0x020 // set to disable sense overcurrent fault
@@ -177,6 +202,12 @@ void DRV8353_Init(void);
 uint16_t DRV8353_Transaction(uint16_t DataOut);
 uint16_t DRV8353_Read(uint8_t reg_addr);
 uint16_t DRV8353_Write(uint8_t reg_addr, uint16_t reg_value);
-void DRV8353_SetGain(DRV_Gain gain);
+uint8_t DRV8353_SetGain(DRV_Gain gain);
+DRV_Gain DRV8353_GetGain(void);
+uint8_t DRV8353_SetVDSLimit(DRV_VDS_Limit lmt);
+DRV_VDS_Limit DRV8353_GetVDSLimit(void);
+uint8_t DRV8353_SetGateStrength(uint32_t strength);
+uint32_t DRV8353_GetGateStrength(void);
+
 
 #endif // __SPI_H

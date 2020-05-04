@@ -37,6 +37,8 @@
 
 #include "main.h"
 
+static uint8_t DRV8353_CheckConnection(void);
+
 /**
  * @brief SPI init for DRV8353.
  *
@@ -125,6 +127,7 @@ void DRV8353_Init(void) {
     // Initialize the registers
     // CTRL - all three bridges will shutdown if one has a fault. PWM 6x mode
     DRV8353_Write(DRVREG_CTRL, DRVBIT_CTRL_OCPACT);
+    Delay(5); // Wait after each write - there's some necessary time between SPI_EN going high and back low again
 
     // Gate drive settings.
     // Using TPW4R50ANH mosfets with 58nC total gate charge, 12nC gate-drain charge
@@ -138,16 +141,20 @@ void DRV8353_Init(void) {
 
     // Gate HS - Mid range current source and sink (300mA source, 600mA sink)
     DRV8353_Write(DRVREG_GATEH, DRVBIT_GATEH_IDRIVEHS_2 | DRVBIT_GATEH_IDRIVENHS_2);
+    Delay(5);
     // Gate LS - Mid range current source and sink (300mA source, 600mA sink), Tdrive = 500ns,
     //              and new PWM input needed to clear VDS_OCP or SEN_OCP faults.
     DRV8353_Write(DRVREG_GATEL, DRVBIT_GATEL_CBC | DRVBIT_GATEL_IDRIVELS_2 | DRVBIT_GATEL_IDRIVENLS_2);
+    Delay(5);
     // OCP - 100ns dead time (generally dead time is set by the MCU), overcurrent faults are latched,
     //          deglitch time is 2us, and VDS over current level is 0.6V (worst case
     //          100degC Rdson = 6mOhm, trip at 100A) (setting is 1001b)
     DRV8353_Write(DRVREG_OCP, DRVBIT_OCP_DEADTIME_0 | DRVBIT_OCP_DEG_1 | DRVBIT_OCP_VDSLVL_3 | DRVBIT_OCP_VDSLVL_0);
+    Delay(5);
     // CSA - Normal shunt resistor connections, bidirectional, 2nd smallest gain (10V/V, setting of 01b),
     //          sense over current threshold is 0.25V (equivalent to 125A with 2mOhm shunt, setting of 00b)
     DRV8353_Write(DRVREG_CSA, DRVBIT_CSA_VREFDIV | DRVBIT_CSA_GAIN_0);
+    Delay(5);
 
     // No need to set the final register, auto-calibration is done at startup anyway.
 }
@@ -215,34 +222,146 @@ uint16_t DRV8353_Write(uint8_t reg_addr, uint16_t reg_value) {
 }
 
 /**
- * @brief Set the Current Sense Amplifier gain in DRV8353 chip
- * @param gain Choice of 5V/V, 10V/V, 20V/V, or 40V/V. Use the predefined enum
- * @retval None
+ * @brief  Set the Current Sense Amplifier gain in DRV8353 chip
+ * @param  gain Choice of 5V/V, 10V/V, 20V/V, or 40V/V. Use the predefined enum
+ * @retval RETVAL_OK if setting correctly applied, otherwise RETVAL_FAIL
  */
-void DRV8353_SetGain(DRV_Gain gain) {
+uint8_t DRV8353_SetGain(DRV_Gain gain) {
     uint16_t temp_csa;
-    // First read the present value
-    temp_csa = DRV8353_Read(DRVREG_CSA);
-    // Choose new gain setting
-    switch(gain) {
-    case DRV_Gain_5:
+    // Input check
+    if(gain <= 0x03) {
+
+        // First read the present value
+        temp_csa = DRV8353_Read(DRVREG_CSA);
+        // Choose new gain setting
         temp_csa &= ~(DRVBIT_CSA_GAIN);
-        break;
-    case DRV_Gain_10:
-        temp_csa &= ~(DRVBIT_CSA_GAIN);
-        temp_csa |= DRVBIT_CSA_GAIN_0;
-        break;
-    case DRV_Gain_20:
-        temp_csa &= ~(DRVBIT_CSA_GAIN);
-        temp_csa |= DRVBIT_CSA_GAIN_1;
-        break;
-    case DRV_Gain_40:
-        temp_csa |= DRVBIT_CSA_GAIN;
-        break;
+        temp_csa |= (gain << DRVBIT_CSA_GAIN_SHIFT);
+
+        // Write the new value
+        DRV8353_Write(DRVREG_CSA, temp_csa);
+        // Double-check
+        temp_csa = DRV8353_Read(DRVREG_CSA);
+        if( (temp_csa & DRVBIT_CSA_GAIN) == (gain << DRVBIT_CSA_GAIN_SHIFT) ) {
+            return RETVAL_OK;
+        }
     }
-    // Write the new value
-    DRV8353_Write(DRVREG_CSA, temp_csa);
+    return RETVAL_FAIL;
 }
+
+/**
+ * @brief  Retrieves the currently set Current Sense Amplifier gain in DRV8353 chip
+ * @retval Value from DRV_Gain enum. If chip isn't connected, DRV_Gain_Unknown will be returned.
+ */
+DRV_Gain DRV8353_GetGain(void) {
+    uint16_t temp_csa;
+    if(DRV8353_CheckConnection() == RETVAL_OK) {
+        temp_csa = DRV8353_Read(DRVREG_CSA);
+        if((temp_csa & DRVBIT_CSA_GAIN) == 0x00) {
+            return DRV_Gain_5;
+        } else if((temp_csa & DRVBIT_CSA_GAIN) == DRVBIT_CSA_GAIN_0) {
+            return DRV_Gain_10;
+        } else if((temp_csa & DRVBIT_CSA_GAIN) == DRVBIT_CSA_GAIN_1) {
+            return DRV_Gain_20;
+        } else if((temp_csa & DRVBIT_CSA_GAIN) == (DRVBIT_CSA_GAIN_1 | DRVBIT_CSA_GAIN_0)) {
+            return DRV_Gain_40;
+        }
+    }
+    return DRV_Gain_Unknown;
+}
+
+/**
+ * @brief  Set the VDS limit voltage in DRV8353 chip
+ * @param  gain Choice of DRV_VDS_Limit (0.06V to 2.0V)
+ * @retval RETVAL_OK if setting correctly applied, otherwise RETVAL_FAIL
+ */
+uint8_t DRV8353_SetVDSLimit(DRV_VDS_Limit lmt) {
+    uint16_t temp_ocp;
+    // Input check
+    if(lmt <= 0xF) {
+        // First read the present value
+        temp_ocp = DRV8353_Read(DRVREG_CSA);
+        // Choose new limit
+        temp_ocp &= ~(DRVBIT_OCP_VDSLVL);
+        temp_ocp |= lmt;
+        // Write the new value
+        DRV8353_Write(DRVREG_CSA, temp_ocp);
+        // Double-check
+        temp_ocp = DRV8353_Read(DRVREG_CSA);
+        if((temp_ocp & DRVBIT_OCP_VDSLVL) == lmt) {
+            return RETVAL_OK;
+        }
+    }
+    return RETVAL_FAIL;
+}
+
+/**
+ * @brief  Retrieves the currently set VDS limit voltage in DRV8353 chip
+ * @retval Value from DRV_VDS_Limit enum. If chip isn't connected, DRV_VDS_Unknown will be returned.
+ */
+DRV_VDS_Limit DRV8353_GetVDSLimit(void) {
+    uint16_t temp_ocp;
+    if(DRV8353_CheckConnection() == RETVAL_OK) {
+        temp_ocp = DRV8353_Read(DRVREG_OCP) & DRVBIT_OCP_VDSLVL;
+        return (DRV_VDS_Limit)temp_ocp; // the register value directly maps to the enum settings
+    }
+    return DRV_VDS_Unknown;
+}
+
+/**
+ * @brief  Set the gate drive strength in DRV8353 chip
+ * @param  strength: bitmapped field for maximum gate drive current
+ *         This is a bitmapped field. Bits 15-12 are for the upper gates rising edge,
+ *         bits 11-8 are for upper gates falling edge, bits 7-4 are for lower gates
+ *         rising edge, and bits 3-0 are for lower gates falling edge. There are 16 choices
+ *         per each gate. Rising edge ranges between 50mA to 1000mA and falling edge is
+ *         between 100mA to 2000mA. Smaller number is less current. Check the DRV8353
+ *         datasheet for more details.
+ * @retval RETVAL_OK if setting correctly applied, otherwise RETVAL_FAIL
+ */
+uint8_t DRV8353_SetGateStrength(uint32_t strength) {
+    uint16_t temp_hs, temp_ls, temp_check;
+    if(strength <= 0x0000FFFFu) {
+        // Don't care about previous value, only other field is LOCK which will be set to 000b
+        temp_hs = ((strength & 0xFF00) >> 8u);
+        DRV8353_Write(DRVREG_GATEH, temp_hs);
+
+        // Get present value
+        temp_ls = DRV8353_Read(DRVREG_GATEL);
+        // Set new drive strength
+        temp_ls &= ~(DRVBIT_GATEL_IDRIVELS | DRVBIT_GATEL_IDRIVENLS);
+        temp_ls |= (strength & 0x00FF);
+        DRV8353_Write(DRVREG_GATEL, temp_ls);
+
+        // Double-check
+        temp_check = DRV8353_Read(DRVREG_GATEH);
+        if((temp_check & (DRVBIT_GATEH_IDRIVEHS | DRVBIT_GATEH_IDRVENHS)) == temp_hs) {
+            temp_check = DRV8353_Read(DRVREG_GATEL);
+            if((temp_check & DRV_DATA) == temp_ls) {
+                return RETVAL_OK;
+            }
+        }
+    }
+    return RETVAL_FAIL;
+}
+
+/**
+ * @brief  Retrieves the currently set gate strength current from the DRV8353 chip
+ * @retval Value from gate drive registers. An unconnected chip will return 0xFFFFFFFF, which is an invalid answer.
+ */
+uint32_t DRV8353_GetGateStrength(void) {
+    uint16_t temp_hs, temp_ls;
+    if(DRV8353_CheckConnection() == RETVAL_OK) {
+        temp_hs = DRV8353_Read(DRVREG_GATEH);
+        Delay(1);
+        temp_ls = DRV8353_Read(DRVREG_GATEL);
+        temp_hs = (temp_hs & (DRVBIT_GATEH_IDRIVEHS | DRVBIT_GATEH_IDRVENHS)) << 8u;
+        temp_hs = temp_hs | (temp_ls & (DRVBIT_GATEL_IDRIVELS | DRVBIT_GATEL_IDRIVENLS));
+        return temp_hs;
+    }
+    return 0xFFFFFFFFu;
+}
+
+
 
 /**
  * @brief Select shunt amplifier inputs for calibration
@@ -286,4 +405,22 @@ void DRV8353_SetCalibration(uint8_t channel) {
         // Write the new value
         DRV8353_Write(DRVREG_CSA, temp_csa);
     }
+}
+
+/**
+ * @brief  Checks if the DRV8353 SPI connection is working.
+ *
+ *         Simply reads the control register and makes sure its value matches
+ *         what was set during the initialization phase. If the chip isn't
+ *         powered up or connected properly, the value will probably be all
+ *         '1's instead of what was written.
+ * @retval RETVAL_OK if connected, RETVAL_FAIL otherwise
+ */
+static uint8_t DRV8353_CheckConnection(void) {
+    uint16_t tempreg;
+    tempreg = DRV8353_Read(DRVREG_CTRL) & DRV_DATA;
+    if(tempreg == DRVBIT_CTRL_OCPACT) {
+        return RETVAL_OK;
+    }
+    return RETVAL_FAIL;
 }

@@ -4,7 +4,7 @@
  *
  ******************************************************************************
 
- Copyright (c) 2019 David Miller
+ Copyright (c) 2020 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,6 @@
  */
 
 #include "main.h"
-#include "usb_data_comm.h"
-#include "data_packet.h"
-#include "data_commands.h"
 
 // Private variables
 uint8_t USB_Data_Comm_TxBuffer[PACKET_MAX_LENGTH];
@@ -90,80 +87,6 @@ void USB_Data_Comm_OneByte_Check(void) {
         }
     }
 }
-
-#if 0
-
-/**
- * @brief  USB Data Communications Periodic Check
- * 		   Handles the USB serial port incoming data. Determines
- * 		   if a properly encoded packet has been received, and
- * 		   sends to the appropriate handler if it has. Clears
- * 		   buffer when necessary to accept more data.
- *
- * 		   Note: when new data arrives to a full buffer, the
- * 		   existing data is cleared one byte at a time, oldest
- * 		   to newest. The assumption is made that the buffer is
- * 		   larger than the largest possible packet, so there is
- * 		   no possible way to interrupt a packet in transmission
- * 		   by accidentally deleting part of it.
- * @param  None
- * @retval None
- */
-void USB_Data_Comm_Periodic_Check(void) {
-    // check if data is available
-    int32_t numbytes = VCP_InWaiting();
-    uint16_t pkt_end;
-    if (numbytes <= 0) {
-        return;
-    }
-    // Do we have space?
-    int32_t space_remaining = PACKET_MAX_LENGTH
-            - USB_Data_Comm_RxBuffer_WrPlace;
-    while (numbytes > space_remaining) {
-        // Copy as much as we can.
-        VCP_Read(USB_Data_Comm_RxBuffer + USB_Data_Comm_RxBuffer_WrPlace,
-                space_remaining);
-        // Check if any valid packets exist in the whole buffer
-        data_packet_extract(&USB_Data_Comm_Packet, USB_Data_Comm_RxBuffer,
-                PACKET_MAX_LENGTH);
-        if (USB_Data_Comm_Packet.RxReady) {
-            // If yes, process the packet and then move the buffer to make some room
-            USB_Data_Comm_Process_Command();
-            pkt_end = (USB_Data_Comm_Packet.StartPosition
-                    + USB_Data_Comm_Packet.DataLength + PACKET_OVERHEAD_BYTES);
-            memmove(USB_Data_Comm_RxBuffer, USB_Data_Comm_RxBuffer + pkt_end,
-            PACKET_MAX_LENGTH - pkt_end);
-            USB_Data_Comm_RxBuffer_WrPlace = PACKET_MAX_LENGTH - pkt_end;
-            space_remaining = pkt_end;
-        } else {
-            // If no, discard one byte from the front, making one space available
-            memmove(USB_Data_Comm_RxBuffer, USB_Data_Comm_RxBuffer + 1,
-                    PACKET_MAX_LENGTH - 1);
-            space_remaining = 1;
-            USB_Data_Comm_RxBuffer_WrPlace = PACKET_MAX_LENGTH - 1;
-        }
-        // How much is left now?
-        numbytes = VCP_InWaiting();
-    }
-
-    VCP_Read(USB_Data_Comm_RxBuffer + USB_Data_Comm_RxBuffer_WrPlace, numbytes);
-    USB_Data_Comm_RxBuffer_WrPlace += numbytes;
-    // Check if we have a packet
-    data_packet_extract(&USB_Data_Comm_Packet, USB_Data_Comm_RxBuffer,
-            USB_Data_Comm_RxBuffer_WrPlace);
-    if (USB_Data_Comm_Packet.RxReady) {
-        // Do the thing commanded
-        USB_Data_Comm_Process_Command();
-        // And free up space
-        pkt_end = (USB_Data_Comm_Packet.StartPosition
-                + USB_Data_Comm_Packet.DataLength + PACKET_OVERHEAD_BYTES);
-        memmove(USB_Data_Comm_RxBuffer, USB_Data_Comm_RxBuffer + pkt_end,
-        PACKET_MAX_LENGTH - pkt_end);
-        USB_Data_Comm_RxBuffer_WrPlace -= pkt_end;
-    }
-}
-
-#endif
 
 /**
  * @brief  USB Data Communications Process Command

@@ -72,8 +72,6 @@ static void ADC_CalcVref(void);
  */
 void ADC_Init(void) {
 
-    // TODO: What the heck is going on with ADC2? The data of the last conversion is repeated. Dunno why.
-
     // Load from eeprom
     ADC_LoadVariables();
 
@@ -481,13 +479,13 @@ float ADC_GetFetTempDegC(void) {
     return temp;
 }
 
-uint8_t ADC_SetInverseTIAGain(float new_gain) {
-    config_adc.Inverse_TIA_Gain = new_gain;
+uint8_t ADC_SetRShunt(float new_rshunt) {
+    config_adc.Shunt_Resistance = new_rshunt;
     return RETVAL_OK;
 }
 
-float ADC_GetInverseTIAGain(void) {
-    return config_adc.Inverse_TIA_Gain;
+float ADC_GetRShunt(void) {
+    return config_adc.Shunt_Resistance;
 }
 
 uint8_t ADC_SetVbusRatio(float new_ratio) {
@@ -529,7 +527,7 @@ float ADC_GetThermBeta(void) {
 
 
 void ADC_SaveVariables(void) {
-    EE_SaveFloat(CONFIG_ADC_INV_TIA_GAIN, config_adc.Inverse_TIA_Gain);
+    EE_SaveFloat(CONFIG_ADC_RSHUNT, config_adc.Shunt_Resistance);
     EE_SaveFloat(CONFIG_ADC_VBUS_RATIO, config_adc.Vbus_Ratio);
     EE_SaveFloat(CONFIG_ADC_THERM_FIXED_R, config_adc.Thermistor_Fixed_R);
     EE_SaveFloat(CONFIG_ADC_THERM_R25, config_adc.Thermistor_R25);
@@ -537,11 +535,12 @@ void ADC_SaveVariables(void) {
 }
 
 void ADC_LoadVariables(void) {
-    config_adc.Inverse_TIA_Gain = EE_ReadFloatWithDefault(CONFIG_ADC_INV_TIA_GAIN, DFLT_ADC_INV_TIA_GAIN);
+    config_adc.Shunt_Resistance = EE_ReadFloatWithDefault(CONFIG_ADC_RSHUNT, DFLT_ADC_RSHUNT);
     config_adc.Vbus_Ratio = EE_ReadFloatWithDefault(CONFIG_ADC_VBUS_RATIO, DFLT_ADC_VBUS_RATIO);
     config_adc.Thermistor_Fixed_R = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_FIXED_R, DFLT_ADC_THERM_FIXED_R);
     config_adc.Thermistor_R25 = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_R25, DFLT_ADC_THERM_R25);
     config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);
     // For convenience
     config_adc.Inverse_Therm_Beta = 1.0f / config_adc.Thermistor_Beta;
+    config_adc.Inverse_TIA_Gain = 1.0f / (DEFAULT_CSA_GAIN * config_adc.Shunt_Resistance);
 }
