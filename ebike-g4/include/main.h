@@ -29,6 +29,7 @@
 #define __MAIN_H
 
 #include "stm32g4xx.h"
+#include "main_data_types.h"
 #include "adc.h"
 #include "cordic_sin_cos.h"
 #include "crc.h"
@@ -40,6 +41,7 @@
 #include "foc_lib.h"
 #include "gpio.h"
 #include "hall_sensor.h"
+#include "live_data.h"
 #include "periphconfig.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
@@ -63,22 +65,6 @@
 
 // Various settings
 #define APP_TIM_RATE        (1000) // 1kHz update rate
-
-typedef enum _main_limit_type {
-    Main_Limit_PhaseCurrent,
-    Main_Limit_PhaseRegenCurrent,
-    Main_Limit_BattCurrent,
-    Main_Limit_BattRegenCurrent,
-    Main_Limit_SoftVoltage,
-    Main_Limit_HardVoltage,
-    Main_Limit_SoftFetTemp,
-    Main_Limit_HardFetTemp,
-    Main_Limit_SoftMotorTemp,
-    Main_Limit_HardMotorTemp,
-    Main_Limit_MinVoltFault,
-    Main_Limit_MaxVoltFault,
-    Main_Limit_CurrentFault
-} Main_Limit_Type;
 
 // Exported functions
 

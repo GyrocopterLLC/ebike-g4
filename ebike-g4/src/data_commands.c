@@ -195,7 +195,11 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // 16-bit integer values
     // Not yet implemented
     case CONFIG_MAIN_NUM_USB_OUTPUTS:
+        retval16b = LIVE_GetNumOutputs();
+        break;
     case CONFIG_MAIN_USB_SPEED:
+        retval16b = LIVE_GetSpeed();
+        break;
     case CONFIG_MAIN_USB_CHOICE_1:
     case CONFIG_MAIN_USB_CHOICE_2:
     case CONFIG_MAIN_USB_CHOICE_3:
@@ -206,6 +210,8 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_MAIN_USB_CHOICE_8:
     case CONFIG_MAIN_USB_CHOICE_9:
     case CONFIG_MAIN_USB_CHOICE_10:
+        retval16b = LIVE_GetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1);
+        break;
     case CONFIG_THRT_TYPE:
     case CONFIG_MOTOR_POLEPAIRS:
     case CONFIG_BMS_NUMBATTS:
@@ -342,7 +348,11 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     // 16-bit integer values
     // Not yet implemented
     case CONFIG_MAIN_NUM_USB_OUTPUTS:
+        errCode = LIVE_SetNumOutputs(value16b);
+        break;
     case CONFIG_MAIN_USB_SPEED:
+        errCode = LIVE_SetSpeed(value16b);
+        break;
     case CONFIG_MAIN_USB_CHOICE_1:
     case CONFIG_MAIN_USB_CHOICE_2:
     case CONFIG_MAIN_USB_CHOICE_3:
@@ -353,6 +363,8 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     case CONFIG_MAIN_USB_CHOICE_8:
     case CONFIG_MAIN_USB_CHOICE_9:
     case CONFIG_MAIN_USB_CHOICE_10:
+        errCode = LIVE_SetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1,value16b);
+        break;
     case CONFIG_THRT_TYPE:
     case CONFIG_MOTOR_POLEPAIRS:
         errCode = RETVAL_OK;
@@ -499,8 +511,7 @@ uint16_t command_enable_feature(uint8_t* pktdata) {
 
     switch (feature_ID) {
     case FEATURE_SERIAL_DATA:
-//        MAIN_SetUSBDebugging(1);
-        errCode = RETVAL_OK;
+        errCode = LIVE_TurnOnData();
         break;
     case FEATURE_BLDC_MODE:
 //        errCode = MAIN_RequestBLDC();
@@ -523,8 +534,7 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
 
     switch (feature_ID) {
     case FEATURE_SERIAL_DATA:
-//        MAIN_SetUSBDebugging(0);
-        errCode = RETVAL_OK;
+        errCode = LIVE_TurnOffData();
         break;
     case FEATURE_BLDC_MODE:
 //        errCode = MAIN_RequestFOC();
@@ -546,7 +556,7 @@ uint16_t command_run_routine(uint8_t* pktdata) {
     pktdata += 2;
     uint16_t errCode = RETVAL_FAIL;
 
-    float valuef;
+//    float valuef;
 
     switch(routine_ID) {
 

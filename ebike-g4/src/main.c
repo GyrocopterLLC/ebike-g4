@@ -40,6 +40,14 @@ uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
 float DBG_RampAngle;
 float DBG_RampIncrement;
 
+Main_Variables Mvar;
+Motor_Controls Mctrl;
+Motor_Observations Mobv;
+Motor_PWMDuties Mpwm;
+FOC_StateVariables Mfoc;
+PID_Type Mpid_Id;
+PID_Type Mpid_Iq;
+
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
 static void MAIN_StartAppTimer(void);
@@ -111,6 +119,17 @@ int main (
     // Start the app timer
     MAIN_StartAppTimer();
 
+    LIVE_Init(20000); // Live data streaming will be called at 20kHz
+
+    // Set up internal variables
+    Mvar.Timestamp = 0u;
+    Mvar.Ctrl = &Mctrl;
+    Mvar.Foc = &Mfoc;
+    Mvar.Obv = &Mobv;
+    Mvar.Pwm = &Mpwm;
+    Mfoc.Id_PID = &Mpid_Id;
+    Mfoc.Iq_PID = &Mpid_Iq;
+
     // Start the watchdog
     WDT_Init();
     // Infinite loop, never return.
@@ -119,6 +138,7 @@ int main (
         WDT_Feed();
 
         USB_Data_Comm_OneByte_Check();
+        LIVE_SendPacket(); // Will only send when ready to do so
 
 //        // Loop back any received USB characters
 //        vcp_bytes = VCP_InWaiting();
@@ -199,25 +219,29 @@ void MAIN_AppTimerISR(void) {
 
 // Called at 20kHz
 void MAIN_MotorISR(void) {
-    float alpha, beta;
     float sin, cos;
-    float Ta, Tb, Tc;
     uint16_t dac1, dac2;
+
+    // Increment timestamp
+    Mvar.Timestamp++;
 
     // Increment the ramp angle
     FOC_RampGen(&DBG_RampAngle, DBG_RampIncrement);
     // Calculate the Sin/Cos using CORDIC
     CORDIC_CalcSinCos(DBG_RampAngle*2.0f-1.0f, &sin, &cos);
     // Make some waves
-    FOC_Ipark(0.75f, 0.0f, sin, cos, &alpha, &beta);
-    FOC_SVM(alpha, beta, &Ta, &Tb, &Tc);
+    FOC_Ipark(0.75f, 0.0f, sin, cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
+    FOC_SVM((Mfoc.Clarke_Alpha), (Mfoc.Clarke_Beta), &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
     // Show Ta and Tb on the DAC outputs
-    dac1 = (uint16_t)(65535.0f*Ta);
-    dac2 = (uint16_t)(65535.0f*Tb);
+    dac1 = (uint16_t)(65535.0f*Mpwm.tA);
+    dac2 = (uint16_t)(65535.0f*Mpwm.tB);
     DAC1->DHR12LD = (uint32_t)(dac1) + ((uint32_t)(dac2) << 16);
 
     // Also apply Ta, Tb, and Tc to the PWM outputs
-    PWM_SetDutyF(Ta, Tb, Tc);
+    PWM_SetDutyF(Mpwm.tA, Mpwm.tB, Mpwm.tC);
+
+    // Output live data if it's enabled
+    LIVE_AssemblePacket(&Mvar);
 }
 
 

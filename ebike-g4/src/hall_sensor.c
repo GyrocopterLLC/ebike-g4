@@ -7,7 +7,7 @@
  *              threshold.
  *
  *              These sensors are used inside brushless DC motors to detect
- *              the position of the rotor. The rotor magnets provide the flux
+ *              the position of the rotor. The rotor magnets provide the
  *              flux needed to make the Hall sensor switch.
  *
  *              We need three Hall sensors to determine rotor position. Each
@@ -366,7 +366,7 @@ uint8_t HALL_SetAngleTable(float* angleTab) {
             return RETVAL_FAIL;
         }
     }
-    // Copy over the foward angle table
+    // Copy over the forward angle table
     for (i = 0; i < 8; i++) {
         HallStateAnglesFwdFloat[i] = angleTab[i];
     }

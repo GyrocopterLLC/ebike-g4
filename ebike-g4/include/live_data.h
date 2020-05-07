@@ -1,8 +1,8 @@
 /******************************************************************************
- * Filename: cordic_sin_cos.h
+ * Filename: live_data.h
  ******************************************************************************
 
- Copyright (c) 2019 David Miller
+ Copyright (c) 2020 David Miller
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,12 +23,38 @@
  SOFTWARE.
  */
 
-#ifndef _CORDIC_SIN_COS_H
-#define _CORDIC_SIN_COS_H
+#ifndef __LIVE_DATA_H
+#define __LIVE_DATA_H
 
-void CORDIC_Init(void);
-void CORDIC_CalcSinCos(float theta, float* sin, float* cos) ;
-void CORDIC_CalcSinCosDeferred(float theta);
-void CORDIC_GetResults(float* sin, float* cos);
+#include "project_parameters.h"
+
+typedef enum _live_datarate_type {
+    DataRate_50Hz = 0,
+    DataRate_100Hz = 1,
+    DataRate_200Hz = 2,
+    DataRate_500Hz = 3,
+    DataRate_1kHz = 4,
+    DataRate_5kHz = 5
+} Live_DataRate;
+
+typedef struct _live_config_type {
+    uint16_t Num_Outputs;
+    uint16_t Speed;
+    uint16_t Choices[MAX_LIVE_OUTPUTS];
+} Live_Config;
+
+void LIVE_Init(uint32_t calling_freq);
+void LIVE_AssemblePacket(Main_Variables* mvar);
+void LIVE_SendPacket(void);
+
+// Command interaction functions
+uint8_t LIVE_TurnOnData(void);
+uint8_t LIVE_TurnOffData(void);
+uint8_t LIVE_SetSpeed(uint16_t newSpeed);
+uint16_t LIVE_GetSpeed(void);
+uint8_t LIVE_SetNumOutputs(uint16_t numOutputs);
+uint16_t LIVE_GetNumOutputs(void);
+uint8_t LIVE_SetOutput(uint8_t whichOutput, uint16_t newSetting);
+uint16_t LIVE_GetOutput(uint8_t whichOutput);
 
 #endif

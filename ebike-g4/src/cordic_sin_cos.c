@@ -106,14 +106,15 @@ void CORDIC_CalcSinCos(float theta, float* sin, float* cos) {
  * @param  theta: input angle in range [-1,1), which is scaled to [-pi, pi)
  * @retval None
  */
-void CORDIC_CalcSinCosNoWait(float theta) {
+void CORDIC_CalcSinCosDeferred(float theta) {
     int32_t fxd_input;
-    fxd_input = (int32_t) (theta * 1073741824.0f); // Multiply by 0x80000000
+    fxd_input = float_to_q31(theta);
+//    fxd_input = (int32_t) (theta * 1073741824.0f); // Multiply by 0x80000000
     CORDIC->WDATA = fxd_input;
 }
 
 /**
- * @brief  Gets the results of a previous CORDIC_CalcSinCosNoWait function call.
+ * @brief  Gets the results of a previous CORDIC_CalcSinCosDeferred function call.
  * @param  sin: pointer to sin(theta) result
  * @param  cos: pointer to cos(theta) result
  * @retval None
@@ -123,6 +124,8 @@ void CORDIC_GetResults(float* sin, float* cos) {
     fxd_sin = CORDIC->RDATA; // Inserts wait states until result is ready
     fxd_cos = CORDIC->RDATA;
 
-    *sin = ((float)fxd_sin) / (1073741824.0f);
-    *cos = ((float)fxd_cos) / (1073741824.0f);
+    *sin = q31_to_float(fxd_sin);
+    *cos = q31_to_float(fxd_cos);
+//    *sin = ((float)fxd_sin) / (1073741824.0f);
+//    *cos = ((float)fxd_cos) / (1073741824.0f);
 }
