@@ -142,7 +142,7 @@ void ADC_Init(void);
 float ADC_GetCurrent(uint8_t which_cur);
 uint16_t ADC_Raw(uint8_t which_cur);
 float ADC_ConvertToAmps(int32_t rawCurrentReading);
-float ADC_GetThrottle(uint8_t thrnum);
+float ADC_GetThrottle(void);
 float ADC_GetVbus(void);
 float ADC_GetVref(void);
 void ADC_SetNull(uint8_t which_cur, uint16_t nullVal);

@@ -394,12 +394,10 @@ void ADC_AverageInitialValue(void) {
 float ADC_ConvertToAmps(int32_t rawCurrentReading) {
     // Assume null point has already been subtracted.
     // The raw reading is a 12-bit number
-    //float temp_current = ((float)rawCurrentReading)*0.000244140625f; // inverse of 4096
     float temp_current = ((float) rawCurrentReading) / MAXCOUNTF;
     // Convert to volts
     temp_current *= adc_vref;
     // Convert to amps
-//    temp_current *= CURRENT_AMP_INV;
     temp_current *= config_adc.Inverse_TIA_Gain;
 
     return temp_current;
@@ -415,14 +413,10 @@ uint16_t ADC_Raw(uint8_t which_cur) {
     return adc_conv[which_cur];
 }
 
-float ADC_GetThrottle(uint8_t thrnum) {
-    float temp_throttle = 0.0f;
-    if (thrnum == 1) {
-        // Convert 12-bit adc result to floating point
-        temp_throttle = ((float) adc_conv[ADC_THR]) / MAXCOUNTF;
-    } else if (thrnum == 2) {
-        temp_throttle = 0.0f;
-    }
+float ADC_GetThrottle(void) {
+    float temp_throttle;
+    // Convert 12-bit adc result to floating point
+    temp_throttle = ((float) adc_conv[ADC_THR]) / MAXCOUNTF;
     // Convert to volts using reference measurement
     temp_throttle *= adc_vref;
     return temp_throttle;

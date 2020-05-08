@@ -212,7 +212,6 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_MAIN_USB_CHOICE_10:
         retval16b = LIVE_GetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1);
         break;
-    case CONFIG_THRT_TYPE:
     case CONFIG_MOTOR_POLEPAIRS:
     case CONFIG_BMS_NUMBATTS:
         retval16b = 0xAAAAu;
@@ -246,6 +245,24 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_ADC_THERM_B:
         retvalf = ADC_GetThermBeta();
         break;
+    case CONFIG_THRT_MIN:
+        retvalf = THROTTLE_GetMin();
+        break;
+    case CONFIG_THRT_MAX:
+        retvalf = THROTTLE_GetMax();
+        break;
+    case CONFIG_THRT_HYST:
+        retvalf = THROTTLE_GetHyst();
+        break;
+    case CONFIG_THRT_FILT:
+        retvalf = THROTTLE_GetFilt();
+        break;
+    case CONFIG_THRT_RISE:
+        retvalf = THROTTLE_GetRise();
+        break;
+    case CONFIG_THRT_RATIO:
+        retvalf = THROTTLE_GetRatio();
+        break;
     // Not yet implemented
     case CONFIG_FOC_KP:
     case CONFIG_FOC_KI:
@@ -253,11 +270,6 @@ uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     case CONFIG_FOC_KC:
     case CONFIG_MAIN_SPEED_TO_FOC:
     case CONFIG_MAIN_SWITCH_EPS:
-    case CONFIG_THRT_MIN:
-    case CONFIG_THRT_MAX:
-    case CONFIG_THRT_HYST:
-    case CONFIG_THRT_FILT:
-    case CONFIG_THRT_RISE:
     case CONFIG_LMT_VOLT_FAULT_MIN:
     case CONFIG_LMT_VOLT_FAULT_MAX:
     case CONFIG_LMT_CUR_FAULT_MAX:
@@ -365,7 +377,6 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     case CONFIG_MAIN_USB_CHOICE_10:
         errCode = LIVE_SetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1,value16b);
         break;
-    case CONFIG_THRT_TYPE:
     case CONFIG_MOTOR_POLEPAIRS:
         errCode = RETVAL_OK;
         break;
@@ -397,6 +408,24 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     case CONFIG_ADC_THERM_B:
         errCode = ADC_SetThermBeta(valuef);
         break;
+    case CONFIG_THRT_MIN:
+        errCode = THROTTLE_SetMin(valuef);
+        break;
+    case CONFIG_THRT_MAX:
+        errCode = THROTTLE_SetMax(valuef);
+        break;
+    case CONFIG_THRT_HYST:
+        errCode = THROTTLE_SetHyst(valuef);
+        break;
+    case CONFIG_THRT_FILT:
+        errCode = THROTTLE_SetFilt(valuef);
+        break;
+    case CONFIG_THRT_RISE:
+        errCode = THROTTLE_SetRise(valuef);
+        break;
+    case CONFIG_THRT_RATIO:
+        errCode = THROTTLE_SetRatio(valuef);
+        break;
     // Not yet implemented
     case CONFIG_FOC_KP:
     case CONFIG_FOC_KI:
@@ -404,11 +433,6 @@ uint16_t command_set_ram(uint8_t* pktdata) {
     case CONFIG_FOC_KC:
     case CONFIG_MAIN_SPEED_TO_FOC:
     case CONFIG_MAIN_SWITCH_EPS:
-    case CONFIG_THRT_MIN:
-    case CONFIG_THRT_MAX:
-    case CONFIG_THRT_HYST:
-    case CONFIG_THRT_FILT:
-    case CONFIG_THRT_RISE:
     case CONFIG_LMT_VOLT_FAULT_MIN:
     case CONFIG_LMT_VOLT_FAULT_MAX:
     case CONFIG_LMT_CUR_FAULT_MAX:
@@ -619,7 +643,6 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
     case CONFIG_MAIN_USB_CHOICE_8:
     case CONFIG_MAIN_USB_CHOICE_9:
     case CONFIG_MAIN_USB_CHOICE_10:
-    case CONFIG_THRT_TYPE:
     case CONFIG_MOTOR_POLEPAIRS:
     case CONFIG_BMS_NUMBATTS:
         type = Data_Type_Int16;
@@ -649,6 +672,7 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
     case CONFIG_THRT_HYST:
     case CONFIG_THRT_FILT:
     case CONFIG_THRT_RISE:
+    case CONFIG_THRT_RATIO:
     case CONFIG_LMT_VOLT_FAULT_MIN:
     case CONFIG_LMT_VOLT_FAULT_MAX:
     case CONFIG_LMT_CUR_FAULT_MAX:

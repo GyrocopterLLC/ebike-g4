@@ -82,6 +82,10 @@ int main (
     // Start the systick timer for a simple delay timer
     DelayInit();
 
+    // Start up the EEPROM emulation
+    EE_Config_Addr_Table(VirtAddVarTab);
+    EE_Init(VirtAddVarTab);
+
     // Initialize peripherals
     ADC_Init();
     CORDIC_Init();
@@ -90,9 +94,8 @@ int main (
     PWM_Init(DFLT_FOC_PWM_FREQ);
     UART_Init();
     USB_Init();
-    // Start up the EEPROM emulation, and fetch stored values from it
-    EE_Config_Addr_Table(VirtAddVarTab);
-    EE_Init(VirtAddVarTab);
+    THROTTLE_Init();
+    HALL_Init(DFLT_FOC_PWM_FREQ);
 
     // Enable the USB CRC class
     USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
@@ -139,57 +142,6 @@ int main (
 
         USB_Data_Comm_OneByte_Check();
         LIVE_SendPacket(); // Will only send when ready to do so
-
-//        // Loop back any received USB characters
-//        vcp_bytes = VCP_InWaiting();
-//        if(vcp_bytes > 0) {
-//            if(vcp_bytes > DBG_USB_BUF_LEN) {
-//                VCP_Read(DBG_Usb_Buffer, DBG_USB_BUF_LEN);
-//            } else {
-//                VCP_Read(DBG_Usb_Buffer, vcp_bytes);
-//            }
-//
-//
-//
-//            if(strstr((char*)DBG_Usb_Buffer,"ftemp?") != 0) {
-//                // Convert and send Fet temp
-//                fet_temp = ADC_GetFetTempDegC();
-//                // printf function library doesn't have float support. Doing it manually with 3 decimals
-//                sprintf((char*)DBG_Usb_Buffer,"T=%d.%03d\n",(int16_t)fet_temp,(int16_t)(1000.0f*fabsf(fet_temp-truncf(fet_temp))));
-//                VCP_Write(DBG_Usb_Buffer, strlen((char*)DBG_Usb_Buffer));
-//            } else if(strstr((char*)DBG_Usb_Buffer, "boot") != 0) {
-//                // Disable USB
-//                USB->CNTR |= USB_CNTR_FRES; // Force a reset of USB
-//                MAIN_GoToBootloader();
-//            } else if(strstr((char*)DBG_Usb_Buffer, "dbgpwm") != 0) {
-//                DBG_Flags ^= DBG_FLAG_PWM_ENABLE;
-//            } else {
-//
-//                // Send the same thing back instead
-//                VCP_Write(DBG_Usb_Buffer, vcp_bytes);
-//            }
-//        }
-//
-//        Delay(10);
-//        led_timer++;
-//        if(led_timer == 50) {
-//            GPIO_Low(LED_PORT, GLED_PIN);
-//            if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0) {
-//                // turn on pwm outputs!
-//                PWM_TIM->BDTR |= TIM_BDTR_MOE;
-//            }
-//        }
-//        if(led_timer >= 100) {
-//            GPIO_High(LED_PORT, GLED_PIN);
-//            led_timer = 0;
-//            if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0) {
-//                // turn off pwm outputs!
-//                PWM_TIM->BDTR &= ~(TIM_BDTR_MOE);
-//            }
-//        }
-//
-//
-
     }
 }
 
@@ -205,8 +157,7 @@ void MAIN_AppTimerISR(void) {
         led_timer = 0;
     }
 
-    // ADC conversions
-    ADC_InjSeqComplete();
+    // Slow ADC conversions
     ADC_RegSeqComplete();
 
     // PWM output
@@ -215,6 +166,10 @@ void MAIN_AppTimerISR(void) {
     } else {
         PWM_TIM->BDTR &= ~(TIM_BDTR_MOE);
     }
+
+    // Throttle processing
+    THROTTLE_Process();
+    Mctrl.ThrottleCommand = THROTTLE_GetCommand();
 }
 
 // Called at 20kHz
@@ -227,8 +182,20 @@ void MAIN_MotorISR(void) {
 
     // Increment the ramp angle
     FOC_RampGen(&DBG_RampAngle, DBG_RampIncrement);
+    // And the real motor angle
+    HALL_IncAngle();
+    Mobv.RotorAngle = HALL_GetAngleF();
+    Mobv.RotorSpeed_eHz = HALL_GetSpeedF();
+    Mobv.HallState = HALL_GetState();
     // Calculate the Sin/Cos using CORDIC
     CORDIC_CalcSinCos(DBG_RampAngle*2.0f-1.0f, &sin, &cos);
+
+    // All injected ADC should be done by now. Read them in.
+    ADC_InjSeqComplete();
+    Mobv.iA = ADC_GetCurrent(ADC_IA);
+    Mobv.iB = ADC_GetCurrent(ADC_IB);
+    Mobv.iC = ADC_GetCurrent(ADC_IC);
+
     // Make some waves
     FOC_Ipark(0.75f, 0.0f, sin, cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
     FOC_SVM((Mfoc.Clarke_Alpha), (Mfoc.Clarke_Beta), &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));

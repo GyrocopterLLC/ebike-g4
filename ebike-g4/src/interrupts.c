@@ -44,25 +44,26 @@ void SysTick_Handler (void) {
 /**
  * Handlers for ADC.
  * The active interrupts are:
- * - ADC1 injected end of conversion (JEOC)
- * - ADC3 injected end of conversion (JEOC)
+ * - ADC1 injected end of sequence (JEOS)
+ * - ADC3 injected end of sequence (JEOS)
  * - DMA1 Channel 1 end of transfer (TCIF)
  * - DMA1 Channel 2 end of transfer (TCIF)
  */
 
 void ADC1_2_IRQHandler(void) {
-    if((ADC1->ISR & ADC_ISR_JEOC) != 0) {
+    if((ADC1->ISR & ADC_ISR_JEOS) != 0) {
         // Injected end of conversion
-        ADC1->ISR |= ADC_ISR_JEOC; // Clear the flag by writing 1 to it
+        ADC1->ISR |= ADC_ISR_JEOS; // Clear the flag by writing 1 to it
+
         // Call the motor control loop
         MAIN_MotorISR();
     }
 }
 
 void ADC3_IRQHandler(void) {
-    if((ADC3->ISR & ADC_ISR_JEOC) != 0) {
+    if((ADC3->ISR & ADC_ISR_JEOS) != 0) {
         // Injected end of conversion
-        ADC3->ISR |= ADC_ISR_JEOC; // Clear the flag by writing 1 to it
+        ADC3->ISR |= ADC_ISR_JEOS; // Clear the flag by writing 1 to it
     }
 }
 

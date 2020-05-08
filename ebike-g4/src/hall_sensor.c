@@ -53,17 +53,28 @@
 static void HALL_CalcSpeed(void);
 static float HALL_CalcMidPoint(float a1, float a2);
 static float HALL_ClipToOne(float unclipped);
+static void HALL_UpdateLookupTables(void);
 
 HallSensor_HandleTypeDef HallSensor;
 HallSensorPLL_HandleTypeDef HallSensorPLL;
-float HallStateAnglesMidFloat[8];
-float HallStateAnglesFwdFloat[8];
-float HallStateAnglesRevFloat[8];
-uint8_t HallStateForwardOrder[8];
-uint8_t HallStateReverseOrder[8];
+float HallStateAnglesMidFloat[8]; // Midpoints of states. Angle is 0.0 (0deg) to 1.0 (360deg)
+float HallStateAnglesFwdFloat[8]; // Entry angle for states when rotating forwards. Angle is 0.0 (0deg) to 1.0 (360deg)
+float HallStateAnglesRevFloat[8]; // Entry angle for states when rotating reverse. Angle is 0.0 (0deg) to 1.0 (360deg)
+uint8_t HallStateForwardOrder[8]; // List of states, lowest to highest angle
+uint8_t HallStateReverseOrder[8]; // List of states, highest to lowest angle
+uint8_t HallStateForwardRotation[8]; // Lookup where index is current state, value is next state when rotating forwards
+uint8_t HallStateReverseRotation[8]; // Lookup where index is current state, value is next state when rotating reverse
 float* HallDetectAngleTable;
 uint8_t HallDetectTableLength;
 uint32_t HallDetectTransitionsDone[6];
+
+uint32_t HallInputDebouncer[16];
+
+
+uint8_t DebugStateTracker[256];
+uint8_t DebugDirTracker[256];
+uint16_t DebugCaptureTracker[256];
+uint8_t DebugCounter;
 
 /**
  * @brief  Initializes the Hall effect sensor interface
@@ -116,6 +127,7 @@ void HALL_Init(uint32_t callingFrequency) {
     HallSensor.SteadyRotationCount = 0;
     HallSensor.Status |= HALL_STOPPED;
     HallSensor.CurrentState = 0;
+    HallSensor.PreviousState = 0;
     HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
     HallSensor.PreviousRotationDirection = HALL_ROT_UNKNOWN;
     HallSensor.Valid = ANGLE_INVALID;
@@ -133,15 +145,14 @@ void HALL_Init(uint32_t callingFrequency) {
 }
 
 /**
- * @brief  Auto-generates a forward rotation table from a list of state transitions.
+ * @brief  Generates a ordered list of state transitions from a list of angles at each state.
  * @param  angleTab: list of 8 angles, corresponding with the state transitions for
  *          states 1-6. Locations 0 and 7 are ignored
- * @param  fwdTab: the forward rotation table, a lookup table where each position
- *          is the current state, and the value in that position is the next state.
- *          Again only locations 1-6 matter.
+ * @param  fwdOrderTab: the forward rotation order. Lowest angle is at location 1, highest
+ *          at location 6. Locations 0 and 7 are ignored
  * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
  */
-uint8_t HALL_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab) {
+uint8_t HALL_GenFwdOrder(float* angleTab, uint8_t* fwdOrderTab) {
     // Assume all tables are length 8. That's enough for all possible combos
     // of the three Hall sensors, including the undefined 0 and 7 states.
 
@@ -169,62 +180,192 @@ uint8_t HALL_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab) {
                 }
             }
         }
-        fwdTab[j] = loweststate;
+        fwdOrderTab[j] = loweststate;
         already_used_states |= (1 << loweststate);
     }
     return RETVAL_OK;
 }
 
-
 /**
- * @brief  Auto-generates an inverse forward rotation table from a list of state transitions.
+ * @brief  Generates a ordered list of state transitions from a list of angles at each state.
  * @param  angleTab: list of 8 angles, corresponding with the state transitions for
  *          states 1-6. Locations 0 and 7 are ignored
+ * @param  fwdOrderTab: the reverse rotation order. Highest angle is at location 1, lowest
+ *          at location 6. Locations 0 and 7 are ignored
+ * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
+ */
+uint8_t HALL_GenRevOrder(float* angleTab, uint8_t* revOrderTab) {
+    // Assume all tables are length 8. That's enough for all possible combos
+    // of the three Hall sensors, including the undefined 0 and 7 states.
+
+    // Enforce all states are valid (angle between 0.0 and 1.0)
+    for (uint8_t i = 1; i <= 6; i++) {
+        if ((angleTab[i] > 1.0f) || (angleTab[i] < 0.0f)) {
+            return RETVAL_FAIL;
+        }
+    }
+
+    uint8_t already_used_states = 0;    // Bits set to one if the correspoding
+                                        // state was already selected.
+    float highestval;
+    uint8_t higheststate;
+    for (uint8_t j = 1; j <= 6; j++) {
+
+        // Find the next highest Hall state
+        highestval = -1.0f;
+        higheststate = 7;
+        for (uint8_t k = 1; k <= 6; k++) {
+            if ((already_used_states & (1 << k)) == 0) {
+                if (angleTab[k] > highestval) {
+                    highestval = angleTab[k];
+                    higheststate = k;
+                }
+            }
+        }
+        revOrderTab[j] = higheststate;
+        already_used_states |= (1 << higheststate);
+    }
+    return RETVAL_OK;
+}
+
+/**
+ * @brief  Generates a forward rotation table from a list of state transitions.
+ * @param  orderTab: list of 8 states, where position 1 is the lowest angle and
+ *          position 6 is the highest angle (order that states will be encountered
+ *          when rotating forwards). Locations 0 and 7 are ignored.
+ * @param  fwdTab: the forward rotation table, a lookup table where each position
+ *          is the current state, and the value in that position is the next state.
+ *          Locations 0 and 7 are ignored.
+ * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
+ */
+uint8_t HALL_GenFwdTable(uint8_t* orderTab, uint8_t* fwdTab) {
+
+    // Check that all the states are in there
+    uint8_t temp_check = 0;
+    uint8_t i;
+    for(i = 1; i <= 6; i++) {
+        temp_check |= (1 << orderTab[i]); // Set a bit for each state
+    }
+    if(temp_check != 0x7E) {
+        // All states 1 to 6 should be in the table
+        return RETVAL_FAIL;
+    }
+    uint8_t cur_state;
+    uint8_t next_state;
+    for(i = 1; i <= 6; i++) {
+        // Get the state at this point in the rotation order
+        cur_state = orderTab[i];
+        if(i < 6) {
+            // Get the state after this one
+            next_state = orderTab[i+1];
+        } else {
+            // Wraparound from 6 to 1 if we're at the end
+            next_state = orderTab[1];
+        }
+        fwdTab[cur_state] = next_state;
+    }
+
+    return RETVAL_OK;
+}
+
+
+/**
+ * @brief  Generates an inverse forward rotation table from a forward rotation table.
+ * @param  fwdTab: the forward rotation table, a lookup table where each position
+ *          is the current state, and the value in that position is the next state.
+ *          Locations 0 and 7 are ignored.
  * @param  fwdInvTab: the inverse forward rotation table, a lookup table where each position
  *          is the next state, and the value in that position is the current state.
  *          Alternatively you can say the position is the current state, and value is previous
  *          state. Again only locations 1-6 matter.
  * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
  */
-uint8_t HALL_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab) {
-    uint8_t fwdTab[8]; // temporary holding for the forward table
-    if(HALL_AutoGenFwdTable(angleTab, fwdTab) == RETVAL_OK) {
-        // We can flip the fwdTab into the fwdInvTab
-        for(uint8_t i = 1; i <= 6; i++) {
-            fwdInvTab[fwdTab[i]] = i;
-        }
-        return RETVAL_OK;
+uint8_t HALL_GenFwdInvTable(uint8_t* fwdTab, uint8_t* fwdInvTab) {
+    // Check that all the states are in there
+    uint8_t temp_check = 0;
+    uint8_t i;
+    for(i = 1; i <= 6; i++) {
+        temp_check |= (1 << fwdTab[i]); // Set a bit for each state
+    }
+    if(temp_check != 0x7E) {
+        // All states 1 to 6 should be in the table
+        return RETVAL_FAIL;
     }
 
-    // If the forward version fails, then this one does too.
-    return RETVAL_FAIL;
+    // Invert the table. Value becomes position, position becomes value.
+    for(uint8_t i = 1; i <= 6; i++) {
+        fwdInvTab[fwdTab[i]] = i;
+    }
+    return RETVAL_OK;
 }
 
 /**
- * @brief  Auto-generates a reverse rotation table from a list of state transitions.
- * @param  angleTab: list of 8 angles, corresponding with the state transitions for
- *          states 1-6. Locations 0 and 7 are ignored
+ * @brief  Generates a reverse rotation table from a list of state transitions.
+ * @param  revOrderTab: list of 8 states, where position 1 is the highest angle and
+ *          position 6 is the lowest angle (order that states will be encountered
+ *          when rotating reverse). Locations 0 and 7 are ignored.
  * @param  revTab: the reverse rotation table, a lookup table where each position
  *          is the current state, and the value in that position is the next state.
  *          Again only locations 1-6 matter.
  * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
  */
-uint8_t HALL_AutoGenRevTable(float* angleTab, uint8_t* revTab) {
-    return HALL_AutoGenFwdInvTable(angleTab, revTab);
+uint8_t HALL_GenRevTable(uint8_t* revOrderTab, uint8_t* revTab) {
+    // Check that all the states are in there
+    uint8_t temp_check = 0;
+    uint8_t i;
+    for(i = 1; i <= 6; i++) {
+        temp_check |= (1 << revOrderTab[i]); // Set a bit for each state
+    }
+    if(temp_check != 0x7E) {
+        // All states 1 to 6 should be in the table
+        return RETVAL_FAIL;
+    }
+    uint8_t cur_state;
+    uint8_t next_state;
+    for(i = 1; i <= 6; i++) {
+        // Get the state at this point in the rotation order
+        cur_state = revOrderTab[i];
+        if(i < 6) {
+            // Get the state after this one
+            next_state = revOrderTab[i+1];
+        } else {
+            // Wraparound from 6 to 1 if we're at the end
+            next_state = revOrderTab[1];
+        }
+        revTab[cur_state] = next_state;
+    }
+
+    return RETVAL_OK;
 }
 
 /**
- * @brief  Auto-generates an inverse reverse rotation table from a list of state transitions.
- * @param  angleTab: list of 8 angles, corresponding with the state transitions for
- *          states 1-6. Locations 0 and 7 are ignored
+ * @brief  Generates an inverse reverse rotation table from a reverse rotation table.
+ * @param  revTab: the reverse rotation table, a lookup table where each position
+ *          is the current state, and the value in that position is the next state.
+ *          Again only locations 1-6 matter.
  * @param  revInvTab: the inverse reverse rotation table, a lookup table where each position
  *          is the next state, and the value in that position is the current state.
  *          Alternatively you can say the position is the current state, and value is previous
  *          state. Again only locations 1-6 matter.
  * @retval RETVAL_OK if succeeded (the math works out) otherwise RETVAL_FAIL
  */
-uint8_t HALL_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab) {
-    return HALL_AutoGenFwdTable(angleTab, revInvTab);
+uint8_t HALL_GenRevInvTable(uint8_t* revTab, uint8_t* revInvTab) {
+    // Check that all the states are in there
+    uint8_t temp_check = 0;
+    uint8_t i;
+    for(i = 1; i <= 6; i++) {
+        temp_check |= (1 << revTab[i]); // Set a bit for each state
+    }
+    if(temp_check != 0x7E) {
+        // All states 1 to 6 should be in the table
+        return RETVAL_FAIL;
+    }
+
+    // Invert the table. Value becomes position, position becomes value.
+    for(uint8_t i = 1; i <= 6; i++) {
+        revInvTab[revTab[i]] = i;
+    }
+    return RETVAL_OK;
 }
 
 uint8_t HALL_GetState(void) {
@@ -341,19 +482,7 @@ uint8_t HALL_SetAngle(uint8_t state, float newAngle) {
     // Copy the angle
     HallStateAnglesFwdFloat[state] = newAngle;
     // Update forward and reverse lookup tables
-    HALL_AutoGenFwdInvTable(HallStateAnglesFwdFloat, HallStateForwardOrder);
-    HALL_AutoGenRevInvTable(HallStateAnglesFwdFloat, HallStateReverseOrder);
-    // Generate the reverse angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
-                HallStateAnglesFwdFloat[i];
-
-    }
-    // Generate the midpoint angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = HALL_CalcMidPoint(HallStateAnglesFwdFloat[i], HallStateAnglesRevFloat[i]);
-    }
-
+    HALL_UpdateLookupTables();
     return RETVAL_OK;
 }
 
@@ -370,20 +499,8 @@ uint8_t HALL_SetAngleTable(float* angleTab) {
     for (i = 0; i < 8; i++) {
         HallStateAnglesFwdFloat[i] = angleTab[i];
     }
-    // Update the forward and reverse lookup tables
-    HALL_AutoGenFwdInvTable(HallStateAnglesFwdFloat,
-            HallStateForwardOrder);
-    HALL_AutoGenRevInvTable(HallStateAnglesFwdFloat,
-            HallStateReverseOrder);
-    // Generate the reverse angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
-                HallStateAnglesFwdFloat[i];
-    }
-    // Generate the midpoint angle table
-    for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesMidFloat[i] = HALL_CalcMidPoint(HallStateAnglesFwdFloat[i], HallStateAnglesRevFloat[i]);
-    }
+
+    HALL_UpdateLookupTables();
     return RETVAL_OK;
 }
 
@@ -449,55 +566,68 @@ void HALL_UpdateCallback(void) {
  * the timer period is extended.
  */
 void HALL_CaptureCallback(void) {
-    uint8_t lastState = HallSensor.CurrentState;
-    uint8_t nextState;
+    uint8_t hall_a_vote, hall_b_vote, hall_c_vote;
 
     HallSensor.CaptureValue = HALL_TIM->CCR1;
-
+    DebugCaptureTracker[DebugCounter] = HallSensor.CaptureValue;
     // Figure out which way we're turning.
-    nextState =
-            (HALL_PORT->IDR & (1 << HALL_A_PIN)) != 0 ? 1 : 0;
-    nextState +=
-            (HALL_PORT->IDR & (1 << HALL_B_PIN)) != 0 ? 2 : 0;
-    nextState +=
-            (HALL_PORT->IDR & (1 << HALL_C_PIN)) != 0 ? 4 : 0;
+    // Simple debouncing. Read the input data register 16 times, and vote on
+    // the real value.
+    uint8_t i;
+    for(i = 0; i < 16; i++) {
+        // The IDR is declared volatile, so this will read its current value each time.
+        HallInputDebouncer[i] = HALL_PORT->IDR;
+    }
+    hall_a_vote = 0;
+    hall_b_vote = 0;
+    hall_c_vote = 0;
+    for(i = 0; i < 16; i++) {
+        if(HallInputDebouncer[i] & (1 << HALL_A_PIN))
+            hall_a_vote++;
+        if(HallInputDebouncer[i] & (1 << HALL_B_PIN))
+                    hall_b_vote++;
+        if(HallInputDebouncer[i] & (1 << HALL_C_PIN))
+                    hall_c_vote++;
+    }
+    // Majority vote. If the sum is over num_samples/2, it's a high value. Otherwise, it's low.
+    HallSensor.CurrentState = ((hall_a_vote > 8) ? 1 : 0)
+            + ((hall_b_vote > 8) ? 2 : 0)
+            + ((hall_c_vote > 8) ? 4 : 0) ;
+    DebugStateTracker[DebugCounter] = HallSensor.CurrentState;
+//    thisState =
+//            (HALL_PORT->IDR & (1 << HALL_A_PIN)) != 0 ? 1 : 0;
+//    thisState +=
+//            (HALL_PORT->IDR & (1 << HALL_B_PIN)) != 0 ? 2 : 0;
+//    thisState +=
+//            (HALL_PORT->IDR & (1 << HALL_C_PIN)) != 0 ? 4 : 0;
 
-    if(HallStateForwardOrder[nextState] == lastState)
+    if(HallStateForwardRotation[HallSensor.PreviousState] == HallSensor.CurrentState)
         HallSensor.RotationDirection = HALL_ROT_FORWARD;
-    else if(HallStateReverseOrder[nextState] == lastState)
+    else if(HallStateReverseRotation[HallSensor.PreviousState] == HallSensor.CurrentState)
         HallSensor.RotationDirection = HALL_ROT_REVERSE;
     else
         HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
-
+    DebugDirTracker[DebugCounter++] = HallSensor.RotationDirection;
     // Update the angle - just encountered a 60deg marker (the Hall state change)
     // If we're rotating forward, the actual angle will be at the beginning of the state.
-    // For example, if we entered State 5 (0->60°), we will be at 0°. Since State 5
-    // is defined as the middle of its range (30°), we need to subtract 30°. In the
-    // reverse rotation case, we would instead add 30°. If we can't trust which way
-    // the motor is turning, just choose the middle of the range (don't add or subtract
-    // anything).
+    // For example, if we entered State 5 (210->270°), we will be at 210° if rotating forwards,
+    // but at 270 if rotating reverse.
+    // If we can't trust which way the motor is turning, just choose the middle of the range.
 
     switch (HallSensor.RotationDirection) {
     case HALL_ROT_FORWARD:
-        HallSensor.Angle = HallStateAnglesFwdFloat[nextState];
-        HallSensor.CaptureForState[nextState - 1] = HallSensor.CaptureValue;
-        HallSensor.PrescalerForState[nextState - 1] = HallSensor.Prescaler;
-        if (HallSensor.Angle < 0.0f) {
-            HallSensor.Angle += 1.0f;
-        }
+        HallSensor.Angle = HallStateAnglesFwdFloat[HallSensor.CurrentState];
+        HallSensor.CaptureForState[HallSensor.CurrentState] = HallSensor.CaptureValue;
+        HallSensor.PrescalerForState[HallSensor.CurrentState] = HallSensor.Prescaler;
         break;
     case HALL_ROT_REVERSE:
-        HallSensor.Angle = HallStateAnglesRevFloat[nextState];
-        HallSensor.CaptureForState[nextState - 1] = HallSensor.CaptureValue;
-        HallSensor.PrescalerForState[nextState - 1] = HallSensor.Prescaler;
-        if (HallSensor.Angle > 1.0f) {
-            HallSensor.Angle -= 1.0f;
-        }
+        HallSensor.Angle = HallStateAnglesRevFloat[HallSensor.CurrentState];
+        HallSensor.CaptureForState[HallSensor.CurrentState] = HallSensor.CaptureValue;
+        HallSensor.PrescalerForState[HallSensor.CurrentState] = HallSensor.Prescaler;
         break;
     case HALL_ROT_UNKNOWN:
     default:
-        HallSensor.Angle = HALL_CalcMidPoint(HallStateAnglesFwdFloat[nextState],
-                HallStateAnglesRevFloat[nextState]);
+        HallSensor.Angle = HallStateAnglesMidFloat[HallSensor.CurrentState];
         break;
     }
 
@@ -563,6 +693,7 @@ void HALL_CaptureCallback(void) {
     }
     HallSensor.PreviousSpeed = HallSensor.Speed;
     HallSensor.PreviousRotationDirection = HallSensor.RotationDirection;
+    HallSensor.PreviousState = HallSensor.CurrentState;
 }
 
 void HALL_SaveVariables(void) {
@@ -584,14 +715,24 @@ void HALL_LoadVariables(void) {
     HallStateAnglesFwdFloat[5] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL5, DFLT_MOTOR_HALL5);
     HallStateAnglesFwdFloat[6] = EE_ReadFloatWithDefault(CONFIG_MOTOR_HALL6, DFLT_MOTOR_HALL6);
 
-    // Update the forward and reverse lookup tables
-    HALL_AutoGenFwdInvTable(HallStateAnglesFwdFloat,
-            HallStateForwardOrder);
-    HALL_AutoGenRevInvTable(HallStateAnglesFwdFloat,
-            HallStateReverseOrder);
+    HALL_UpdateLookupTables();
+
+}
+
+/**
+ * @brief  Creates ordered state tables and lookup tables from a list of angles at each state.
+ */
+static void HALL_UpdateLookupTables(void) {
+    // Create forward and reverse state transition order tables
+    HALL_GenFwdOrder(HallStateAnglesFwdFloat, HallStateForwardOrder);
+    HALL_GenRevOrder(HallStateAnglesFwdFloat, HallStateReverseOrder);
+
+    // Create the forward and reverse lookup tables
+    HALL_GenFwdTable(HallStateForwardOrder, HallStateForwardRotation);
+    HALL_GenRevTable(HallStateReverseOrder, HallStateReverseRotation);
     // Generate the reverse angle table
     for (uint8_t i = 1; i <= 6; i++) {
-        HallStateAnglesRevFloat[HallStateForwardOrder[i]] =
+        HallStateAnglesRevFloat[HallStateReverseRotation[i]] =
                 HallStateAnglesFwdFloat[i];
     }
     // Generate the midpoint angle table

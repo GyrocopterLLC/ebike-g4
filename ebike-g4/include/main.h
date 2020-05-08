@@ -46,6 +46,7 @@
 #include "pinconfig.h"
 #include "project_parameters.h"
 #include "pwm.h"
+#include "throttle.h"
 #include "uart.h"
 #include "usb_cdc.h"
 #include "usb_data_comm.h"

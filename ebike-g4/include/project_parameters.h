@@ -104,19 +104,19 @@ typedef enum _data_type {
 /*** Throttle Variable IDs ***/
 #define CONFIG_THRT_PREFIX          (0x0300)
 #define CONFIG_THRT_NUMVARS         (6)
-#define CONFIG_THRT_TYPE            (0x0301) //I16: (0) None, (1) Analog, or (2) PAS
-#define CONFIG_THRT_MIN             (0x0302) //F32: Voltage at throttle minimum
-#define CONFIG_THRT_MAX             (0x0303) //F32: Voltage at throttle maximum
-#define CONFIG_THRT_HYST            (0x0304) //F32: Hysteresis switching off or on
-#define CONFIG_THRT_FILT            (0x0305) //F32: Low pass filter setting (Hz)
-#define CONFIG_THRT_RISE            (0x0306) //F32: Maximum amount of throttle rise per count
+#define CONFIG_THRT_MIN             (0x0301) //F32: Voltage at throttle minimum
+#define CONFIG_THRT_MAX             (0x0302) //F32: Voltage at throttle maximum
+#define CONFIG_THRT_HYST            (0x0303) //F32: Hysteresis when switching off or on
+#define CONFIG_THRT_FILT            (0x0304) //F32: Low pass filter setting (Hz)
+#define CONFIG_THRT_RISE            (0x0305) //F32: Maximum amount of throttle rise per count
+#define CONFIG_THRT_RATIO           (0x0306) //F32: Throttle analog resistor divider ratio
 /*** Throttle Default Values ***/
-#define DFLT_THRT_TYPE              (1) // Analog ADC type
 #define DFLT_THRT_MIN               (0.90f)
 #define DFLT_THRT_MAX               (4.00f)
 #define DFLT_THRT_HYST              (0.025f)
 #define DFLT_THRT_FILT              (2.0f)
 #define DFLT_THRT_RISE              (0.0005f) // 0->100 in 2 seconds
+#define DFLT_THRT_RATIO             (1.499f) // Rtop = 4.99k, Rbot = 10k, Ratio = (10+4.99)/10 = 1.499
 
 /*** Limit Variable IDs ***/
 #define CONFIG_LMT_PREFIX               (0x0400)

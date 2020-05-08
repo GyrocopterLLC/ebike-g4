@@ -52,15 +52,16 @@ typedef struct _hallsensor{
     float AngleIncrement;
     float Angle;
     uint32_t CaptureValue;
-    uint32_t CaptureForState[6];
+    uint32_t CaptureForState[8];
     uint16_t Prescaler;
-    uint16_t PrescalerForState[6];
+    uint16_t PrescalerForState[8];
     uint8_t Status;
     uint8_t OverflowCount;
     uint8_t SteadyRotationCount;
     uint8_t RotationDirection;
     uint8_t PreviousRotationDirection;
     uint8_t CurrentState;
+    uint8_t PreviousState;
     uint8_t Valid;
 
 } HallSensor_HandleTypeDef;
@@ -86,11 +87,12 @@ typedef struct _hallsensorpll{
 #define ANGLE_VALID                 (1)
 
 void HALL_Init(uint32_t callingFrequency);
-
-uint8_t HALL_AutoGenFwdTable(float* angleTab, uint8_t* fwdTab);
-uint8_t HALL_AutoGenFwdInvTable(float* angleTab, uint8_t* fwdInvTab);
-uint8_t HALL_AutoGenRevTable(float* angleTab, uint8_t* revTab);
-uint8_t HALL_AutoGenRevInvTable(float* angleTab, uint8_t* revInvTab);
+uint8_t HALL_GenFwdOrder(float* angleTab, uint8_t* fwdOrderTab);
+uint8_t HALL_GenRevOrder(float* angleTab, uint8_t* revOrderTab);
+uint8_t HALL_GenFwdTable(uint8_t* orderTab, uint8_t* fwdTab);
+uint8_t HALL_GenFwdInvTable(uint8_t* fwdTab, uint8_t* fwdInvTab);
+uint8_t HALL_GenRevTable(uint8_t* revOrderTab, uint8_t* revTab);
+uint8_t HALL_GenRevInvTable(uint8_t* revTab, uint8_t* revInvTab);
 
 uint8_t HALL_GetState(void);
 void HALL_IncAngle(void);
