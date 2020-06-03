@@ -102,11 +102,14 @@ void LIVE_AssemblePacket(Main_Variables* mvar) {
                     case LIVE_CHOICE_HALLSPEED:
                         temp_data = mvar->Obv->RotorSpeed_eHz;
                         break;
+                    case LIVE_CHOICE_HALLACCEL:
+                        temp_data = mvar->Obv->RotorAccel_eHzps;
+                        break;
                     case LIVE_CHOICE_HALLSTATE:
                         temp_data = (float)(mvar->Obv->HallState);
                         break;
                     case LIVE_CHOICE_VBUS:
-                        temp_data = mvar->Ctrl->BusVoltage;
+                        temp_data = mvar->Obv->BusVoltage;
                         break;
                     case LIVE_CHOICE_ID:
                         temp_data = mvar->Foc->Park_D;

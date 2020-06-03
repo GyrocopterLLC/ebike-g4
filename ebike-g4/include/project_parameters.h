@@ -36,15 +36,17 @@ typedef enum _data_type {
 
 /***  ADC Configuration Variable IDs ***/
 #define CONFIG_ADC_PREFIX           (0x0000)
-#define CONFIG_ADC_NUMVARS          (5)
+#define CONFIG_ADC_NUMVARS          (6)
 #define CONFIG_ADC_RSHUNT           (0x0001) //F32: Shunt resistance in ohms
-#define CONFIG_ADC_VBUS_RATIO       (0x0002) //F32: 1 / (R_bottom / (R_top + R_bottom))
-#define CONFIG_ADC_THERM_FIXED_R    (0x0003) //F32: Temp sensor divisor resistor (on PCB)
-#define CONFIG_ADC_THERM_R25        (0x0004) //F32: Temp sensor resistance at 25degC
-#define CONFIG_ADC_THERM_B          (0x0005) //F32: Temp sensor beta value
+#define CONFIG_ADC_VBUS_RATIO       (0x0002) //F32: Bus voltage analog resistor divider ratio
+#define CONFIG_ADC_VPHASE_RATIO     (0x0003) //F32: Phase voltage analog resistor divider ratio
+#define CONFIG_ADC_THERM_FIXED_R    (0x0004) //F32: Temp sensor divisor resistor (on PCB)
+#define CONFIG_ADC_THERM_R25        (0x0005) //F32: Temp sensor resistance at 25degC
+#define CONFIG_ADC_THERM_B          (0x0006) //F32: Temp sensor beta value
 /*** ADC Default Values ***/
 #define DFLT_ADC_RSHUNT             (0.002f) // 0.002 Ohms
-#define DFLT_ADC_VBUS_RATIO         (25.87562f) // 1 / (4.02kOhm / (100 + 4.02kOhm)) = 25.87562
+#define DFLT_ADC_VBUS_RATIO         (25.87562f) // (100kOhm + 4.02kOhm) / 4.02kOhm = 25.87562
+#define DFLT_ADC_VPHASE_RATIO       (23.0f) // (22kOhm + 1kOhm) / 1kOhm = 23.0
 #define DFLT_ADC_THERM_FIXED_R      (10000.0f) // 10k resistor
 #define DFLT_ADC_THERM_R25          (10000.0f) // Thermistor is 10k at 25degC (ERT-J1VR103J)
 #define DFLT_ADC_THERM_B            (4250.0f) // Thermistor Beta value (ERT-J1VR103J)
@@ -273,7 +275,7 @@ typedef enum _data_type {
 #define MAX_LIVE_OUTPUTS            (10)
 #define MAX_LIVE_SPEED_CHOICES      (6)  // 0: 50Hz, 1: 100Hz, 2: 200Hz, 3: 500Hz, 4: 1kHz, 5: 5kHz
 //Debugging outputs
-#define MAX_LIVE_DATA_CHOICES       (16)
+#define MAX_LIVE_DATA_CHOICES       (17)
 #define LIVE_CHOICE_UNUSED          (0)
 #define LIVE_CHOICE_IA              (1)
 #define LIVE_CHOICE_IB              (2)
@@ -284,13 +286,14 @@ typedef enum _data_type {
 #define LIVE_CHOICE_THROTTLE        (7)
 #define LIVE_CHOICE_HALLANGLE       (8)
 #define LIVE_CHOICE_HALLSPEED       (9)
-#define LIVE_CHOICE_HALLSTATE       (10)
-#define LIVE_CHOICE_VBUS            (11)
-#define LIVE_CHOICE_ID              (12)
-#define LIVE_CHOICE_IQ              (13)
-#define LIVE_CHOICE_TD              (14)
-#define LIVE_CHOICE_TQ              (15)
-#define LIVE_CHOICE_ERRORCODE       (16)
+#define LIVE_CHOICE_HALLACCEL       (10)
+#define LIVE_CHOICE_HALLSTATE       (11)
+#define LIVE_CHOICE_VBUS            (12)
+#define LIVE_CHOICE_ID              (13)
+#define LIVE_CHOICE_IQ              (14)
+#define LIVE_CHOICE_TD              (15)
+#define LIVE_CHOICE_TQ              (16)
+#define LIVE_CHOICE_ERRORCODE       (17)
 
 
 #endif /* PROJECT_PARAMETERS_H_ */

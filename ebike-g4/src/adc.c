@@ -213,13 +213,14 @@ void ADC_Init(void) {
      * triggers are really only read by ADC1. When the injected channels are finished, the master
      * JEOS interrupt will read both sets of JDR data registers. Since the conversions are the
      * same length, they will be finished at the same time. For regular channels, DMA is enabled
-     * in dual mode. The DMA request is triggered on the master ADC, but only after both EOC flags
-     * are set. The data is pulled from the common data register to allow for just a single DMA
-     * channel read for both conversions. So 2 DMA channels are needed for 4 ADCs.
+     * individually. The DMA request is triggered by each ADC when its EOC flag is set. They will
+     * probably be set around the same time as each other since they were triggered together.
+     * The DMA is configured to pull from the data register after each conversion is complete
+     * and save the result to an array in memory.
      *
      * ADC3&4 are set in regular simultaneous only. The injected channels on ADC3 are run solo,
      * since ADC4 doesn't have any injected channels assigned. The regular sequence for ADC3&4
-     * works the same way as ADC1&2.
+     * works the same way as ADC1&2, including individual DMA channels for saving data to memory.
      */
     // Enable DMA clock
     RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN;
@@ -357,9 +358,10 @@ static void ADC_CalcVref(void) {
 }
 
 void ADC_InjSeqComplete(void) {
-    adc_conv[ADC_IA] = ADC3->JDR1;
+    // Error on schematic, Ia and Ic current sensors need to be swapped
+    adc_conv[ADC_IC] = ADC3->JDR1;
     adc_conv[ADC_IB] = ADC2->JDR1;
-    adc_conv[ADC_IC] = ADC1->JDR1;
+    adc_conv[ADC_IA] = ADC1->JDR1;
 
 }
 
@@ -435,6 +437,16 @@ float ADC_GetVbus(void) {
 
 float ADC_GetVref(void) {
     return adc_vref;
+}
+
+float ADC_GetPhaseVoltage(uint8_t which_phase) {
+    // Convert 12-bit to float
+    float temp_vphase = ((float) adc_conv[which_phase]) / MAXCOUNTF;
+    // Convert to volts from reference
+    temp_vphase *= adc_vref;
+    // Convert to real measurement from resistor divider ratio
+    temp_vphase *= config_adc.Vphase_Ratio;
+    return temp_vphase;
 }
 
 void ADC_SetNull(uint8_t which_cur, uint16_t nullVal) {
@@ -531,6 +543,7 @@ void ADC_SaveVariables(void) {
 void ADC_LoadVariables(void) {
     config_adc.Shunt_Resistance = EE_ReadFloatWithDefault(CONFIG_ADC_RSHUNT, DFLT_ADC_RSHUNT);
     config_adc.Vbus_Ratio = EE_ReadFloatWithDefault(CONFIG_ADC_VBUS_RATIO, DFLT_ADC_VBUS_RATIO);
+    config_adc.Vphase_Ratio = EE_ReadFloatWithDefault(CONFIG_ADC_VPHASE_RATIO, DFLT_ADC_VPHASE_RATIO);
     config_adc.Thermistor_Fixed_R = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_FIXED_R, DFLT_ADC_THERM_FIXED_R);
     config_adc.Thermistor_R25 = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_R25, DFLT_ADC_THERM_R25);
     config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);

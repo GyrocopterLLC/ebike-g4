@@ -116,6 +116,7 @@ typedef struct _config_adc {
     float Shunt_Resistance;
     float Inverse_TIA_Gain;
     float Vbus_Ratio;
+    float Vphase_Ratio;
     float Thermistor_Fixed_R;
     float Thermistor_R25;
     float Thermistor_Beta;
@@ -145,6 +146,7 @@ float ADC_ConvertToAmps(int32_t rawCurrentReading);
 float ADC_GetThrottle(void);
 float ADC_GetVbus(void);
 float ADC_GetVref(void);
+float ADC_GetPhaseVoltage(uint8_t which_phase);
 void ADC_SetNull(uint8_t which_cur, uint16_t nullVal);
 float ADC_GetFetTempDegC(void);
 

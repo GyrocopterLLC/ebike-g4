@@ -41,6 +41,8 @@
 #define HALL_ROT_FORWARD                1
 #define HALL_ROT_REVERSE                2
 
+#define NUM_ACCEL_SAMPLES               4 // Number of speed samples for rolling average
+
 // Error checking
 #define HALL_MAX_SPEED_CHANGE           (3.0f)
 #define HALL_MIN_STEADY_ROTATION_COUNT  (6) // One full electrical rotation
@@ -48,6 +50,8 @@
 typedef struct _hallsensor{
     float Speed;
     float PreviousSpeed;
+    float Accel;
+    float AccelSamples[NUM_ACCEL_SAMPLES];
     uint32_t CallingFrequency;
     float AngleIncrement;
     float Angle;
@@ -55,6 +59,7 @@ typedef struct _hallsensor{
     uint32_t CaptureForState[8];
     uint16_t Prescaler;
     uint16_t PrescalerForState[8];
+    uint8_t CurrentAccelSample;
     uint8_t Status;
     uint8_t OverflowCount;
     uint8_t SteadyRotationCount;
@@ -101,6 +106,8 @@ float HALL_GetAngleF(void);
 
 uint32_t HALL_GetSpeed(void);
 float HALL_GetSpeedF(void);
+uint32_t HALL_GetAcceleration(void);
+float HALL_GetAccelerationF(void);
 uint8_t HALL_GetDirection(void);
 uint8_t HALL_IsValid(void);
 

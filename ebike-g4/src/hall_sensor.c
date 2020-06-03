@@ -51,6 +51,7 @@
 #include <math.h>
 
 static void HALL_CalcSpeed(void);
+static void HALL_CalcAcceleration(void);
 static float HALL_CalcMidPoint(float a1, float a2);
 static float HALL_ClipToOne(float unclipped);
 static void HALL_UpdateLookupTables(void);
@@ -67,14 +68,6 @@ uint8_t HallStateReverseRotation[8]; // Lookup where index is current state, val
 float* HallDetectAngleTable;
 uint8_t HallDetectTableLength;
 uint32_t HallDetectTransitionsDone[6];
-
-uint32_t HallInputDebouncer[16];
-
-
-uint8_t DebugStateTracker[256];
-uint8_t DebugDirTracker[256];
-uint16_t DebugCaptureTracker[256];
-uint8_t DebugCounter;
 
 /**
  * @brief  Initializes the Hall effect sensor interface
@@ -122,6 +115,11 @@ void HALL_Init(uint32_t callingFrequency) {
     HallSensor.Status = 0;
     HallSensor.Speed = 0.0f;
     HallSensor.PreviousSpeed = 0.0f;
+    HallSensor.Accel = 0.0f;
+    for(uint8_t i = 0; i < NUM_ACCEL_SAMPLES; i++) {
+        HallSensor.AccelSamples[i] = 0.0f;
+    }
+    HallSensor.CurrentAccelSample = 0;
     HallSensor.CallingFrequency = callingFrequency;
     HallSensor.OverflowCount = 0;
     HallSensor.SteadyRotationCount = 0;
@@ -406,6 +404,14 @@ float HALL_GetSpeedF(void) {
     return HallSensor.Speed;
 }
 
+uint32_t HALL_GetAcceleration(void) {
+    return (uint32_t) (HallSensor.Accel * 65536.0f);
+}
+
+float HALL_GetAccelerationF(void) {
+    return HallSensor.Accel;
+}
+
 uint8_t HALL_GetDirection(void) {
     return HallSensor.RotationDirection;
 }
@@ -566,40 +572,13 @@ void HALL_UpdateCallback(void) {
  * the timer period is extended.
  */
 void HALL_CaptureCallback(void) {
-    uint8_t hall_a_vote, hall_b_vote, hall_c_vote;
 
     HallSensor.CaptureValue = HALL_TIM->CCR1;
-    DebugCaptureTracker[DebugCounter] = HallSensor.CaptureValue;
-    // Figure out which way we're turning.
-    // Simple debouncing. Read the input data register 16 times, and vote on
-    // the real value.
-    uint8_t i;
-    for(i = 0; i < 16; i++) {
-        // The IDR is declared volatile, so this will read its current value each time.
-        HallInputDebouncer[i] = HALL_PORT->IDR;
-    }
-    hall_a_vote = 0;
-    hall_b_vote = 0;
-    hall_c_vote = 0;
-    for(i = 0; i < 16; i++) {
-        if(HallInputDebouncer[i] & (1 << HALL_A_PIN))
-            hall_a_vote++;
-        if(HallInputDebouncer[i] & (1 << HALL_B_PIN))
-                    hall_b_vote++;
-        if(HallInputDebouncer[i] & (1 << HALL_C_PIN))
-                    hall_c_vote++;
-    }
-    // Majority vote. If the sum is over num_samples/2, it's a high value. Otherwise, it's low.
-    HallSensor.CurrentState = ((hall_a_vote > 8) ? 1 : 0)
-            + ((hall_b_vote > 8) ? 2 : 0)
-            + ((hall_c_vote > 8) ? 4 : 0) ;
-    DebugStateTracker[DebugCounter] = HallSensor.CurrentState;
-//    thisState =
-//            (HALL_PORT->IDR & (1 << HALL_A_PIN)) != 0 ? 1 : 0;
-//    thisState +=
-//            (HALL_PORT->IDR & (1 << HALL_B_PIN)) != 0 ? 2 : 0;
-//    thisState +=
-//            (HALL_PORT->IDR & (1 << HALL_C_PIN)) != 0 ? 4 : 0;
+    // Figure out which way we're turning. Get the state of all three Hall sensor pins
+    uint16_t temp_idr = HALL_PORT->IDR;
+    HallSensor.CurrentState = (temp_idr & (1 << HALL_A_PIN) ? 1 : 0)
+            + (temp_idr & (1 << HALL_B_PIN) ? 2 : 0)
+            + (temp_idr & (1 << HALL_C_PIN) ? 4 : 0);
 
     if(HallStateForwardRotation[HallSensor.PreviousState] == HallSensor.CurrentState)
         HallSensor.RotationDirection = HALL_ROT_FORWARD;
@@ -607,7 +586,6 @@ void HALL_CaptureCallback(void) {
         HallSensor.RotationDirection = HALL_ROT_REVERSE;
     else
         HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
-    DebugDirTracker[DebugCounter++] = HallSensor.RotationDirection;
     // Update the angle - just encountered a 60deg marker (the Hall state change)
     // If we're rotating forward, the actual angle will be at the beginning of the state.
     // For example, if we entered State 5 (210->270°), we will be at 210° if rotating forwards,
@@ -689,6 +667,15 @@ void HALL_CaptureCallback(void) {
             HallSensor.SteadyRotationCount = 0;
             HallSensor.Valid = ANGLE_INVALID;
         }
+        // Acceleration: difference in speed divided by the time between sampling
+        // accel = (CurrentSpeed - PrevSpeed) / ((timer_counts*prescaler) / clk_freq)
+        HallSensor.AccelSamples[HallSensor.CurrentAccelSample++] = (HallSensor.Speed - HallSensor.PreviousSpeed) * ((float) HALL_CLK) /
+                (((float) (HallSensor.CaptureForState[HallSensor.CurrentState])) *
+                ((float) (HallSensor.PrescalerForState[HallSensor.CurrentState] + 1)));
+        // Wraparound the sample counter
+        if(HallSensor.CurrentAccelSample >= NUM_ACCEL_SAMPLES)
+            HallSensor.CurrentAccelSample = 0;
+        HALL_CalcAcceleration();
 
     }
     HallSensor.PreviousSpeed = HallSensor.Speed;
@@ -749,14 +736,15 @@ static void HALL_UpdateLookupTables(void) {
  *      time between Hall Sensor state changes. This function needs to (1)
  *      determine the timebase as a function of the timer clock and prescaler,
  *      and (2) determine the motor electrical speed as the inverse of the
- *      period between state changes.
+ *      period between state changes. This function updates the Speed and
+ *      AngleIncrement. Speed is the electrical motor speed in Hz.
  *
- * @retval The electrical motor speed in Hz
+ * @retval None
  */
 static void HALL_CalcSpeed(void) {
     // Sum up all 6 states
     float full_rotation_capture = 0.0f;
-    for (uint8_t i = 0; i < 6; i++) {
+    for (uint8_t i = 1; i <= 6; i++) {
         full_rotation_capture += ((float) (HallSensor.CaptureForState[i]))
                 * ((float) (HallSensor.PrescalerForState[i] + 1));
     }
@@ -771,6 +759,28 @@ static void HALL_CalcSpeed(void) {
         HallSensor.Speed = 0;
         HallSensor.AngleIncrement = 0;
     }
+}
+
+/**
+ * @brief Calculates the acceleration of rotation
+ *
+ *      Called from the capture interrupt. The previous acceleration samples
+ *      are averaged to determine the acceleration, which adds a little
+ *      noise filtering. The Accel variable is updated in this function.
+ *      Accel is the electrical motor acceleration in Hz/s.
+ *
+ * @retval None
+ */
+static void HALL_CalcAcceleration(void) {
+
+    float accelSum = 0.0f;
+    // Sum up all previous accelerations
+    for(uint8_t i = 0; i < NUM_ACCEL_SAMPLES; i++) {
+        accelSum += HallSensor.AccelSamples[i];
+    }
+    // Average
+    accelSum /= ((float)NUM_ACCEL_SAMPLES);
+    HallSensor.Accel = accelSum;
 }
 
 // Determines the midpoint of two angles.

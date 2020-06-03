@@ -33,12 +33,10 @@
 #define DBG_USB_BUF_LEN 128
 
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
-#define DBG_FLAG_PWM_ENABLE 0x00000001
+#define DBG_FLAG_PWM_ENABLE     0x00000001u
+#define DBG_FLAG_PWM_DISABLE    0x00000002u
 uint32_t DBG_Flags=0;
 uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
-
-float DBG_RampAngle;
-float DBG_RampIncrement;
 
 Main_Variables Mvar;
 Motor_Controls Mctrl;
@@ -110,14 +108,10 @@ int main (
     GPIO_Output(DRV_EN_PORT, DRV_EN_PIN);
     GPIO_High(LED_PORT, GLED_PIN);
     GPIO_Low(LED_PORT, RLED_PIN);
-//    GPIO_Low(DRV_EN_PORT, DRV_EN_PIN);
 
     // Use the DAC for some SVM prettiness
     RCC->AHB2ENR |= RCC_AHB2ENR_DAC1EN;
     DAC1->CR |= DAC_CR_EN1 | DAC_CR_EN2;
-
-    // Initialize a ramp
-    DBG_RampIncrement = FOC_RampCtrl(20000.0f, 25.0f); // Called at 20kHz, 25Hz wave.
 
     // Start the app timer
     MAIN_StartAppTimer();
@@ -159,36 +153,65 @@ void MAIN_AppTimerISR(void) {
 
     // Slow ADC conversions
     ADC_RegSeqComplete();
+    Mobv.BusVoltage = ADC_GetVbus();
+    Mobv.vA = ADC_GetPhaseVoltage(ADC_VA);
+    Mobv.vB = ADC_GetPhaseVoltage(ADC_VB);
+    Mobv.vC = ADC_GetPhaseVoltage(ADC_VC);
 
     // PWM output
     if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0 ) {
-        PWM_TIM->BDTR |= TIM_BDTR_MOE;
-    } else {
-        PWM_TIM->BDTR &= ~(TIM_BDTR_MOE);
+        DBG_Flags &= ~(DBG_FLAG_PWM_ENABLE);
+        Mctrl.state = Motor_Debug;
+        PWM_MotorON();
+    } else if((DBG_Flags & DBG_FLAG_PWM_DISABLE) != 0 ) {
+        DBG_Flags &= ~(DBG_FLAG_PWM_DISABLE);
+        Mctrl.state = Motor_Off;
+        PWM_MotorOFF();
     }
 
     // Throttle processing
     THROTTLE_Process();
     Mctrl.ThrottleCommand = THROTTLE_GetCommand();
+
+    // Shall we turn the motor?
+    switch(Mctrl.state) {
+    case Motor_Off:
+        if(Mctrl.ThrottleCommand > 0.0f) {
+            Mctrl.state = Motor_Sine;
+            PWM_MotorON();
+
+        }
+        break;
+    case Motor_Sine:
+        if(Mctrl.ThrottleCommand == 0.0f) {
+            Mctrl.state = Motor_Off;
+            PWM_MotorOFF();
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 // Called at 20kHz
 void MAIN_MotorISR(void) {
-    float sin, cos;
     uint16_t dac1, dac2;
+//    static float rampangle = 0.0f;
 
     // Increment timestamp
     Mvar.Timestamp++;
 
-    // Increment the ramp angle
-    FOC_RampGen(&DBG_RampAngle, DBG_RampIncrement);
-    // And the real motor angle
+    // Increment motor angle
     HALL_IncAngle();
     Mobv.RotorAngle = HALL_GetAngleF();
     Mobv.RotorSpeed_eHz = HALL_GetSpeedF();
+    Mobv.RotorAccel_eHzps = HALL_GetAccelerationF();
     Mobv.HallState = HALL_GetState();
     // Calculate the Sin/Cos using CORDIC
-    CORDIC_CalcSinCos(DBG_RampAngle*2.0f-1.0f, &sin, &cos);
+    CORDIC_CalcSinCosDeferred(Mobv.RotorAngle*2.0f-1.0f);
+//    rampangle += 0.00075f; // about 15Hz at 20kHz cycle time
+//    if(rampangle >=1.0f) rampangle -= 1.0f;
+//    CORDIC_CalcSinCosDeferred(rampangle*2.0f-1.0f);
 
     // All injected ADC should be done by now. Read them in.
     ADC_InjSeqComplete();
@@ -196,13 +219,22 @@ void MAIN_MotorISR(void) {
     Mobv.iB = ADC_GetCurrent(ADC_IB);
     Mobv.iC = ADC_GetCurrent(ADC_IC);
 
-    // Make some waves
-    FOC_Ipark(0.75f, 0.0f, sin, cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
-    FOC_SVM((Mfoc.Clarke_Alpha), (Mfoc.Clarke_Beta), &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
+    // Grab those completed sin/cos values
+    CORDIC_GetResults(&(Mfoc.Sin), &(Mfoc.Cos));
+    // Make some waves. Run the motor in sine mode.
+    FOC_Ipark(0.0f, Mctrl.ThrottleCommand, Mfoc.Sin, Mfoc.Cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
+    FOC_SVM(Mfoc.Clarke_Alpha, Mfoc.Clarke_Beta, &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
     // Show Ta and Tb on the DAC outputs
     dac1 = (uint16_t)(65535.0f*Mpwm.tA);
     dac2 = (uint16_t)(65535.0f*Mpwm.tB);
     DAC1->DHR12LD = (uint32_t)(dac1) + ((uint32_t)(dac2) << 16);
+
+    if(Mctrl.state == Motor_Debug) {
+        // Force all three PWMs to the throttle level for debugging
+        Mpwm.tA = Mctrl.ThrottleCommand;
+        Mpwm.tB = Mctrl.ThrottleCommand;
+        Mpwm.tC = Mctrl.ThrottleCommand;
+    }
 
     // Also apply Ta, Tb, and Tc to the PWM outputs
     PWM_SetDutyF(Mpwm.tA, Mpwm.tB, Mpwm.tC);
@@ -369,7 +401,7 @@ uint8_t MAIN_EnableDebugPWM(void) {
 }
 
 uint8_t MAIN_DisableDebugPWM(void) {
-    DBG_Flags &= ~(DBG_FLAG_PWM_ENABLE);
+    DBG_Flags |= DBG_FLAG_PWM_DISABLE;
     return RETVAL_OK;
 }
 

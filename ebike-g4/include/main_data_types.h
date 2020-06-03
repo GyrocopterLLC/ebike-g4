@@ -54,6 +54,16 @@ typedef enum _main_control_methods {
     Control_Debug // all three PWMs simply follow the throttle
 } Main_Control_Methods;
 
+typedef enum _motor_run_state {
+    Motor_Off,      // All switching disabled.
+    Motor_SixStep,  // Running in trapezoidal mode
+    Motor_Sine,  // Ruuning in sinewave (open loop current, continuously updating angle)
+    Motor_FOC,  // Switched to FOC full control
+    Motor_OpenLoop, // Open-loop with fixed frequency rotation
+    Motor_Debug,    // All three PWMs follow the throttle
+    Motor_Fault     // Something screwed up
+} Motor_Run_State;
+
 typedef struct _main_config {
     // ----- Settings editable by user -----
     float RampSpeed;
@@ -79,7 +89,6 @@ typedef struct _main_config {
     float MinVoltFault;
     float MaxVoltFault;
     float CurrentFault;
-    Main_Control_Methods ControlMethod;
     // ----- Generated constants -----
     float inv_max_phase_current;
     float inv_pole_pairs;
@@ -89,17 +98,22 @@ typedef struct _main_config {
 } Config_Main;
 
 typedef struct _Motor_Controls {
-//    Motor_RunState state;
+    Main_Control_Methods ControlMethod;
+    Motor_Run_State state;
     float ThrottleCommand;
-    float BusVoltage;
 } Motor_Controls;
 
 typedef struct _Motor_Observations {
     float iA;
     float iB;
     float iC;
+    float vA;
+    float vB;
+    float vC;
+    float BusVoltage;
     float RotorAngle;
     float RotorSpeed_eHz;
+    float RotorAccel_eHzps;
     uint8_t HallState;
 } Motor_Observations;
 
@@ -110,6 +124,8 @@ typedef struct _Motor_PWMDuties {
 } Motor_PWMDuties;
 
 typedef struct _FOC_StateVariables {
+    float Sin;
+    float Cos;
     float Clarke_Alpha;
     float Clarke_Beta;
     float Park_D;
