@@ -165,7 +165,44 @@ typedef enum _data_type {
 #define CONFIG_MOTOR_WHEEL_SIZE     (0x0509) //F32: Diameter in mm
 #define CONFIG_MOTOR_KV             (0x050A) //F32: Motor voltage constant (RPM / Volt)
 /*** Motor Default Values ***/
-// For Ebikeling 700C front 1200W motor
+// For Ebikeling 700C front 1200W motor (2->6->4->5->1->3)
+
+// Redo with voltage sensing!
+
+// Forward rotation:
+// rising A (4 to 5):   0.5741980041423249
+// falling C (5 to 1):  0.7215875099416836
+// rising B (1 to 3):   0.8956964002575087
+// falling A (3 to 2):  0.07304103128566627
+// rising C (2 to 6):   0.22672750318891483
+// falling B (6 to 4):  0.4016299738288212
+
+// Reverse rotation:
+// falling A (5 to 4):  0.5650003575148457
+// rising B (4 to 6):   0.3910043952868503
+// falling C (6 to 2):  0.21344155930285352
+// rising A (2 to 3):   0.06525376758132169
+// falling B (3 to 1):  0.8970313516299208
+// rising C (1 to 5):   0.7205920218932402
+
+// Average for Hall1:   0.721089765917462
+// Average for Hall2:   0.06914739943349399
+// Average for Hall3:   0.8963638759437147
+// Average for Hall4:   0.39631718455783577
+// Average for Hall5:   0.5695991808285853
+// Average for Hall6:   0.22008453124588417
+
+
+// Trapezoidal patterns:
+// A+/C- ==> 30
+// B+/C- ==> 90
+// B+/A- ==> 150
+// C+/A- ==> 210
+// C+/B- ==> 270
+// A+/B- ==> 330
+// State 1: about 0 to 60 degrees - apply B+/A- (150), which is 150 ahead to 90 ahead
+//
+
 #define DFLT_MOTOR_HALL1            (0.743786f)
 #define DFLT_MOTOR_HALL2            (0.089677f)
 #define DFLT_MOTOR_HALL3            (0.905861f)
@@ -275,7 +312,7 @@ typedef enum _data_type {
 #define MAX_LIVE_OUTPUTS            (10)
 #define MAX_LIVE_SPEED_CHOICES      (6)  // 0: 50Hz, 1: 100Hz, 2: 200Hz, 3: 500Hz, 4: 1kHz, 5: 5kHz
 //Debugging outputs
-#define MAX_LIVE_DATA_CHOICES       (17)
+#define MAX_LIVE_DATA_CHOICES       (20)
 #define LIVE_CHOICE_UNUSED          (0)
 #define LIVE_CHOICE_IA              (1)
 #define LIVE_CHOICE_IB              (2)
@@ -293,7 +330,10 @@ typedef enum _data_type {
 #define LIVE_CHOICE_IQ              (14)
 #define LIVE_CHOICE_TD              (15)
 #define LIVE_CHOICE_TQ              (16)
-#define LIVE_CHOICE_ERRORCODE       (17)
+#define LIVE_CHOICE_VA              (17)
+#define LIVE_CHOICE_VB              (18)
+#define LIVE_CHOICE_VC              (19)
+#define LIVE_CHOICE_ERRORCODE       (20)
 
 
 #endif /* PROJECT_PARAMETERS_H_ */

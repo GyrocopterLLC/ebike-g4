@@ -208,7 +208,10 @@ void MAIN_MotorISR(void) {
     Mobv.RotorAccel_eHzps = HALL_GetAccelerationF();
     Mobv.HallState = HALL_GetState();
     // Calculate the Sin/Cos using CORDIC
-    CORDIC_CalcSinCosDeferred(Mobv.RotorAngle*2.0f-1.0f);
+    // Convert [0,1] to [-1,1]
+    float cordic_angle = Mobv.RotorAngle*2.0f;
+    if(cordic_angle > 1.0f) cordic_angle = cordic_angle - 2.0f;
+    CORDIC_CalcSinCosDeferred(cordic_angle);
 //    rampangle += 0.00075f; // about 15Hz at 20kHz cycle time
 //    if(rampangle >=1.0f) rampangle -= 1.0f;
 //    CORDIC_CalcSinCosDeferred(rampangle*2.0f-1.0f);

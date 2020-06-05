@@ -123,6 +123,15 @@ void LIVE_AssemblePacket(Main_Variables* mvar) {
                     case LIVE_CHOICE_TQ:
                         temp_data = mvar->Foc->Iq_PID->Out;
                         break;
+                    case LIVE_CHOICE_VA:
+                        temp_data = mvar->Obv->vA;
+                        break;
+                    case LIVE_CHOICE_VB:
+                        temp_data = mvar->Obv->vB;
+                        break;
+                    case LIVE_CHOICE_VC:
+                        temp_data = mvar->Obv->vC;
+                        break;
                     case LIVE_CHOICE_ERRORCODE:
                         temp_data = 0.0f;
                         break;
