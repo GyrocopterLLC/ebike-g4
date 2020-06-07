@@ -538,11 +538,10 @@ uint16_t command_enable_feature(uint8_t* pktdata) {
         errCode = LIVE_TurnOnData();
         break;
     case FEATURE_BLDC_MODE:
-//        errCode = MAIN_RequestBLDC();
-        errCode = RETVAL_OK;
+        errCode = MAIN_SetControlMode(Control_BLDC);
         break;
     case FEATURE_DEBUG_PWM:
-        errCode = MAIN_EnableDebugPWM();
+        errCode = MAIN_SetControlMode(Control_Debug);
         break;
     default:
         errCode = RETVAL_FAIL;
@@ -561,11 +560,10 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
         errCode = LIVE_TurnOffData();
         break;
     case FEATURE_BLDC_MODE:
-//        errCode = MAIN_RequestFOC();
-        errCode = RETVAL_OK;
+        errCode = MAIN_SetControlMode(Control_FOC);
         break;
     case FEATURE_DEBUG_PWM:
-        errCode = MAIN_DisableDebugPWM();
+        errCode = MAIN_SetControlMode(Control_FOC);
         break;
     default:
         errCode = RETVAL_FAIL;

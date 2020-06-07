@@ -167,8 +167,7 @@ typedef enum _data_type {
 /*** Motor Default Values ***/
 // For Ebikeling 700C front 1200W motor (2->6->4->5->1->3)
 
-// Redo with voltage sensing!
-
+// State angles sensed by freewheeling with phase voltage sensing
 // Forward rotation:
 // rising A (4 to 5):   0.5741980041423249
 // falling C (5 to 1):  0.7215875099416836
@@ -185,13 +184,13 @@ typedef enum _data_type {
 // falling B (3 to 1):  0.8970313516299208
 // rising C (1 to 5):   0.7205920218932402
 
+// Defined for entering a state in forward rotation
 // Average for Hall1:   0.721089765917462
 // Average for Hall2:   0.06914739943349399
 // Average for Hall3:   0.8963638759437147
 // Average for Hall4:   0.39631718455783577
 // Average for Hall5:   0.5695991808285853
 // Average for Hall6:   0.22008453124588417
-
 
 // Trapezoidal patterns:
 // A+/C- ==> 30
@@ -200,8 +199,12 @@ typedef enum _data_type {
 // C+/A- ==> 210
 // C+/B- ==> 270
 // A+/B- ==> 330
-// State 1: about 0 to 60 degrees - apply B+/A- (150), which is 150 ahead to 90 ahead
-//
+// State 2: 0 to 60 degrees - apply B+/A- (150), leads rotor by 150-0=150 to 150-60=90
+// State 6: 60 to 120 degrees - apply C+/A- (210), leads by 210-60=150 to 210-120=90
+// State 4: 120 to 180 degrees - apply C+/B- (270), leads by 270-120=150 to 270-180=90
+// State 5: 180 to 240 degrees - apply A+/B- (330), leads by 330-180=150 to 330-240=90
+// State 1: 240 to 300 degrees - apply A+/C- (30), leads by (360+30)-240=150 to (360+30)-300=90
+// State 3: 300 to 0/360 degrees - apply B+/C- (90), leads by (360+90)-300=150 to 90-0=90
 
 #define DFLT_MOTOR_HALL1            (0.743786f)
 #define DFLT_MOTOR_HALL2            (0.089677f)

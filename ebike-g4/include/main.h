@@ -42,6 +42,7 @@
 #include "gpio.h"
 #include "hall_sensor.h"
 #include "live_data.h"
+#include "motor_loop.h"
 #include "periphconfig.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
@@ -70,8 +71,8 @@
 // Exported functions
 
 uint8_t MAIN_GetDashboardData(uint8_t* data); // Returns live values
-uint8_t MAIN_EnableDebugPWM(void); // Turn on PWM outputs
-uint8_t MAIN_DisableDebugPWM(void); // Turn off PWM outputs
+uint8_t MAIN_SetControlMode(Main_Control_Methods new_ctrl_mode);
+Main_Control_Methods MAIN_GetControlMode(void);
 void MAIN_Reboot(void); // Restart processor
 void MAIN_GoToBootloader(void); // Restart and go to bootloader at startup
 void MAIN_AppTimerISR(void); // Called periodically to do housekeeping functions

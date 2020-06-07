@@ -33,8 +33,6 @@
 #define DBG_USB_BUF_LEN 128
 
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
-#define DBG_FLAG_PWM_ENABLE     0x00000001u
-#define DBG_FLAG_PWM_DISABLE    0x00000002u
 uint32_t DBG_Flags=0;
 uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
 
@@ -124,6 +122,7 @@ int main (
     Mvar.Foc = &Mfoc;
     Mvar.Obv = &Mobv;
     Mvar.Pwm = &Mpwm;
+    Mctrl.ControlMethod = Control_FOC;
     Mfoc.Id_PID = &Mpid_Id;
     Mfoc.Iq_PID = &Mpid_Iq;
 
@@ -158,38 +157,37 @@ void MAIN_AppTimerISR(void) {
     Mobv.vB = ADC_GetPhaseVoltage(ADC_VB);
     Mobv.vC = ADC_GetPhaseVoltage(ADC_VC);
 
-    // PWM output
-    if((DBG_Flags & DBG_FLAG_PWM_ENABLE) != 0 ) {
-        DBG_Flags &= ~(DBG_FLAG_PWM_ENABLE);
-        Mctrl.state = Motor_Debug;
-        PWM_MotorON();
-    } else if((DBG_Flags & DBG_FLAG_PWM_DISABLE) != 0 ) {
-        DBG_Flags &= ~(DBG_FLAG_PWM_DISABLE);
-        Mctrl.state = Motor_Off;
-        PWM_MotorOFF();
-    }
-
     // Throttle processing
     THROTTLE_Process();
     Mctrl.ThrottleCommand = THROTTLE_GetCommand();
 
     // Shall we turn the motor?
-    switch(Mctrl.state) {
-    case Motor_Off:
+    if(Mctrl.state == Motor_Off) {
         if(Mctrl.ThrottleCommand > 0.0f) {
-            Mctrl.state = Motor_Sine;
-            PWM_MotorON();
+            switch(Mctrl.ControlMethod) {
+            case Control_BLDC:
+                Mctrl.state = Motor_SixStep;
+                break;
+            case Control_FOC:
+                Mctrl.state = Motor_Sine; // Todo: change to FOC
+                break;
+            case Control_Debug:
+                Mctrl.state = Motor_Debug;
+                break;
+            default:
+                Mctrl.state = Motor_Off; // No change if none of the above
+                break;
+            }
+            if(Mctrl.state != Motor_Off) {
+                PWM_MotorON();
+            }
 
         }
-        break;
-    case Motor_Sine:
+    } else {
         if(Mctrl.ThrottleCommand == 0.0f) {
             Mctrl.state = Motor_Off;
             PWM_MotorOFF();
         }
-        break;
-    default:
-        break;
     }
 }
 
@@ -224,20 +222,15 @@ void MAIN_MotorISR(void) {
 
     // Grab those completed sin/cos values
     CORDIC_GetResults(&(Mfoc.Sin), &(Mfoc.Cos));
-    // Make some waves. Run the motor in sine mode.
-    FOC_Ipark(0.0f, Mctrl.ThrottleCommand, Mfoc.Sin, Mfoc.Cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
-    FOC_SVM(Mfoc.Clarke_Alpha, Mfoc.Clarke_Beta, &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
+    // Run the motor depending on the control mode
+
+    Motor_Loop(&Mvar);
+//    FOC_Ipark(0.0f, Mctrl.ThrottleCommand, Mfoc.Sin, Mfoc.Cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
+//    FOC_SVM(Mfoc.Clarke_Alpha, Mfoc.Clarke_Beta, &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
     // Show Ta and Tb on the DAC outputs
     dac1 = (uint16_t)(65535.0f*Mpwm.tA);
     dac2 = (uint16_t)(65535.0f*Mpwm.tB);
     DAC1->DHR12LD = (uint32_t)(dac1) + ((uint32_t)(dac2) << 16);
-
-    if(Mctrl.state == Motor_Debug) {
-        // Force all three PWMs to the throttle level for debugging
-        Mpwm.tA = Mctrl.ThrottleCommand;
-        Mpwm.tB = Mctrl.ThrottleCommand;
-        Mpwm.tC = Mctrl.ThrottleCommand;
-    }
 
     // Also apply Ta, Tb, and Tc to the PWM outputs
     PWM_SetDutyF(Mpwm.tA, Mpwm.tB, Mpwm.tC);
@@ -398,14 +391,17 @@ void MAIN_Reboot(void) {
     NVIC_SystemReset();
 }
 
-uint8_t MAIN_EnableDebugPWM(void) {
-    DBG_Flags |= DBG_FLAG_PWM_ENABLE;
-    return RETVAL_OK;
+uint8_t MAIN_SetControlMode(Main_Control_Methods new_ctrl_mode) {
+    // Only change if the motor is currently stopped
+    if(Mctrl.state == Motor_Off) {
+        Mctrl.ControlMethod = new_ctrl_mode;
+        return RETVAL_OK;
+    }
+    return RETVAL_FAIL;
 }
 
-uint8_t MAIN_DisableDebugPWM(void) {
-    DBG_Flags |= DBG_FLAG_PWM_DISABLE;
-    return RETVAL_OK;
+Main_Control_Methods MAIN_GetControlMode(void) {
+    return Mctrl.ControlMethod;
 }
 
 uint8_t MAIN_GetDashboardData(uint8_t* data) {
