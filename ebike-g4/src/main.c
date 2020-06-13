@@ -30,11 +30,11 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DBG_USB_BUF_LEN 128
-
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
-uint32_t DBG_Flags=0;
-uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
+
+#define MAIN_FLAG_CAL_PERFORMED         (0x00000001u)
+#define MAIN_FLAG_CAL_IN_PROGRESS       (0x00000002u)
+uint32_t MAIN_Flags=0;
 
 Main_Variables Mvar;
 Motor_Controls Mctrl;
@@ -44,9 +44,19 @@ FOC_StateVariables Mfoc;
 PID_Type Mpid_Id;
 PID_Type Mpid_Iq;
 
+// Calibration variables
+uint32_t MAIN_CalCounter;
+Main_Control_Methods MAIN_OldControlMethod;
+#define MAIN_CAL_NUM_SAMPLES            (1024u)
+uint32_t MAIN_CalASum;
+uint32_t MAIN_CalBSum;
+uint32_t MAIN_CalCSum;
+
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
 static void MAIN_StartAppTimer(void);
+static void MAIN_StartCalibrateCurrentSensors(void);
+static void MAIN_FinishCalibrateCurrentSensors(void);
 
 int main (
         __attribute__((unused)) int argc,
@@ -135,6 +145,12 @@ int main (
 
         USB_Data_Comm_OneByte_Check();
         LIVE_SendPacket(); // Will only send when ready to do so
+
+        if((MAIN_Flags & MAIN_FLAG_CAL_PERFORMED ) == 0) {
+            if((MAIN_Flags & MAIN_FLAG_CAL_IN_PROGRESS) == 0) {
+                MAIN_StartCalibrateCurrentSensors();
+            }
+        }
     }
 }
 
@@ -206,13 +222,12 @@ void MAIN_MotorISR(void) {
     Mobv.RotorAccel_eHzps = HALL_GetAccelerationF();
     Mobv.HallState = HALL_GetState();
     // Calculate the Sin/Cos using CORDIC
-    // Convert [0,1] to [-1,1]
+    // Convert [0,1] to [-1,1] ... [0, 2*pi] becomes [-pi, pi]
+    // Zero through +0.5 is doubled so it becomes 0 to +1.0,
+    // but +0.5 to +1.0 is mapped to -1.0 to 0
     float cordic_angle = Mobv.RotorAngle*2.0f;
     if(cordic_angle > 1.0f) cordic_angle = cordic_angle - 2.0f;
     CORDIC_CalcSinCosDeferred(cordic_angle);
-//    rampangle += 0.00075f; // about 15Hz at 20kHz cycle time
-//    if(rampangle >=1.0f) rampangle -= 1.0f;
-//    CORDIC_CalcSinCosDeferred(rampangle*2.0f-1.0f);
 
     // All injected ADC should be done by now. Read them in.
     ADC_InjSeqComplete();
@@ -225,8 +240,6 @@ void MAIN_MotorISR(void) {
     // Run the motor depending on the control mode
 
     Motor_Loop(&Mvar);
-//    FOC_Ipark(0.0f, Mctrl.ThrottleCommand, Mfoc.Sin, Mfoc.Cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
-//    FOC_SVM(Mfoc.Clarke_Alpha, Mfoc.Clarke_Beta, &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
     // Show Ta and Tb on the DAC outputs
     dac1 = (uint16_t)(65535.0f*Mpwm.tA);
     dac2 = (uint16_t)(65535.0f*Mpwm.tB);
@@ -237,6 +250,18 @@ void MAIN_MotorISR(void) {
 
     // Output live data if it's enabled
     LIVE_AssemblePacket(&Mvar);
+
+    // Current calibration if its in progress
+    if((MAIN_Flags & MAIN_FLAG_CAL_IN_PROGRESS) != 0) {
+        if(MAIN_CalCounter < MAIN_CAL_NUM_SAMPLES) {
+            MAIN_CalASum += ADC_Raw(ADC_IA);
+            MAIN_CalBSum += ADC_Raw(ADC_IB);
+            MAIN_CalCSum += ADC_Raw(ADC_IC);
+            MAIN_CalCounter++;
+        } else {
+            MAIN_FinishCalibrateCurrentSensors();
+        }
+    }
 }
 
 
@@ -441,4 +466,30 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
     data_packet_pack_32b(data, 0);
 
     return RETVAL_OK;
+}
+
+static void MAIN_StartCalibrateCurrentSensors(void) {
+    // Only do if not rotating
+    if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)) {
+        MAIN_Flags |= MAIN_FLAG_CAL_IN_PROGRESS;
+        MAIN_OldControlMethod = Mctrl.ControlMethod;
+        Mctrl.ControlMethod = Control_None;
+        MAIN_CalCounter = 0;
+        MAIN_CalASum = 0;
+        MAIN_CalBSum = 0;
+        MAIN_CalCSum = 0;
+        // Set manual DC calibration modes on the current sensors
+        DRV8353_SetCalibration(DRV_CHANNEL_A_CAL|DRV_CHANNEL_B_CAL|DRV_CHANNEL_C_CAL);
+    }
+}
+
+static void MAIN_FinishCalibrateCurrentSensors(void) {
+    // Disable the calibration modes
+    DRV8353_SetCalibration(0);
+    ADC_SetNull(ADC_IA, MAIN_CalASum / MAIN_CAL_NUM_SAMPLES);
+    ADC_SetNull(ADC_IB, MAIN_CalBSum / MAIN_CAL_NUM_SAMPLES);
+    ADC_SetNull(ADC_IC, MAIN_CalCSum / MAIN_CAL_NUM_SAMPLES);
+    MAIN_Flags |= MAIN_FLAG_CAL_PERFORMED;
+    MAIN_Flags &= ~(MAIN_FLAG_CAL_IN_PROGRESS);
+    Mctrl.ControlMethod = MAIN_OldControlMethod;
 }

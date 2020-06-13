@@ -156,7 +156,24 @@ void DRV8353_Init(void) {
     DRV8353_Write(DRVREG_CSA, DRVBIT_CSA_VREFDIV | DRVBIT_CSA_GAIN_0);
     Delay(5);
 
-    // No need to set the final register, auto-calibration is done at startup anyway.
+    // Re-run auto calibration.
+    DRV8353_Write(DRVREG_CAL, DRVBIT_CAL_MODE); // Enable auto-calibration mode
+    Delay(5);
+    // Run auto-cal for channel A
+    DRV8353_SetCalibration(DRV_CHANNEL_A_CAL);
+    Delay(5);
+    // Run auto-cal for channel B
+    DRV8353_SetCalibration(DRV_CHANNEL_A_CAL);
+    Delay(5);
+    // Run auto-cal for channel C
+    DRV8353_SetCalibration(DRV_CHANNEL_A_CAL);
+    Delay(5);
+    // Reset channel calibrations
+    DRV8353_SetCalibration(0);
+    Delay(5);
+    // Reset back into normal mode
+    DRV8353_Write(DRVREG_CAL, 0); // Disable auto-calibration mode
+    Delay(5);
 }
 
 /**

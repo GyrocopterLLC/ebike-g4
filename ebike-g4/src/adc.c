@@ -254,6 +254,13 @@ void ADC_Init(void) {
     ADC12_COMMON->CCR |= ADC_CCR_DUAL_0;
     ADC345_COMMON->CCR |= ADC_CCR_DUAL_2 | ADC_CCR_DUAL_1;
 
+    // Apply current sensing offsets default value
+    // We don't know what the calibrated zero point is yet, but it should be close
+    // to the middle of the range
+    ADC_SetNull(ADC_IA, (MAXCOUNT+1)/2);
+    ADC_SetNull(ADC_IB, (MAXCOUNT+1)/2);
+    ADC_SetNull(ADC_IC, (MAXCOUNT+1)/2);
+
     // Interrupts - injected end of queue enabled
     ADC1->IER = ADC_IER_JEOSIE;
     NVIC_SetPriority(ADC1_2_IRQn, PRIO_ADC);

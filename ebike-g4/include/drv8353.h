@@ -72,7 +72,7 @@ typedef enum _DRV_VDS_Limit {
     DRV_VDS_Unknown = 99
 } DRV_VDS_Limit;
 
-#define DEFAULT_CSA_GAIN        (20.0f) // Value at restart
+#define DEFAULT_CSA_GAIN        (10.0f) // Value after initializing DRV8353
 
 // Settings for shunt amplifier calibration
 #define DRV_CHANNEL_A_CAL       0x01
@@ -208,6 +208,7 @@ uint8_t DRV8353_SetVDSLimit(DRV_VDS_Limit lmt);
 DRV_VDS_Limit DRV8353_GetVDSLimit(void);
 uint8_t DRV8353_SetGateStrength(uint32_t strength);
 uint32_t DRV8353_GetGateStrength(void);
+void DRV8353_SetCalibration(uint8_t channel);
 
 
 #endif // __SPI_H
