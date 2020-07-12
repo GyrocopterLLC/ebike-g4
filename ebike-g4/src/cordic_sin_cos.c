@@ -57,6 +57,7 @@ void CORDIC_Init(void) {
 
 }
 
+#if(USE_DEFINE_CONVERSIONS == 0)
 int32_t float_to_q31(float input) {
     int32_t retval;
     asm(    "VCVT.S32.F32 %1, %1, #31\n\t"
@@ -76,6 +77,7 @@ float q31_to_float(int32_t input) {
             :);
     return retval;
 }
+#endif
 
 /**
  * @brief  Calculates sin(theta) and cos(theta) using the CORDIC peripheral.
@@ -87,7 +89,11 @@ float q31_to_float(int32_t input) {
 void CORDIC_CalcSinCos(float theta, float* sin, float* cos) {
     int32_t fxd_input, fxd_sin, fxd_cos;
 //    fxd_input = (int32_t) (theta * 2147483648.0f); // Multiply by 0x80000000 = 2147483648
+#if(USE_DEFINE_CONVERSIONS == 1)
+    float_to_q31_def(theta, fxd_input);
+#else
     fxd_input = float_to_q31(theta);
+#endif
 
     CORDIC->WDATA = fxd_input;
 
@@ -97,8 +103,13 @@ void CORDIC_CalcSinCos(float theta, float* sin, float* cos) {
 
 //    *sin = ((float)fxd_sin) / (2147483648.0f);
 //    *cos = ((float)fxd_cos) / (2147483648.0f);
+#if(USE_DEFINE_CONVERSIONS == 1)
+    q31_to_float_def(fxd_sin, sin);
+    q31_to_float_def(fxd_cos, cos);
+#else
     *sin = q31_to_float(fxd_sin);
     *cos = q31_to_float(fxd_cos);
+#endif
 }
 
 /**
@@ -108,7 +119,11 @@ void CORDIC_CalcSinCos(float theta, float* sin, float* cos) {
  */
 void CORDIC_CalcSinCosDeferred(float theta) {
     int32_t fxd_input;
+#if(USE_DEFINE_CONVERSIONS == 1)
+    float_to_q31_def(theta, fxd_input);
+#else
     fxd_input = float_to_q31(theta);
+#endif
 //    fxd_input = (int32_t) (theta * 1073741824.0f); // Multiply by 0x80000000
     CORDIC->WDATA = fxd_input;
 }
@@ -124,8 +139,14 @@ void CORDIC_GetResults(float* sin, float* cos) {
     fxd_sin = CORDIC->RDATA; // Inserts wait states until result is ready
     fxd_cos = CORDIC->RDATA;
 
+#if(USE_DEFINE_CONVERSIONS == 1)
+    q31_to_float_def(fxd_sin, sin);
+    q31_to_float_def(fxd_cos, cos);
+#else
     *sin = q31_to_float(fxd_sin);
     *cos = q31_to_float(fxd_cos);
+#endif
+
 //    *sin = ((float)fxd_sin) / (1073741824.0f);
 //    *cos = ((float)fxd_cos) / (1073741824.0f);
 }

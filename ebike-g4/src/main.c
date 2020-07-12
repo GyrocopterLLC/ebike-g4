@@ -40,6 +40,7 @@ Main_Variables Mvar;
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
+Motor_Settings Msett;
 FOC_StateVariables Mfoc;
 PID_Type Mpid_Id;
 PID_Type Mpid_Iq;
@@ -126,15 +127,25 @@ int main (
 
     LIVE_Init(20000); // Live data streaming will be called at 20kHz
 
-    // Set up internal variables
+    // Set up internal variables and apply defaults
     Mvar.Timestamp = 0u;
     Mvar.Ctrl = &Mctrl;
+    Mctrl.ControlMethod = Control_FOC;
+    Mctrl.ThrottleCommand = 0.0f;
+    Mctrl.state = Motor_Off;
     Mvar.Foc = &Mfoc;
     Mvar.Obv = &Mobv;
     Mvar.Pwm = &Mpwm;
-    Mctrl.ControlMethod = Control_FOC;
+    Mpwm.tA = 0.0f;
+    Mpwm.tB = 0.0f;
+    Mpwm.tC = 0.0f;
+    Mvar.Sett = &Msett;
+    Msett.inv_max_phase_current = (1.0f) / (60.0f);
+    Msett.kv_volts_per_ehz = 60.0f /(( 23.0f) * (7.5f)); // 60 (sec/min) / (polepairs*Kv (V/rpm))
+
     Mfoc.Id_PID = &Mpid_Id;
     Mfoc.Iq_PID = &Mpid_Iq;
+
 
     // Start the watchdog
     WDT_Init();
@@ -227,7 +238,7 @@ void MAIN_MotorISR(void) {
     // but +0.5 to +1.0 is mapped to -1.0 to 0
     float cordic_angle = Mobv.RotorAngle*2.0f;
     if(cordic_angle > 1.0f) cordic_angle = cordic_angle - 2.0f;
-    CORDIC_CalcSinCosDeferred(cordic_angle);
+    CORDIC_CalcSinCosDeferred_Def(cordic_angle);
 
     // All injected ADC should be done by now. Read them in.
     ADC_InjSeqComplete();
@@ -236,7 +247,7 @@ void MAIN_MotorISR(void) {
     Mobv.iC = ADC_GetCurrent(ADC_IC);
 
     // Grab those completed sin/cos values
-    CORDIC_GetResults(&(Mfoc.Sin), &(Mfoc.Cos));
+    CORDIC_GetResults_Def(Mfoc.Sin, Mfoc.Cos);
     // Run the motor depending on the control mode
 
     Motor_Loop(&Mvar);

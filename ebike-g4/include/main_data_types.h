@@ -107,6 +107,8 @@ typedef struct _Motor_Observations {
     float iA;
     float iB;
     float iC;
+    float iAlpha;
+    float iBeta;
     float vA;
     float vB;
     float vC;
@@ -123,15 +125,22 @@ typedef struct _Motor_PWMDuties {
     float tC;
 } Motor_PWMDuties;
 
+typedef struct _Motor_Settings {
+    float inv_max_phase_current;
+    float kv_volts_per_ehz;
+} Motor_Settings;
+
 typedef struct _FOC_StateVariables {
-    float Sin;
-    float Cos;
-    float Clarke_Alpha;
-    float Clarke_Beta;
-    float Park_D;
-    float Park_Q;
-    PID_Type* Id_PID;
-    PID_Type* Iq_PID;
+    float Sin; // sin(motorangle)
+    float Cos; // cos(motorangle)
+    float Clarke_Alpha; // Stationary 2-phase current, aligned on 0 degrees
+    float Clarke_Beta;  // Stationary 2-phase current, aligned on 90 degrees
+    float Park_D; // Rotational current, aligned with rotor
+    float Park_Q; // Rotational current, aligned 90 degrees ahead of rotor
+    float T_Alpha; // Commanded voltage (as percent of battery), aligned on 0 degrees
+    float T_Beta;  // Commanded voltage (as percent of battery), aligned on 90 degrees
+    PID_Type* Id_PID; // Controller for rotor aligned current
+    PID_Type* Iq_PID; // Controller for 90 degree ahead aligned current
 } FOC_StateVariables;
 
 typedef struct _main_variables_type {
@@ -140,6 +149,7 @@ typedef struct _main_variables_type {
     Motor_Observations* Obv;
     Motor_PWMDuties* Pwm;
     FOC_StateVariables* Foc;
+    Motor_Settings* Sett;
 } Main_Variables;
 
 

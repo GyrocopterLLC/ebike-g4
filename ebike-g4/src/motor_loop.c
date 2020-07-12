@@ -27,6 +27,7 @@
  */
 
 #include "main.h"
+#include <math.h>
 
 uint8_t lastHallState = 0;
 Motor_Run_State lastRunState = Motor_Off;
@@ -35,6 +36,9 @@ void Motor_Loop(Main_Variables* mvar) {
     float throttle = mvar->Ctrl->ThrottleCommand;
     FOC_StateVariables* foc = mvar->Foc;
     Motor_PWMDuties* pwm = mvar->Pwm;
+    Motor_Observations* obv = mvar->Obv;
+    Motor_Controls* ctrl = mvar->Ctrl;
+    Motor_Settings* sett = mvar->Sett;
 
 
     if(mvar->Ctrl->state == Motor_Sine) {
@@ -45,6 +49,61 @@ void Motor_Loop(Main_Variables* mvar) {
         }
         FOC_Ipark(0.0f, throttle, foc->Sin, foc->Cos, &(foc->Clarke_Alpha), &(foc->Clarke_Beta));
         FOC_SVM(foc->Clarke_Alpha, foc->Clarke_Beta, &(pwm->tA), &(pwm->tB), &(pwm->tC));
+    }
+    else if(mvar->Ctrl->state == Motor_FOC) {
+        if(lastRunState != Motor_FOC) {
+            PHASE_A_PWM();
+            PHASE_B_PWM();
+            PHASE_C_PWM();
+        }
+        // --- Determine rotational phase current (Phase D/Q) ---
+        // The current with the highest on time will be ignored. The current sensors are on the low-side, so
+        // when the high side is turned on fully the measured current will be incorrect.
+        // But since the three currents always sum to zero (iA + iB + iC = 0), it's easy to calculate one current
+        // if you have the other two.
+        float mincurrentA, mincurrentB;
+
+        if(((pwm->tA) > (pwm->tB)) && ((pwm->tA) > (pwm->tC))) {
+                // Duty cycle on A is the highest, use B and C
+                mincurrentA = -(obv->iB) - (obv->iC);
+                mincurrentB = obv->iB;
+        } else if(((pwm->tB) > (pwm->tA)) && ((pwm->tB) > (pwm->tC))) {
+            // Duty cycle B is biggest, use A and C
+            mincurrentA = obv->iA;
+            mincurrentB = -(obv->iA) - (obv->iC);
+        } else {
+            // Duty cycle C is biggest, use A and B
+            mincurrentA = obv->iA;
+            mincurrentB = obv->iB;
+        }
+
+        // Perform 3-phase to 2-phase conversion (Clarke)
+        FOC_Clarke(mincurrentA, mincurrentB, &(foc->Clarke_Alpha), &(foc->Clarke_Beta));
+        // Perform stationary to rotational conversion (Park)
+        FOC_Park(foc->Clarke_Alpha, foc->Clarke_Beta, foc->Sin, foc->Cos, &(foc->Park_D), &(foc->Park_Q));
+        // --- Proportional-integral-derivative (PID) controller ---
+        // Error signals are normalized to 1.0. This allows us to use the same
+        // PID gains regardless of current scaling.
+        foc->Id_PID->Err = 0.0f
+                - ((foc->Park_D) * (sett->inv_max_phase_current));
+        foc->Iq_PID->Err = ctrl->ThrottleCommand
+                - ((foc->Park_Q) * (sett->inv_max_phase_current));
+        // Perform the PID control loop
+        FOC_PIDcalc(foc->Id_PID);
+        FOC_PIDcalc(foc->Iq_PID);
+        // Convert back to stationary phase (inverse Park)
+        FOC_Ipark(foc->Id_PID->Out, foc->Iq_PID->Out, foc->Sin, foc->Cos, &(foc->T_Alpha), &(foc->T_Beta));
+        // Saturate inputs to unit-length vector
+        // Is magnitude of ipark greater than 1?
+        if ((((foc->T_Alpha) * (foc->T_Alpha)) + ((foc->T_Beta) * (foc->T_Beta))) > 1.0f) {
+            // Trim by scaling by 1.0 / mag(ipark)
+            float inv_mag_ipark = 1.0f
+                    / sqrtf(((foc->T_Alpha) * (foc->T_Alpha)) + ((foc->T_Beta) * (foc->T_Beta)));
+            foc->T_Alpha = (foc->T_Alpha) * inv_mag_ipark;
+            foc->T_Beta = (foc->T_Beta) * inv_mag_ipark;
+        }
+
+        FOC_SVM(foc->T_Alpha, foc->T_Beta, &(pwm->tA), &(pwm->tB), &(pwm->tC));
     }
     else if(mvar->Ctrl->state == Motor_Debug) {
         if(lastRunState != Motor_Debug) {
