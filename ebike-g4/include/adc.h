@@ -120,7 +120,6 @@ typedef struct _config_adc {
     float Thermistor_Fixed_R;
     float Thermistor_R25;
     float Thermistor_Beta;
-    float Inverse_Therm_Beta;
 } Config_ADC;
 
 typedef enum {

@@ -309,7 +309,7 @@ typedef enum _data_type {
 #define MAX_LIVE_OUTPUTS            (10)
 #define MAX_LIVE_SPEED_CHOICES      (6)  // 0: 50Hz, 1: 100Hz, 2: 200Hz, 3: 500Hz, 4: 1kHz, 5: 5kHz
 //Debugging outputs
-#define MAX_LIVE_DATA_CHOICES       (20)
+#define MAX_LIVE_DATA_CHOICES       (21)
 #define LIVE_CHOICE_UNUSED          (0)
 #define LIVE_CHOICE_IA              (1)
 #define LIVE_CHOICE_IB              (2)
@@ -330,7 +330,8 @@ typedef enum _data_type {
 #define LIVE_CHOICE_VA              (17)
 #define LIVE_CHOICE_VB              (18)
 #define LIVE_CHOICE_VC              (19)
-#define LIVE_CHOICE_ERRORCODE       (20)
+#define LIVE_CHOICE_FTEMP           (20)
+#define LIVE_CHOICE_ERRORCODE       (21)
 
 
 #endif /* PROJECT_PARAMETERS_H_ */

@@ -34,7 +34,10 @@ uint16_t VirtAddVarTab[TOTAL_EE_VARS];
 
 #define MAIN_FLAG_CAL_PERFORMED         (0x00000001u)
 #define MAIN_FLAG_CAL_IN_PROGRESS       (0x00000002u)
+#define MAIN_FLAG_DO_TEMP_CONVERSION    (0x00000004u)
 uint32_t MAIN_Flags=0;
+
+#define TEMP_CONVERSION_RATE_MS         (200) // Temperature conversion 5x per second (200ms)
 
 Main_Variables Mvar;
 Motor_Controls Mctrl;
@@ -162,12 +165,18 @@ int main (
                 MAIN_StartCalibrateCurrentSensors();
             }
         }
+
+        if((MAIN_Flags & MAIN_FLAG_DO_TEMP_CONVERSION) == MAIN_FLAG_DO_TEMP_CONVERSION) {
+            MAIN_Flags &= ~(MAIN_FLAG_DO_TEMP_CONVERSION);
+            Mobv.FetTemperature = ADC_GetFetTempDegC();
+        }
     }
 }
 
 // Called at 1kHz
 void MAIN_AppTimerISR(void) {
     static uint16_t led_timer = 0;
+    static uint16_t temp_conversion_timer = 0;
     led_timer++;
     if(led_timer == 500) {
         GPIO_Low(LED_PORT, GLED_PIN);
@@ -187,6 +196,13 @@ void MAIN_AppTimerISR(void) {
     // Throttle processing
     THROTTLE_Process();
     Mctrl.ThrottleCommand = THROTTLE_GetCommand();
+
+    // Temperature processing at slower rate
+    temp_conversion_timer++;
+    if(temp_conversion_timer == (TEMP_CONVERSION_RATE_MS - 1)) {
+        temp_conversion_timer = 0;
+        MAIN_Flags |= MAIN_FLAG_DO_TEMP_CONVERSION;
+    }
 
     // Shall we turn the motor?
     if(Mctrl.state == Motor_Off) {
@@ -466,9 +482,11 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
 //    data_packet_pack_float(data, Mpc.BatteryCurrent);
     data_packet_pack_float(data, 0.0f);
     data+=4;
-    data_packet_pack_float(data, ADC_GetVbus());
+//    data_packet_pack_float(data, ADC_GetVbus());
+    data_packet_pack_float(data, Mobv.BusVoltage);
     data+=4;
-    data_packet_pack_float(data, ADC_GetFetTempDegC());
+//    data_packet_pack_float(data, ADC_GetFetTempDegC());
+    data_packet_pack_float(data, Mobv.FetTemperature);
     data+=4;
 //    data_packet_pack_float(data, g_MotorTemp);
     data_packet_pack_float(data, 0.0f);

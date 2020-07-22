@@ -116,6 +116,7 @@ typedef struct _Motor_Observations {
     float RotorAngle;
     float RotorSpeed_eHz;
     float RotorAccel_eHzps;
+    float FetTemperature;
     uint8_t HallState;
 } Motor_Observations;
 
