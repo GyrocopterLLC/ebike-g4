@@ -97,8 +97,8 @@ int main (
     EE_Init(VirtAddVarTab);
 
     // Initialize peripherals
-    ADC_Init();
     CORDIC_Init();
+    ADC_Init();
     CRC_Init();
     DRV8353_Init();
     PWM_Init(DFLT_FOC_PWM_FREQ);

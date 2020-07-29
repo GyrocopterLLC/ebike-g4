@@ -37,6 +37,9 @@ uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[NUM_CUR_CH];
 float adc_vref;
 
+// Filters
+Biquad_Type adc_fet_filter;
+
 Config_ADC config_adc;
 
 static void ADC_Enable(ADC_TypeDef* adc);
@@ -141,6 +144,8 @@ void ADC_Init(void) {
     // Measure and store VREF by converting Vrefint
     ADC_CalcVref();
 
+    // Initialize filters
+    FOC_BiquadLPF(&adc_fet_filter, ((float)DFLT_FOC_PWM_FREQ), 20.0f, 0.707f);
 
     // CFGR settings:   JQDIS = 1 (queue is disabled for injected conversions)
     //                  DMAEN = 1 (DMA is enabled to generate DMA requests)
@@ -380,6 +385,10 @@ void ADC_RegSeqComplete(void) {
     adc_conv[ADC_VA] = adc2_raw_regular_results[0];
     adc_conv[ADC_VB] = adc2_raw_regular_results[2];
     adc_conv[ADC_VC] = adc3_raw_regular_results[0];
+
+    // Apply filters
+    adc_fet_filter.X = (float)adc_conv[ADC_FTEMP];
+    FOC_BiquadCalc(&adc_fet_filter);
 }
 
 /**
@@ -474,7 +483,7 @@ float ADC_GetFetTempDegC(void) {
     // Rt = Rf*(1-adc)/adc, which simplifies to Rf*(1/adc - 1)
     
     // Convert 12-bit to float
-    float temp = ((float) adc_conv[ADC_FTEMP]) / MAXCOUNTF;
+    float temp = (adc_fet_filter.Y) / MAXCOUNTF;
     // Calculate resistance
 //    temp = TEMP_FIXED_RESISTOR * (1.0f/temp - 1.0f);
     temp = config_adc.Thermistor_Fixed_R * (1.0f/temp - 1.0f);
