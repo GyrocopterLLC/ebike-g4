@@ -30,23 +30,37 @@
 #include <string.h>
 #include <stdio.h>
 
-#define DBG_USB_BUF_LEN 128
-
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
-uint32_t DBG_Flags=0;
-uint8_t DBG_Usb_Buffer[DBG_USB_BUF_LEN];
+
+#define MAIN_FLAG_CAL_PERFORMED         (0x00000001u)
+#define MAIN_FLAG_CAL_IN_PROGRESS       (0x00000002u)
+#define MAIN_FLAG_DO_TEMP_CONVERSION    (0x00000004u)
+uint32_t MAIN_Flags=0;
+
+#define TEMP_CONVERSION_RATE_MS         (200) // Temperature conversion 5x per second (200ms)
 
 Main_Variables Mvar;
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
+Motor_Settings Msett;
 FOC_StateVariables Mfoc;
 PID_Type Mpid_Id;
 PID_Type Mpid_Iq;
 
+// Calibration variables
+uint32_t MAIN_CalCounter;
+Main_Control_Methods MAIN_OldControlMethod;
+#define MAIN_CAL_NUM_SAMPLES            (1024u)
+uint32_t MAIN_CalASum;
+uint32_t MAIN_CalBSum;
+uint32_t MAIN_CalCSum;
+
 static void MAIN_InitializeClocks(void);
 static void MAIN_CheckBootloader(void);
 static void MAIN_StartAppTimer(void);
+static void MAIN_StartCalibrateCurrentSensors(void);
+static void MAIN_FinishCalibrateCurrentSensors(void);
 
 int main (
         __attribute__((unused)) int argc,
@@ -83,8 +97,8 @@ int main (
     EE_Init(VirtAddVarTab);
 
     // Initialize peripherals
-    ADC_Init();
     CORDIC_Init();
+    ADC_Init();
     CRC_Init();
     DRV8353_Init();
     PWM_Init(DFLT_FOC_PWM_FREQ);
@@ -116,15 +130,25 @@ int main (
 
     LIVE_Init(20000); // Live data streaming will be called at 20kHz
 
-    // Set up internal variables
+    // Set up internal variables and apply defaults
     Mvar.Timestamp = 0u;
     Mvar.Ctrl = &Mctrl;
+    Mctrl.ControlMethod = Control_FOC;
+    Mctrl.ThrottleCommand = 0.0f;
+    Mctrl.state = Motor_Off;
     Mvar.Foc = &Mfoc;
     Mvar.Obv = &Mobv;
     Mvar.Pwm = &Mpwm;
-    Mctrl.ControlMethod = Control_FOC;
+    Mpwm.tA = 0.0f;
+    Mpwm.tB = 0.0f;
+    Mpwm.tC = 0.0f;
+    Mvar.Sett = &Msett;
+    Msett.inv_max_phase_current = (1.0f) / (60.0f);
+    Msett.kv_volts_per_ehz = 60.0f /(( 23.0f) * (7.5f)); // 60 (sec/min) / (polepairs*Kv (V/rpm))
+
     Mfoc.Id_PID = &Mpid_Id;
     Mfoc.Iq_PID = &Mpid_Iq;
+
 
     // Start the watchdog
     WDT_Init();
@@ -135,12 +159,24 @@ int main (
 
         USB_Data_Comm_OneByte_Check();
         LIVE_SendPacket(); // Will only send when ready to do so
+
+        if((MAIN_Flags & MAIN_FLAG_CAL_PERFORMED ) == 0) {
+            if((MAIN_Flags & MAIN_FLAG_CAL_IN_PROGRESS) == 0) {
+                MAIN_StartCalibrateCurrentSensors();
+            }
+        }
+
+        if((MAIN_Flags & MAIN_FLAG_DO_TEMP_CONVERSION) == MAIN_FLAG_DO_TEMP_CONVERSION) {
+            MAIN_Flags &= ~(MAIN_FLAG_DO_TEMP_CONVERSION);
+            Mobv.FetTemperature = ADC_GetFetTempDegC();
+        }
     }
 }
 
 // Called at 1kHz
 void MAIN_AppTimerISR(void) {
     static uint16_t led_timer = 0;
+    static uint16_t temp_conversion_timer = 0;
     led_timer++;
     if(led_timer == 500) {
         GPIO_Low(LED_PORT, GLED_PIN);
@@ -160,6 +196,13 @@ void MAIN_AppTimerISR(void) {
     // Throttle processing
     THROTTLE_Process();
     Mctrl.ThrottleCommand = THROTTLE_GetCommand();
+
+    // Temperature processing at slower rate
+    temp_conversion_timer++;
+    if(temp_conversion_timer == (TEMP_CONVERSION_RATE_MS - 1)) {
+        temp_conversion_timer = 0;
+        MAIN_Flags |= MAIN_FLAG_DO_TEMP_CONVERSION;
+    }
 
     // Shall we turn the motor?
     if(Mctrl.state == Motor_Off) {
@@ -206,13 +249,12 @@ void MAIN_MotorISR(void) {
     Mobv.RotorAccel_eHzps = HALL_GetAccelerationF();
     Mobv.HallState = HALL_GetState();
     // Calculate the Sin/Cos using CORDIC
-    // Convert [0,1] to [-1,1]
+    // Convert [0,1] to [-1,1] ... [0, 2*pi] becomes [-pi, pi]
+    // Zero through +0.5 is doubled so it becomes 0 to +1.0,
+    // but +0.5 to +1.0 is mapped to -1.0 to 0
     float cordic_angle = Mobv.RotorAngle*2.0f;
     if(cordic_angle > 1.0f) cordic_angle = cordic_angle - 2.0f;
-    CORDIC_CalcSinCosDeferred(cordic_angle);
-//    rampangle += 0.00075f; // about 15Hz at 20kHz cycle time
-//    if(rampangle >=1.0f) rampangle -= 1.0f;
-//    CORDIC_CalcSinCosDeferred(rampangle*2.0f-1.0f);
+    CORDIC_CalcSinCosDeferred_Def(cordic_angle);
 
     // All injected ADC should be done by now. Read them in.
     ADC_InjSeqComplete();
@@ -221,12 +263,10 @@ void MAIN_MotorISR(void) {
     Mobv.iC = ADC_GetCurrent(ADC_IC);
 
     // Grab those completed sin/cos values
-    CORDIC_GetResults(&(Mfoc.Sin), &(Mfoc.Cos));
+    CORDIC_GetResults_Def(Mfoc.Sin, Mfoc.Cos);
     // Run the motor depending on the control mode
 
     Motor_Loop(&Mvar);
-//    FOC_Ipark(0.0f, Mctrl.ThrottleCommand, Mfoc.Sin, Mfoc.Cos, &(Mfoc.Clarke_Alpha), &(Mfoc.Clarke_Beta));
-//    FOC_SVM(Mfoc.Clarke_Alpha, Mfoc.Clarke_Beta, &(Mpwm.tA), &(Mpwm.tB), &(Mpwm.tC));
     // Show Ta and Tb on the DAC outputs
     dac1 = (uint16_t)(65535.0f*Mpwm.tA);
     dac2 = (uint16_t)(65535.0f*Mpwm.tB);
@@ -237,6 +277,18 @@ void MAIN_MotorISR(void) {
 
     // Output live data if it's enabled
     LIVE_AssemblePacket(&Mvar);
+
+    // Current calibration if its in progress
+    if((MAIN_Flags & MAIN_FLAG_CAL_IN_PROGRESS) != 0) {
+        if(MAIN_CalCounter < MAIN_CAL_NUM_SAMPLES) {
+            MAIN_CalASum += ADC_Raw(ADC_IA);
+            MAIN_CalBSum += ADC_Raw(ADC_IB);
+            MAIN_CalCSum += ADC_Raw(ADC_IC);
+            MAIN_CalCounter++;
+        } else {
+            MAIN_FinishCalibrateCurrentSensors();
+        }
+    }
 }
 
 
@@ -430,9 +482,11 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
 //    data_packet_pack_float(data, Mpc.BatteryCurrent);
     data_packet_pack_float(data, 0.0f);
     data+=4;
-    data_packet_pack_float(data, ADC_GetVbus());
+//    data_packet_pack_float(data, ADC_GetVbus());
+    data_packet_pack_float(data, Mobv.BusVoltage);
     data+=4;
-    data_packet_pack_float(data, ADC_GetFetTempDegC());
+//    data_packet_pack_float(data, ADC_GetFetTempDegC());
+    data_packet_pack_float(data, Mobv.FetTemperature);
     data+=4;
 //    data_packet_pack_float(data, g_MotorTemp);
     data_packet_pack_float(data, 0.0f);
@@ -441,4 +495,30 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
     data_packet_pack_32b(data, 0);
 
     return RETVAL_OK;
+}
+
+static void MAIN_StartCalibrateCurrentSensors(void) {
+    // Only do if not rotating
+    if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)) {
+        MAIN_Flags |= MAIN_FLAG_CAL_IN_PROGRESS;
+        MAIN_OldControlMethod = Mctrl.ControlMethod;
+        Mctrl.ControlMethod = Control_None;
+        MAIN_CalCounter = 0;
+        MAIN_CalASum = 0;
+        MAIN_CalBSum = 0;
+        MAIN_CalCSum = 0;
+        // Set manual DC calibration modes on the current sensors
+        DRV8353_SetCalibration(DRV_CHANNEL_A_CAL|DRV_CHANNEL_B_CAL|DRV_CHANNEL_C_CAL);
+    }
+}
+
+static void MAIN_FinishCalibrateCurrentSensors(void) {
+    // Disable the calibration modes
+    DRV8353_SetCalibration(0);
+    ADC_SetNull(ADC_IA, MAIN_CalASum / MAIN_CAL_NUM_SAMPLES);
+    ADC_SetNull(ADC_IB, MAIN_CalBSum / MAIN_CAL_NUM_SAMPLES);
+    ADC_SetNull(ADC_IC, MAIN_CalCSum / MAIN_CAL_NUM_SAMPLES);
+    MAIN_Flags |= MAIN_FLAG_CAL_PERFORMED;
+    MAIN_Flags &= ~(MAIN_FLAG_CAL_IN_PROGRESS);
+    Mctrl.ControlMethod = MAIN_OldControlMethod;
 }

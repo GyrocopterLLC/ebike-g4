@@ -192,26 +192,20 @@ typedef enum _data_type {
 // Average for Hall5:   0.5695991808285853
 // Average for Hall6:   0.22008453124588417
 
-// Trapezoidal patterns:
-// A+/C- ==> 30
-// B+/C- ==> 90
-// B+/A- ==> 150
-// C+/A- ==> 210
-// C+/B- ==> 270
-// A+/B- ==> 330
-// State 2: 0 to 60 degrees - apply B+/A- (150), leads rotor by 150-0=150 to 150-60=90
-// State 6: 60 to 120 degrees - apply C+/A- (210), leads by 210-60=150 to 210-120=90
-// State 4: 120 to 180 degrees - apply C+/B- (270), leads by 270-120=150 to 270-180=90
-// State 5: 180 to 240 degrees - apply A+/B- (330), leads by 330-180=150 to 330-240=90
-// State 1: 240 to 300 degrees - apply A+/C- (30), leads by (360+30)-240=150 to (360+30)-300=90
-// State 3: 300 to 0/360 degrees - apply B+/C- (90), leads by (360+90)-300=150 to 90-0=90
-
-#define DFLT_MOTOR_HALL1            (0.743786f)
-#define DFLT_MOTOR_HALL2            (0.089677f)
-#define DFLT_MOTOR_HALL3            (0.905861f)
-#define DFLT_MOTOR_HALL4            (0.412525f)
-#define DFLT_MOTOR_HALL5            (0.593083f)
-#define DFLT_MOTOR_HALL6            (0.240492f)
+// Previous version
+//#define DFLT_MOTOR_HALL1            (0.743786f)
+//#define DFLT_MOTOR_HALL2            (0.089677f)
+//#define DFLT_MOTOR_HALL3            (0.905861f)
+//#define DFLT_MOTOR_HALL4            (0.412525f)
+//#define DFLT_MOTOR_HALL5            (0.593083f)
+//#define DFLT_MOTOR_HALL6            (0.240492f)
+// New version
+#define DFLT_MOTOR_HALL1            (0.721090f)
+#define DFLT_MOTOR_HALL2            (0.0691474f)
+#define DFLT_MOTOR_HALL3            (0.896364f)
+#define DFLT_MOTOR_HALL4            (0.396317f)
+#define DFLT_MOTOR_HALL5            (0.569599f)
+#define DFLT_MOTOR_HALL6            (0.220085f)
 #define DFLT_MOTOR_POLEPAIRS        (23)
 #define DFLT_MOTOR_GEAR_RATIO       (1.0f) // Direct drive
 #define DFLT_MOTOR_WHEEL_SIZE       (700.28f) // 700C-40 according to www.cateye.com tire size chart
@@ -315,7 +309,7 @@ typedef enum _data_type {
 #define MAX_LIVE_OUTPUTS            (10)
 #define MAX_LIVE_SPEED_CHOICES      (6)  // 0: 50Hz, 1: 100Hz, 2: 200Hz, 3: 500Hz, 4: 1kHz, 5: 5kHz
 //Debugging outputs
-#define MAX_LIVE_DATA_CHOICES       (20)
+#define MAX_LIVE_DATA_CHOICES       (21)
 #define LIVE_CHOICE_UNUSED          (0)
 #define LIVE_CHOICE_IA              (1)
 #define LIVE_CHOICE_IB              (2)
@@ -336,7 +330,8 @@ typedef enum _data_type {
 #define LIVE_CHOICE_VA              (17)
 #define LIVE_CHOICE_VB              (18)
 #define LIVE_CHOICE_VC              (19)
-#define LIVE_CHOICE_ERRORCODE       (20)
+#define LIVE_CHOICE_FTEMP           (20)
+#define LIVE_CHOICE_ERRORCODE       (21)
 
 
 #endif /* PROJECT_PARAMETERS_H_ */

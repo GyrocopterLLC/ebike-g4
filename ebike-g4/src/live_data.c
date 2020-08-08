@@ -132,6 +132,9 @@ void LIVE_AssemblePacket(Main_Variables* mvar) {
                     case LIVE_CHOICE_VC:
                         temp_data = mvar->Obv->vC;
                         break;
+                    case LIVE_CHOICE_FTEMP:
+                        temp_data = mvar->Obv->FetTemperature;
+                        break;
                     case LIVE_CHOICE_ERRORCODE:
                         temp_data = 0.0f;
                         break;
@@ -210,7 +213,7 @@ uint8_t LIVE_SetOutput(uint8_t whichOutput, uint16_t newSetting) {
 }
 
 uint16_t LIVE_GetOutput(uint8_t whichOutput) {
-    if( whichOutput <= MAX_LIVE_OUTPUTS ) {
+    if( whichOutput < MAX_LIVE_OUTPUTS ) {
         return lconf.Choices[whichOutput];
     }
     return 0xFFFFu;

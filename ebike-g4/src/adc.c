@@ -37,6 +37,9 @@ uint16_t adc_conv[NUM_ADC_CH];
 uint16_t adc_current_null[NUM_CUR_CH];
 float adc_vref;
 
+// Filters
+Biquad_Type adc_fet_filter;
+
 Config_ADC config_adc;
 
 static void ADC_Enable(ADC_TypeDef* adc);
@@ -141,6 +144,8 @@ void ADC_Init(void) {
     // Measure and store VREF by converting Vrefint
     ADC_CalcVref();
 
+    // Initialize filters
+    FOC_BiquadLPF(&adc_fet_filter, ((float)DFLT_FOC_PWM_FREQ), 20.0f, 0.707f);
 
     // CFGR settings:   JQDIS = 1 (queue is disabled for injected conversions)
     //                  DMAEN = 1 (DMA is enabled to generate DMA requests)
@@ -253,6 +258,13 @@ void ADC_Init(void) {
     // Setup the ADC common register to enable dual mode.
     ADC12_COMMON->CCR |= ADC_CCR_DUAL_0;
     ADC345_COMMON->CCR |= ADC_CCR_DUAL_2 | ADC_CCR_DUAL_1;
+
+    // Apply current sensing offsets default value
+    // We don't know what the calibrated zero point is yet, but it should be close
+    // to the middle of the range
+    ADC_SetNull(ADC_IA, (MAXCOUNT+1)/2);
+    ADC_SetNull(ADC_IB, (MAXCOUNT+1)/2);
+    ADC_SetNull(ADC_IC, (MAXCOUNT+1)/2);
 
     // Interrupts - injected end of queue enabled
     ADC1->IER = ADC_IER_JEOSIE;
@@ -373,6 +385,10 @@ void ADC_RegSeqComplete(void) {
     adc_conv[ADC_VA] = adc2_raw_regular_results[0];
     adc_conv[ADC_VB] = adc2_raw_regular_results[2];
     adc_conv[ADC_VC] = adc3_raw_regular_results[0];
+
+    // Apply filters
+    adc_fet_filter.X = (float)adc_conv[ADC_FTEMP];
+    FOC_BiquadCalc(&adc_fet_filter);
 }
 
 /**
@@ -467,7 +483,7 @@ float ADC_GetFetTempDegC(void) {
     // Rt = Rf*(1-adc)/adc, which simplifies to Rf*(1/adc - 1)
     
     // Convert 12-bit to float
-    float temp = ((float) adc_conv[ADC_FTEMP]) / MAXCOUNTF;
+    float temp = (adc_fet_filter.Y) / MAXCOUNTF;
     // Calculate resistance
 //    temp = TEMP_FIXED_RESISTOR * (1.0f/temp - 1.0f);
     temp = config_adc.Thermistor_Fixed_R * (1.0f/temp - 1.0f);
@@ -478,7 +494,7 @@ float ADC_GetFetTempDegC(void) {
     // T2 = 1/(1/T1 - log(Rt1 / Rt2)/beta
     // Where T1 = 25degC = 298.15K, Rt1 = THERM_R25, and beta = THERM_B_VALUE
 //    temp = (1.0f / 298.15f) - logf(THERM_R25 / temp) / THERM_B_VALUE;
-    temp = (1.0f / 298.15f) - logf(config_adc.Thermistor_R25 / temp) * config_adc.Inverse_Therm_Beta;
+    temp = (1.0f / 298.15f) - logf(config_adc.Thermistor_R25 / temp) / config_adc.Thermistor_Beta;
     temp = 1.0f / temp;
     temp -= 273.15f; // Convert from K to degC
 
@@ -523,7 +539,6 @@ float ADC_GetThermR25(void){
 
 uint8_t ADC_SetThermBeta(float new_beta) {
     config_adc.Thermistor_Beta = new_beta;
-    config_adc.Inverse_Therm_Beta = 1.0f / new_beta;
     return RETVAL_OK;
 }
 
@@ -548,6 +563,5 @@ void ADC_LoadVariables(void) {
     config_adc.Thermistor_R25 = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_R25, DFLT_ADC_THERM_R25);
     config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);
     // For convenience
-    config_adc.Inverse_Therm_Beta = 1.0f / config_adc.Thermistor_Beta;
     config_adc.Inverse_TIA_Gain = 1.0f / (DEFAULT_CSA_GAIN * config_adc.Shunt_Resistance);
 }

@@ -144,7 +144,11 @@ void FOC_BiquadLPF(Biquad_Type* biq, float Fs, float f0, float Q) {
     }
     // Calculate the intermediates
     w0 = 2.0f * (f0 / Fs); // Leaving out PI, the CORDIC input is scaled by 1/PI anyway
-    CORDIC_CalcSinCos(w0, &sinw0, &cosw0);
+    // Convert angle from 0->2pi to -pi->+pi
+    if(w0 > 1.0f) w0 = w0 - 2.0f;
+    CORDIC_CalcSinCosDeferred_Def(w0);
+    CORDIC_GetResults_Def(sinw0, cosw0);
+//    CORDIC_CalcSinCos(w0, &sinw0, &cosw0);
     alpha = sinw0 / (2.0f * Q);
 
     // Calculate the filter constants
