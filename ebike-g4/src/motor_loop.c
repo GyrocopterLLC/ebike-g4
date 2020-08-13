@@ -40,8 +40,16 @@ void Motor_Loop(Main_Variables* mvar) {
     Motor_Controls* ctrl = mvar->Ctrl;
     Motor_Settings* sett = mvar->Sett;
 
-
-    if(mvar->Ctrl->state == Motor_Sine) {
+    if(mvar->Ctrl->state == Motor_Off) {
+        // Reset PIDs so there aren't any weird jumps at the next startup
+        FOC_PIDreset(foc->Id_PID);
+        FOC_PIDreset(foc->Iq_PID);
+        // Set PWM duty cycles to zero
+        pwm->tA = 0.0f;
+        pwm->tB = 0.0f;
+        pwm->tC = 0.0f;
+    }
+    else if(mvar->Ctrl->state == Motor_Sine) {
         if(lastRunState != Motor_Sine) {
             PHASE_A_PWM();
             PHASE_B_PWM();

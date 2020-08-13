@@ -253,7 +253,8 @@ typedef enum _data_type {
 /*** Features - toggle on or off ***/
 #define FEATURE_SERIAL_DATA         (0x0001)
 #define FEATURE_BLDC_MODE           (0x0002)
-#define FEATURE_DEBUG_PWM           (0x0003)
+#define FEATURE_SINE_MODE           (0x0003)
+#define FEATURE_DEBUG_PWM           (0x0004)
 
 /*** Dashboard Data Format ***/
 #define DASHBOARD_DATA_LENGTH       (8*4)

@@ -167,8 +167,8 @@ void FOC_PIDdefaults(PID_Type* pid) {
     pid->Ki = DFLT_FOC_KI;
     pid->Kd = DFLT_FOC_KD;
     pid->Kc = DFLT_FOC_KC;
-    pid->OutMin = -1.0f;
-    pid->OutMax = 1.0f;
+    pid->OutMin = -0.99f;
+    pid->OutMax = 0.99f;
     pid->SatErr = 0.0f;
     pid->Out = 0.0f;
     pid->Up1 = 0.0f;

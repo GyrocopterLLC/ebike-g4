@@ -50,6 +50,7 @@ typedef enum _main_limit_type {
 typedef enum _main_control_methods {
     Control_None, // invalid
     Control_BLDC, // six-step (trapezoidal) control
+    Control_Sine, // Sinusoidal outputs, no current feedback
     Control_FOC, // Field oriented control
     Control_Debug // all three PWMs simply follow the throttle
 } Main_Control_Methods;

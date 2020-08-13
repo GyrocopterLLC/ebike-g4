@@ -61,6 +61,7 @@ static void MAIN_CheckBootloader(void);
 static void MAIN_StartAppTimer(void);
 static void MAIN_StartCalibrateCurrentSensors(void);
 static void MAIN_FinishCalibrateCurrentSensors(void);
+static void MAIN_LoadVariables(void);
 
 int main (
         __attribute__((unused)) int argc,
@@ -149,6 +150,9 @@ int main (
     Mfoc.Id_PID = &Mpid_Id;
     Mfoc.Iq_PID = &Mpid_Iq;
 
+    // Load default values
+    MAIN_LoadVariables();
+
 
     // Start the watchdog
     WDT_Init();
@@ -211,8 +215,11 @@ void MAIN_AppTimerISR(void) {
             case Control_BLDC:
                 Mctrl.state = Motor_SixStep;
                 break;
+            case Control_Sine:
+                Mctrl.state = Motor_Sine;
+                break;
             case Control_FOC:
-                Mctrl.state = Motor_Sine; // Todo: change to FOC
+                Mctrl.state = Motor_FOC;
                 break;
             case Control_Debug:
                 Mctrl.state = Motor_Debug;
@@ -228,8 +235,8 @@ void MAIN_AppTimerISR(void) {
         }
     } else {
         if(Mctrl.ThrottleCommand == 0.0f) {
-            Mctrl.state = Motor_Off;
             PWM_MotorOFF();
+            Mctrl.state = Motor_Off;
         }
     }
 }
@@ -521,4 +528,22 @@ static void MAIN_FinishCalibrateCurrentSensors(void) {
     MAIN_Flags |= MAIN_FLAG_CAL_PERFORMED;
     MAIN_Flags &= ~(MAIN_FLAG_CAL_IN_PROGRESS);
     Mctrl.ControlMethod = MAIN_OldControlMethod;
+}
+
+static void MAIN_LoadVariables(void) {
+
+
+    // Initialize PID controllers
+    FOC_PIDdefaults(&Mpid_Id);
+    FOC_PIDdefaults(&Mpid_Iq);
+    // Load saved EEPROM variables
+    Mpid_Id.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, DFLT_FOC_KP);
+    Mpid_Id.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, DFLT_FOC_KI);
+    Mpid_Id.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, DFLT_FOC_KD);
+    Mpid_Id.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, DFLT_FOC_KC);
+    Mpid_Iq.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, DFLT_FOC_KP);
+    Mpid_Iq.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, DFLT_FOC_KI);
+    Mpid_Iq.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, DFLT_FOC_KD);
+    Mpid_Iq.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, DFLT_FOC_KC);
+
 }

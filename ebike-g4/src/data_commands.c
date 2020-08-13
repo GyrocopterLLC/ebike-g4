@@ -540,6 +540,9 @@ uint16_t command_enable_feature(uint8_t* pktdata) {
     case FEATURE_BLDC_MODE:
         errCode = MAIN_SetControlMode(Control_BLDC);
         break;
+    case FEATURE_SINE_MODE:
+        errCode = MAIN_SetControlMode(Control_Sine);
+        break;
     case FEATURE_DEBUG_PWM:
         errCode = MAIN_SetControlMode(Control_Debug);
         break;
@@ -560,8 +563,7 @@ uint16_t command_disable_feature(uint8_t* pktdata) {
         errCode = LIVE_TurnOffData();
         break;
     case FEATURE_BLDC_MODE:
-        errCode = MAIN_SetControlMode(Control_FOC);
-        break;
+    case FEATURE_SINE_MODE:
     case FEATURE_DEBUG_PWM:
         errCode = MAIN_SetControlMode(Control_FOC);
         break;
