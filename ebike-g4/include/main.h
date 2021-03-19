@@ -41,6 +41,7 @@
 #include "foc_lib.h"
 #include "gpio.h"
 #include "hall_sensor.h"
+#include "hbd_data_comm.h"
 #include "live_data.h"
 #include "motor_loop.h"
 #include "periphconfig.h"

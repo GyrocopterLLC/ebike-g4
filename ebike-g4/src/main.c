@@ -112,7 +112,11 @@ int main (
     USB_SetClass(&USB_CDC_ClassDesc, &USB_CDC_ClassCallbacks);
     USB_Start();
 
+    // Enable the USB comms interface
     USB_Data_Comm_Init();
+
+    // Enable the Handlebar Display (HBD) comms interface
+    HBD_Data_Comm_Init();
 
     // LED init
     GPIO_Clk(LED_PORT);
@@ -161,15 +165,18 @@ int main (
     {
         WDT_Feed();
 
-        USB_Data_Comm_OneByte_Check();
-        LIVE_SendPacket(); // Will only send when ready to do so
+        USB_Data_Comm_OneByte_Check(); // USB communication loop - checks for messages
+        HBD_OneByte_Check(); // HBD communication loop - checks for messages
+        LIVE_SendPacket(); // Sends live data packets when ready to do so
 
+        // Calibrate current sensors on startup
         if((MAIN_Flags & MAIN_FLAG_CAL_PERFORMED ) == 0) {
             if((MAIN_Flags & MAIN_FLAG_CAL_IN_PROGRESS) == 0) {
                 MAIN_StartCalibrateCurrentSensors();
             }
         }
 
+        // Periodically measure FET temperature
         if((MAIN_Flags & MAIN_FLAG_DO_TEMP_CONVERSION) == MAIN_FLAG_DO_TEMP_CONVERSION) {
             MAIN_Flags &= ~(MAIN_FLAG_DO_TEMP_CONVERSION);
             Mobv.FetTemperature = ADC_GetFetTempDegC();
