@@ -206,6 +206,7 @@ void MAIN_AppTimerISR(void) {
 
     // Throttle processing
     THROTTLE_Process();
+    Mctrl.RawThrottle = THROTTLE_GetRaw();
     Mctrl.ThrottleCommand = THROTTLE_GetCommand();
 
     // Temperature processing at slower rate
@@ -484,8 +485,8 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
     // RPM = eHz * 60 / polepairs
 //    float rpm_conversion = 60.0f * config_main.inv_pole_pairs;
 
-//    data_packet_pack_float(data, Mctrl.ThrottleCommand);
-    data_packet_pack_float(data, 0.0f);
+    data_packet_pack_float(data, Mctrl.ThrottleCommand);
+//    data_packet_pack_float(data, 0.0f);
     data+=4;
 //    data_packet_pack_float(data, rpm_conversion*HallSensor_Get_Speedf());
     data_packet_pack_float(data, 0.0f);

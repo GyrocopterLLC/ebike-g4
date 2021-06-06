@@ -333,6 +333,7 @@ typedef enum _data_type {
 #define LIVE_CHOICE_VC              (19)
 #define LIVE_CHOICE_FTEMP           (20)
 #define LIVE_CHOICE_ERRORCODE       (21)
+#define LIVE_CHOICE_RAWTHROTTLE     (22)
 
 
 #endif /* PROJECT_PARAMETERS_H_ */

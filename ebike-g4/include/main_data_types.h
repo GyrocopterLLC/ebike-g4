@@ -101,6 +101,7 @@ typedef struct _main_config {
 typedef struct _Motor_Controls {
     Main_Control_Methods ControlMethod;
     Motor_Run_State state;
+    float RawThrottle;
     float ThrottleCommand;
 } Motor_Controls;
 

@@ -136,7 +136,10 @@ void LIVE_AssemblePacket(Main_Variables* mvar) {
                         temp_data = mvar->Obv->FetTemperature;
                         break;
                     case LIVE_CHOICE_ERRORCODE:
-                        temp_data = 0.0f;
+                        temp_data = 0.0f; // Not yet implemented
+                        break;
+                    case LIVE_CHOICE_RAWTHROTTLE:
+                        temp_data = mvar->Ctrl->RawThrottle;
                         break;
                     default:
                         temp_data = 0.0f;

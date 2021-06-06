@@ -43,12 +43,12 @@ void THROTTLE_Init(void) {
 
 void THROTTLE_Process(void) {
     float temp_cmd = 0.0f;
-    float raw_throttle = ADC_GetThrottle();
-    raw_throttle *= sThrottle.resistor_ratio; // The value at the throttle connector, not at the MCU pin
+    sThrottle.raw_voltage = ADC_GetThrottle();
+    sThrottle.raw_voltage *= sThrottle.resistor_ratio; // The value at the throttle connector, not at the MCU pin
     // Perform the startup check
-    if(THROTTLE_DetectStuck(&sAnalogThrottle, raw_throttle)) {
+    if(THROTTLE_DetectStuck(&sAnalogThrottle, sThrottle.raw_voltage)) {
         // Throttle is okay. Or at least it started up okay.
-        Throttle_filt.X = raw_throttle;
+        Throttle_filt.X = sThrottle.raw_voltage;
     } else {
         // Throttle might be stuck on
         // Set input to zero
@@ -144,6 +144,10 @@ static uint8_t THROTTLE_DetectStuck(Throttle_Analog_Type* thr, float thr_in) {
 
 float THROTTLE_GetCommand(void) {
     return sThrottle.throttle_command;
+}
+
+float THROTTLE_GetRaw(void) {
+    return sThrottle.raw_voltage;
 }
 
 /**** Interfacing with UI ****/

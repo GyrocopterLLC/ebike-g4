@@ -28,6 +28,7 @@
 
 typedef struct _throttle_type {
     uint8_t state;
+    float raw_voltage;
     float throttle_command;
     float prev_output;
     float hyst;
@@ -49,7 +50,7 @@ typedef struct _throttle_analog {
 // Duration of time (in throttle ticks - usually 1ms) to wait for throttle to steady out
 #define THR_STARTUP_TIMER_DURATION      (300)
 
-#define THROTTLE_DEFAULTS         { 0, 0.0f, 0.0f, \
+#define THROTTLE_DEFAULTS         { 0, 0.0f, 0.0f, 0.0f, \
                                     DFLT_THRT_HYST, DFLT_THRT_FILT, \
                                     DFLT_THRT_RISE, DFLT_THRT_RATIO}
 #define THROTTLE_ANALOG_DEFAULTS	{0, 0, 0.0f, 0.0f, 1.0f}
@@ -82,6 +83,7 @@ typedef struct _throttle_analog {
 void THROTTLE_Init(void);
 void THROTTLE_Process(void);
 float THROTTLE_GetCommand(void);
+float THROTTLE_GetRaw(void);
 
 uint8_t THROTTLE_SetMin(float thrmin);
 float THROTTLE_GetMin(void);
