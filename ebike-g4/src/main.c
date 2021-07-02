@@ -32,26 +32,30 @@
 
 uint16_t VirtAddVarTab[TOTAL_EE_VARS];
 
-#define MAIN_FLAG_CAL_PERFORMED         (0x00000001u)
-#define MAIN_FLAG_CAL_IN_PROGRESS       (0x00000002u)
-#define MAIN_FLAG_DO_TEMP_CONVERSION    (0x00000004u)
+#define MAIN_FLAG_CAL_PERFORMED         (0x00000001UL)
+#define MAIN_FLAG_CAL_IN_PROGRESS       (0x00000002UL)
+#define MAIN_FLAG_DO_TEMP_CONVERSION    (0x00000004UL)
+#define MAIN_FLAG_DO_POWER_CONVERSION   (0x00000008UL)
 uint32_t MAIN_Flags=0;
 
 #define TEMP_CONVERSION_RATE_MS         (200) // Temperature conversion 5x per second (200ms)
+#define POWER_CONVERSION_RATE_MS        (10) // Power conversion 100x per second (10ms)
 
 Main_Variables Mvar;
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
 Motor_Settings Msett;
+Config_Main Mcfg;
 FOC_StateVariables Mfoc;
 PID_Type Mpid_Id;
 PID_Type Mpid_Iq;
+PowerCalcs Mpc;
 
 // Calibration variables
 uint32_t MAIN_CalCounter;
 Main_Control_Methods MAIN_OldControlMethod;
-#define MAIN_CAL_NUM_SAMPLES            (1024u)
+#define MAIN_CAL_NUM_SAMPLES            (1024UL)
 uint32_t MAIN_CalASum;
 uint32_t MAIN_CalBSum;
 uint32_t MAIN_CalCSum;
@@ -88,7 +92,7 @@ int main (
     // priority, lower 4 bits are sub-priority. But the ST implementation of the
     // Cortex M4 only has the upper 4 bits. So this sets 4 bits (16 levels) of
     // preemption, and no sub-priority levels.
-    NVIC_SetPriorityGrouping(0x03u);
+    NVIC_SetPriorityGrouping(0x03UL);
 
     // Start the systick timer for a simple delay timer
     DelayInit();
@@ -133,10 +137,10 @@ int main (
     // Start the app timer
     MAIN_StartAppTimer();
 
-    LIVE_Init(20000); // Live data streaming will be called at 20kHz
+    LIVE_Init(20000UL); // Live data streaming will be called at 20kHz
 
     // Set up internal variables and apply defaults
-    Mvar.Timestamp = 0u;
+    Mvar.Timestamp = 0UL;
     Mvar.Ctrl = &Mctrl;
     Mctrl.ControlMethod = Control_FOC;
     Mctrl.ThrottleCommand = 0.0f;
@@ -181,6 +185,12 @@ int main (
             MAIN_Flags &= ~(MAIN_FLAG_DO_TEMP_CONVERSION);
             Mobv.FetTemperature = ADC_GetFetTempDegC();
         }
+
+        // Periodically calculate power
+        if((MAIN_Flags & MAIN_FLAG_DO_POWER_CONVERSION) == MAIN_FLAG_DO_POWER_CONVERSION) {
+            MAIN_Flags &= ~(MAIN_FLAG_DO_POWER_CONVERSION);
+            power_calc(&Mpc);
+        }
     }
 }
 
@@ -188,6 +198,7 @@ int main (
 void MAIN_AppTimerISR(void) {
     static uint16_t led_timer = 0;
     static uint16_t temp_conversion_timer = 0;
+    static uint16_t power_conversion_timer = 0;
     led_timer++;
     if(led_timer == 500) {
         GPIO_Low(LED_PORT, GLED_PIN);
@@ -211,9 +222,16 @@ void MAIN_AppTimerISR(void) {
 
     // Temperature processing at slower rate
     temp_conversion_timer++;
-    if(temp_conversion_timer == (TEMP_CONVERSION_RATE_MS - 1)) {
+    if(temp_conversion_timer >= (TEMP_CONVERSION_RATE_MS - 1)) {
         temp_conversion_timer = 0;
         MAIN_Flags |= MAIN_FLAG_DO_TEMP_CONVERSION;
+    }
+
+    // Power conversion at slower rate
+    power_conversion_timer++;
+    if(power_conversion_timer >= (POWER_CONVERSION_RATE_MS - 1)) {
+        power_conversion_timer = 0;
+        MAIN_Flags |= MAIN_FLAG_DO_POWER_CONVERSION;
     }
 
     // Shall we turn the motor?
@@ -304,6 +322,14 @@ void MAIN_MotorISR(void) {
             MAIN_FinishCalibrateCurrentSensors();
         }
     }
+
+    // Load up the power calcs structure
+    Mpc.Ta = Mvar.Pwm->tA;
+    Mpc.Tb = Mvar.Pwm->tB;
+    Mpc.Tc = Mvar.Pwm->tC;
+    Mpc.Vbus = Mvar.Obv->BusVoltage;
+    Mpc.Ialpha = Mvar.Obv->iAlpha;
+    Mpc.Ibeta = Mvar.Obv->iBeta;
 }
 
 
@@ -483,24 +509,18 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
 
     // MPH = eHz * wheel circ *3600 / polepairs
     // RPM = eHz * 60 / polepairs
-//    float rpm_conversion = 60.0f * config_main.inv_pole_pairs;
+    float rpm_conversion = 60.0f * Mcfg.inv_pole_pairs;
 
     data_packet_pack_float(data, Mctrl.ThrottleCommand);
-//    data_packet_pack_float(data, 0.0f);
     data+=4;
-//    data_packet_pack_float(data, rpm_conversion*HallSensor_Get_Speedf());
-    data_packet_pack_float(data, 0.0f);
+    data_packet_pack_float(data, rpm_conversion*HALL_GetSpeedF());
     data+=4;
-//    data_packet_pack_float(data, Mpc.PhaseCurrent);
-    data_packet_pack_float(data, 0.0f);
+    data_packet_pack_float(data, Mpc.PhaseCurrent);
     data+=4;
-//    data_packet_pack_float(data, Mpc.BatteryCurrent);
-    data_packet_pack_float(data, 0.0f);
+    data_packet_pack_float(data, Mpc.BatteryCurrent);
     data+=4;
-//    data_packet_pack_float(data, ADC_GetVbus());
     data_packet_pack_float(data, Mobv.BusVoltage);
     data+=4;
-//    data_packet_pack_float(data, ADC_GetFetTempDegC());
     data_packet_pack_float(data, Mobv.FetTemperature);
     data+=4;
 //    data_packet_pack_float(data, g_MotorTemp);
@@ -544,7 +564,7 @@ static void MAIN_LoadVariables(void) {
     // Initialize PID controllers
     FOC_PIDdefaults(&Mpid_Id);
     FOC_PIDdefaults(&Mpid_Iq);
-    // Load saved EEPROM variables
+    // Load saved EEPROM variables for PID
     Mpid_Id.Kp = EE_ReadFloatWithDefault(CONFIG_FOC_KP, DFLT_FOC_KP);
     Mpid_Id.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, DFLT_FOC_KI);
     Mpid_Id.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, DFLT_FOC_KD);
@@ -553,5 +573,17 @@ static void MAIN_LoadVariables(void) {
     Mpid_Iq.Ki = EE_ReadFloatWithDefault(CONFIG_FOC_KI, DFLT_FOC_KI);
     Mpid_Iq.Kd = EE_ReadFloatWithDefault(CONFIG_FOC_KD, DFLT_FOC_KD);
     Mpid_Iq.Kc = EE_ReadFloatWithDefault(CONFIG_FOC_KC, DFLT_FOC_KC);
+
+    // Load saved EEPROM for custom ebike parameters
+    Mcfg.WheelSizeMM = EE_ReadFloatWithDefault(CONFIG_MOTOR_WHEEL_SIZE,
+                DFLT_MOTOR_WHEEL_SIZE);
+    Mcfg.GearRatio = EE_ReadFloatWithDefault(CONFIG_MOTOR_GEAR_RATIO,
+                DFLT_MOTOR_GEAR_RATIO);
+    Mcfg.MotorKv = EE_ReadFloatWithDefault(CONFIG_MOTOR_KV,
+                DFLT_MOTOR_KV);
+    Mcfg.MotorPolePairs = EE_ReadInt16WithDefault(CONFIG_MOTOR_POLEPAIRS,
+                DFLT_MOTOR_POLEPAIRS);
+    // Derived constants
+    Mcfg.inv_pole_pairs = 1.0f / ((float)Mcfg.MotorPolePairs);
 
 }

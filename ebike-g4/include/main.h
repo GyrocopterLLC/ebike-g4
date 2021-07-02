@@ -47,6 +47,7 @@
 #include "periphconfig.h"
 #include "pinconfig.h"
 #include "project_parameters.h"
+#include "power_calcs.h"
 #include "pwm.h"
 #include "throttle.h"
 #include "uart.h"

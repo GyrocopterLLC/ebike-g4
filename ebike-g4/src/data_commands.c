@@ -27,9 +27,9 @@
  */
 
 #include "main.h"
+#include "ram_commands.h"
 
 static Data_Type command_get_datatype(uint16_t data_ID);
-
 /**
  * @brief  Data Process Command
  *              Interprets the command in a decoded packet. Calls the appropriate

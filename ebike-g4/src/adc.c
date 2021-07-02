@@ -519,6 +519,15 @@ float ADC_GetVbusRatio(void) {
     return config_adc.Vbus_Ratio;
 }
 
+uint8_t ADC_SetVphaseRatio(float new_ratio) {
+    config_adc.Vphase_Ratio = new_ratio;
+    return RETVAL_OK;
+}
+
+float ADC_GetVphaseRatio(void) {
+    return config_adc.Vphase_Ratio;
+}
+
 uint8_t ADC_SetThermFixedR(float new_fixed_r) {
     config_adc.Thermistor_Fixed_R = new_fixed_r;
     return RETVAL_OK;
@@ -546,7 +555,6 @@ float ADC_GetThermBeta(void) {
     return config_adc.Thermistor_Beta;
 }
 
-
 void ADC_SaveVariables(void) {
     EE_SaveFloat(CONFIG_ADC_RSHUNT, config_adc.Shunt_Resistance);
     EE_SaveFloat(CONFIG_ADC_VBUS_RATIO, config_adc.Vbus_Ratio);
@@ -564,4 +572,65 @@ void ADC_LoadVariables(void) {
     config_adc.Thermistor_Beta = EE_ReadFloatWithDefault(CONFIG_ADC_THERM_B, DFLT_ADC_THERM_B);
     // For convenience
     config_adc.Inverse_TIA_Gain = 1.0f / (DEFAULT_CSA_GAIN * config_adc.Shunt_Resistance);
+}
+
+// ui versions of commands. all parameters use uint8_t pointers
+uint8_t uiADC_SetRShunt(uint8_t* valptr) {
+    config_adc.Shunt_Resistance = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetRShunt(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Shunt_Resistance);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_SetVbusRatio(uint8_t* valptr) {
+    config_adc.Vbus_Ratio = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetVbusRatio(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Vbus_Ratio);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_SetVphaseRatio(uint8_t* valptr) {
+    config_adc.Vphase_Ratio = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetVphaseRatio(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Vphase_Ratio);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_SetThermFixedR(uint8_t* valptr) {
+    config_adc.Thermistor_Fixed_R = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetThermFixedR(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Thermistor_Fixed_R);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_SetThermR25(uint8_t* valptr) {
+    config_adc.Thermistor_R25 = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetThermR25(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Thermistor_R25);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_SetThermBeta(uint8_t* valptr) {
+    config_adc.Thermistor_Beta = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiADC_GetThermBeta(uint8_t* valptr) {
+    data_packet_pack_float(valptr, config_adc.Thermistor_Beta);
+    return DATA_PACKET_SUCCESS;
 }

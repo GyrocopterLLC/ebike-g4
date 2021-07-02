@@ -153,6 +153,8 @@ uint8_t ADC_SetRShunt(float new_rshunt);
 float ADC_GetRShunt(void);
 uint8_t ADC_SetVbusRatio(float new_ratio);
 float ADC_GetVbusRatio(void);
+uint8_t ADC_SetVphaseRatio(float new_ratio);
+float ADC_GetVphaseRatio(void);
 uint8_t ADC_SetThermFixedR(float new_fixed_r);
 float ADC_GetThermFixedR(void);
 uint8_t ADC_SetThermR25(float new_r25);
@@ -162,5 +164,18 @@ float ADC_GetThermBeta(void);
 
 void ADC_SaveVariables(void);
 void ADC_LoadVariables(void);
+
+uint8_t uiADC_SetRShunt(uint8_t* valptr);
+uint8_t uiADC_GetRShunt(uint8_t* valptr);
+uint8_t uiADC_SetVbusRatio(uint8_t* valptr);
+uint8_t uiADC_GetVbusRatio(uint8_t* valptr);
+uint8_t uiADC_SetVphaseRatio(uint8_t* valptr);
+uint8_t uiADC_GetVphaseRatio(uint8_t* valptr);
+uint8_t uiADC_SetThermFixedR(uint8_t* valptr);
+uint8_t uiADC_GetThermFixedR(uint8_t* valptr);
+uint8_t uiADC_SetThermR25(uint8_t* valptr);
+uint8_t uiADC_GetThermR25(uint8_t* valptr);
+uint8_t uiADC_SetThermBeta(uint8_t* valptr);
+uint8_t uiADC_GetThermBeta(uint8_t* valptr);
 
 #endif /* ADC_H_ */

@@ -27,6 +27,7 @@
 #define _DATA_PACKET_H_
 
 #include <string.h>
+#include "project_parameters.h"
 
 #define DATA_PACKET_TIMEOUT_MS          50
 
@@ -61,6 +62,14 @@ typedef struct _data_packet {
     uint16_t DataBytesRead; // Ditto
     uint32_t Remote_CRC_32;
 } Data_Packet_Type;
+
+typedef struct _ram_command {
+    uint16_t id;
+    Data_Type dtype;
+    uint8_t is_eeprom_val;
+    uint8_t (*get)(uint8_t*);
+    uint8_t (*set)(uint8_t*);
+} Ram_Command_Type;
 
 #define DATA_PACKET_FAIL        (0)
 #define DATA_PACKET_SUCCESS     (1)

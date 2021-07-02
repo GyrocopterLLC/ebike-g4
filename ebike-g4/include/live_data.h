@@ -57,4 +57,15 @@ uint16_t LIVE_GetNumOutputs(void);
 uint8_t LIVE_SetOutput(uint8_t whichOutput, uint16_t newSetting);
 uint16_t LIVE_GetOutput(uint8_t whichOutput);
 
+uint16_t LIVE_GetOutput0(void);
+uint16_t LIVE_GetOutput1(void);
+uint16_t LIVE_GetOutput2(void);
+uint16_t LIVE_GetOutput3(void);
+uint16_t LIVE_GetOutput4(void);
+uint16_t LIVE_GetOutput5(void);
+uint16_t LIVE_GetOutput6(void);
+uint16_t LIVE_GetOutput7(void);
+uint16_t LIVE_GetOutput8(void);
+uint16_t LIVE_GetOutput9(void);
+
 #endif
