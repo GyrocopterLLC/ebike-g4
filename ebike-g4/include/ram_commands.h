@@ -31,10 +31,10 @@
 //**************  ADC Commands  **************
 
 const Ram_Command_Type ADC_Rshunt = {CONFIG_ADC_RSHUNT,
-                                    Data_Type_Float,
-                                    1,
-                                    uiADC_GetRShunt,
-                                    uiADC_SetRShunt};
+                                Data_Type_Float,
+                                1,
+                                uiADC_GetRShunt,
+                                uiADC_SetRShunt};
 const Ram_Command_Type ADC_VbusRatio = {CONFIG_ADC_VBUS_RATIO,
                                 Data_Type_Float,
                                 1,
@@ -61,7 +61,7 @@ const Ram_Command_Type ADC_ThermB = {CONFIG_ADC_THERM_B,
                                 uiADC_GetThermBeta,
                                 uiADC_SetThermBeta};
 
-#if 0
+
 
 //**************  PWM Commands  **************
 const Ram_Command_Type FOC_Kp = {CONFIG_FOC_KP,
@@ -84,16 +84,18 @@ const Ram_Command_Type FOC_Kc = {CONFIG_FOC_KC,
                                 1,
                                 uiFOC_GetKc,
                                 uiFOC_SetKc};
+
 const Ram_Command_Type FOC_PwmFreq = {CONFIG_FOC_PWM_FREQ,
                                 Data_Type_Int32,
                                 1,
                                 uiFOC_GetPwmFreq,
                                 uiFOC_SetPwmFreq};
-const Ram_Command_Type FOC_Kc = {CONFIG_FOC_PWM_DEADTIME,
+const Ram_Command_Type FOC_PwmDeadtime = {CONFIG_FOC_PWM_DEADTIME,
                                 Data_Type_Int32,
                                 1,
                                 uiFOC_GetPwmDeadtime,
                                 uiFOC_SetPwmDeadtime};
+
 
 //**************  MAIN Commands  **************
 const Ram_Command_Type MAIN_CountsToFoc = {CONFIG_MAIN_COUNTS_TO_FOC,
@@ -113,24 +115,65 @@ const Ram_Command_Type MAIN_SwitchEps = {CONFIG_MAIN_SWITCH_EPS,
                                uiMAIN_SetSwitchEps};
 const Ram_Command_Type MAIN_NumUsbOutputs = {CONFIG_MAIN_NUM_USB_OUTPUTS,
                                Data_Type_Int16,
-                               0,
+                               1,
                                uiMAIN_GetNumUsbOutputs,
                                uiMAIN_SetNumUsbOutputs};
 const Ram_Command_Type MAIN_UsbSpeed = {CONFIG_MAIN_USB_SPEED,
                                Data_Type_Int16,
-                               0,
+                               1,
                                uiMAIN_GetUsbSpeed,
                                uiMAIN_SetUsbSpeed};
-const Ram_Command_Type MAIN_UsbChoiceFirst = {CONFIG_MAIN_USB_CHOICE_1ST,
+const Ram_Command_Type MAIN_UsbChoice1 = {CONFIG_MAIN_USB_CHOICE_1,
                                Data_Type_Int16,
-                               0,
-                               uiMAIN_GetUsbChoiceFirst,
-                               uiMAIN_SetUsbChoiceFirst};
-const Ram_Command_Type MAIN_UsbChoiceNext = {CONFIG_MAIN_USB_CHOICE_NEXT,
+                               1,
+                               uiMAIN_GetUsbChoice1,
+                               uiMAIN_SetUsbChoice1};
+const Ram_Command_Type MAIN_UsbChoice2 = {CONFIG_MAIN_USB_CHOICE_2,
                                Data_Type_Int16,
-                               0,
-                               uiMAIN_GetUsbChoiceNext,
-                               uiMAIN_SetUsbChoiceNext};
+                               1,
+                               uiMAIN_GetUsbChoice2,
+                               uiMAIN_SetUsbChoice2};
+const Ram_Command_Type MAIN_UsbChoice3 = {CONFIG_MAIN_USB_CHOICE_3,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice3,
+                               uiMAIN_SetUsbChoice3};
+const Ram_Command_Type MAIN_UsbChoice4 = {CONFIG_MAIN_USB_CHOICE_4,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice4,
+                               uiMAIN_SetUsbChoice4};
+const Ram_Command_Type MAIN_UsbChoice5 = {CONFIG_MAIN_USB_CHOICE_5,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice5,
+                               uiMAIN_SetUsbChoice5};
+const Ram_Command_Type MAIN_UsbChoice6 = {CONFIG_MAIN_USB_CHOICE_6,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice6,
+                               uiMAIN_SetUsbChoice6};
+const Ram_Command_Type MAIN_UsbChoice7 = {CONFIG_MAIN_USB_CHOICE_7,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice7,
+                               uiMAIN_SetUsbChoice7};
+const Ram_Command_Type MAIN_UsbChoice8 = {CONFIG_MAIN_USB_CHOICE_8,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice8,
+                               uiMAIN_SetUsbChoice8};
+const Ram_Command_Type MAIN_UsbChoice9 = {CONFIG_MAIN_USB_CHOICE_9,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice9,
+                               uiMAIN_SetUsbChoice9};
+const Ram_Command_Type MAIN_UsbChoice10 = {CONFIG_MAIN_USB_CHOICE_10,
+                               Data_Type_Int16,
+                               1,
+                               uiMAIN_GetUsbChoice10,
+                               uiMAIN_SetUsbChoice10};
+
 
 //**************  Throttle Commands  **************
 const Ram_Command_Type THRT_Min = {CONFIG_THRT_MIN,
@@ -163,7 +206,7 @@ const Ram_Command_Type THRT_Ratio = {CONFIG_THRT_RATIO,
                                1,
                                uiTHRT_GetRatio,
                                uiTHRT_SetRatio};
-
+#if 0
 //**************  Limit Commands  **************
 const Ram_Command_Type LMT_VoltFaultMin = {CONFIG_LMT_VOLT_FAULT_MIN,
                                Data_Type_Float,
@@ -230,7 +273,9 @@ const Ram_Command_Type LMT_MotorTempHardCap = {CONFIG_LMT_MOTOR_TEMP_HARDCAP,
                                1,
                                uiLMT_GetMotorTempHardCap,
                                uiLMT_SetMotorTempHardCap};
+#endif
 
+#if 0
 //**************  Motor Commands  **************
 const Ram_Command_Type MOTOR_Hall1 = {CONFIG_MOTOR_HALL1,
                                Data_Type_Float,
@@ -282,7 +327,7 @@ const Ram_Command_Type MOTOR_Kv = {CONFIG_MOTOR_KV,
                                1,
                                uiMOTOR_GetKv,
                                uiMOTOR_SetKv};
-
+#endif
 //**************  DRV8353 Commands  **************
 const Ram_Command_Type DRV_GateStrength = {CONFIG_DRV_GATE_STRENGTH,
                                Data_Type_Int32,
@@ -299,7 +344,7 @@ const Ram_Command_Type DRV_CsaGain = {CONFIG_DRV_CSA_GAIN,
                                1,
                                uiDRV_GetCsaGain,
                                uiDRV_SetCsaGain};
-
+#if 0
 const Ram_Command_Type* const Ram_Commands[TOTAL_EE_VARS] = {
         &ADC_Rshunt,
         &ADC_VbusRatio,

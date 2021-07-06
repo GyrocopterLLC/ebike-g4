@@ -260,3 +260,58 @@ void THROTTLE_LoadVariables(void) {
             DFLT_THRT_RATIO);
     THROTTLE_SetScale(&sAnalogThrottle);
 }
+
+uint8_t uiTHRT_GetMin(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetMin());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetMin(uint8_t* valptr) {
+    return THROTTLE_SetMin(data_packet_extract_float(valptr));
+}
+
+uint8_t uiTHRT_GetMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetMax());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetMax(uint8_t* valptr) {
+    return THROTTLE_SetMax(data_packet_extract_float(valptr));
+}
+
+uint8_t uiTHRT_GetHyst(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetHyst());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetHyst(uint8_t* valptr) {
+    return THROTTLE_SetHyst(data_packet_extract_float(valptr));
+}
+
+uint8_t uiTHRT_GetFilt(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetFilt());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetFilt(uint8_t* valptr) {
+    return THROTTLE_SetFilt(data_packet_extract_float(valptr));
+}
+
+uint8_t uiTHRT_GetRise(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetRise());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetRise(uint8_t* valptr) {
+    return THROTTLE_SetRise(data_packet_extract_float(valptr));
+}
+
+uint8_t uiTHRT_GetRatio(uint8_t* valptr) {
+    data_packet_pack_float(valptr, THROTTLE_GetRatio());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiTHRT_SetRatio(uint8_t* valptr) {
+    return THROTTLE_SetRatio(data_packet_extract_float(valptr));
+}
+

@@ -210,5 +210,12 @@ uint8_t DRV8353_SetGateStrength(uint32_t strength);
 uint32_t DRV8353_GetGateStrength(void);
 void DRV8353_SetCalibration(uint8_t channel);
 
+uint8_t uiDRV_GetGateStrength(uint8_t* valptr);
+uint8_t uiDRV_SetGateStrength(uint8_t* valptr);
+uint8_t uiDRV_GetVdsLimit(uint8_t* valptr);
+uint8_t uiDRV_SetVdsLimit(uint8_t* valptr);
+uint8_t uiDRV_GetCsaGain(uint8_t* valptr);
+uint8_t uiDRV_SetCsaGain(uint8_t* valptr);
+
 
 #endif // __SPI_H

@@ -532,9 +532,211 @@ uint8_t MAIN_GetDashboardData(uint8_t* data) {
     return RETVAL_OK;
 }
 
+uint8_t uiFOC_SetKp(uint8_t* valptr) {
+    Mpid_Id.Kp = data_packet_extract_float(valptr);
+    Mpid_Iq.Kp = Mpid_Id.Kp;
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_GetKp(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mpid_Id.Kp);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_SetKi(uint8_t* valptr) {
+    Mpid_Id.Ki = data_packet_extract_float(valptr);
+    Mpid_Iq.Ki = Mpid_Id.Ki;
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_GetKi(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mpid_Id.Ki);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_SetKd(uint8_t* valptr) {
+    Mpid_Id.Kd = data_packet_extract_float(valptr);
+    Mpid_Iq.Kd = Mpid_Id.Kd;
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_GetKd(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mpid_Id.Kd);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_SetKc(uint8_t* valptr) {
+    Mpid_Id.Kc = data_packet_extract_float(valptr);
+    Mpid_Iq.Kc = Mpid_Id.Kc;
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_GetKc(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mpid_Id.Kc);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_SetPwmFreq(uint8_t* valptr) {
+    return PWM_SetFreq((int32_t)(data_packet_extract_32b(valptr)));
+}
+
+uint8_t uiFOC_GetPwmFreq(uint8_t* valptr) {
+    data_packet_pack_32b(valptr, (uint32_t)(PWM_GetFreq()));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiFOC_SetPwmDeadtime(uint8_t* valptr) {
+    return PWM_SetDeadTime((int32_t)(data_packet_extract_32b(valptr)));
+}
+
+uint8_t uiFOC_GetPwmDeadtime(uint8_t* valptr) {
+    data_packet_pack_32b(valptr, (uint32_t)(PWM_GetDeadTime()));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetCountsToFoc(uint8_t* valptr)
+{
+    Mcfg.CountsToFOC = data_packet_extract_32b(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_GetCountsToFoc(uint8_t* valptr) {
+    data_packet_pack_32b(valptr, (uint32_t)(Mcfg.CountsToFOC));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetSpeedToFoc(uint8_t* valptr) {
+    Mcfg.SpeedToFOC = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_GetSpeedToFoc(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.SpeedToFOC);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetSwitchEps(uint8_t* valptr) {
+    Mcfg.SwitchEpsilon = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_GetSwitchEps(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.SwitchEpsilon);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetNumUsbOutputs(uint8_t* valptr) {
+    return LIVE_SetNumOutputs(data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetNumUsbOutputs(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetNumOutputs());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbSpeed(uint8_t* valptr) {
+    return LIVE_SetSpeed(data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbSpeed(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetSpeed());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice1(uint8_t* valptr) {
+    return LIVE_SetOutput(0, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice1(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(0));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice2(uint8_t* valptr) {
+    return LIVE_SetOutput(1, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice2(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(1));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice3(uint8_t* valptr) {
+    return LIVE_SetOutput(2, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice3(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(2));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice4(uint8_t* valptr) {
+    return LIVE_SetOutput(3, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice4(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(3));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice5(uint8_t* valptr) {
+    return LIVE_SetOutput(4, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice5(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(4));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice6(uint8_t* valptr) {
+    return LIVE_SetOutput(5, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice6(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(5));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice7(uint8_t* valptr) {
+    return LIVE_SetOutput(6, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice7(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(6));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice8(uint8_t* valptr) {
+    return LIVE_SetOutput(7, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice8(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(7));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice9(uint8_t* valptr) {
+    return LIVE_SetOutput(8, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice9(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(8));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMAIN_SetUsbChoice10(uint8_t* valptr) {
+    return LIVE_SetOutput(9, data_packet_extract_16b(valptr));
+}
+
+uint8_t uiMAIN_GetUsbChoice10(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, LIVE_GetOutput(9));
+    return DATA_PACKET_SUCCESS;
+}
+
 static void MAIN_StartCalibrateCurrentSensors(void) {
     // Only do if not rotating
-    if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)) {
+    if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)
+            && (HALL_IsStopped() != 0)) {
         MAIN_Flags |= MAIN_FLAG_CAL_IN_PROGRESS;
         MAIN_OldControlMethod = Mctrl.ControlMethod;
         Mctrl.ControlMethod = Control_None;
@@ -559,8 +761,6 @@ static void MAIN_FinishCalibrateCurrentSensors(void) {
 }
 
 static void MAIN_LoadVariables(void) {
-
-
     // Initialize PID controllers
     FOC_PIDdefaults(&Mpid_Id);
     FOC_PIDdefaults(&Mpid_Iq);
@@ -585,5 +785,4 @@ static void MAIN_LoadVariables(void) {
                 DFLT_MOTOR_POLEPAIRS);
     // Derived constants
     Mcfg.inv_pole_pairs = 1.0f / ((float)Mcfg.MotorPolePairs);
-
 }

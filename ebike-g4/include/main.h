@@ -80,4 +80,50 @@ void MAIN_GoToBootloader(void); // Restart and go to bootloader at startup
 void MAIN_AppTimerISR(void); // Called periodically to do housekeeping functions
 void MAIN_MotorISR(void); // Called periodically to perform motor control functions
 
+uint8_t uiFOC_SetKp(uint8_t* valptr);
+uint8_t uiFOC_GetKp(uint8_t* valptr);
+uint8_t uiFOC_SetKi(uint8_t* valptr);
+uint8_t uiFOC_GetKi(uint8_t* valptr);
+uint8_t uiFOC_SetKd(uint8_t* valptr);
+uint8_t uiFOC_GetKd(uint8_t* valptr) ;
+uint8_t uiFOC_SetKc(uint8_t* valptr);
+uint8_t uiFOC_GetKc(uint8_t* valptr);
+uint8_t uiFOC_SetPwmFreq(uint8_t* valptr);
+uint8_t uiFOC_GetPwmFreq(uint8_t* valptr);
+uint8_t uiFOC_SetPwmDeadtime(uint8_t* valptr);
+uint8_t uiFOC_GetPwmDeadtime(uint8_t* valptr);
+
+uint8_t uiMAIN_SetCountsToFoc(uint8_t* valptr);
+uint8_t uiMAIN_GetCountsToFoc(uint8_t* valptr);
+uint8_t uiMAIN_SetSpeedToFoc(uint8_t* valptr);
+uint8_t uiMAIN_GetSpeedToFoc(uint8_t* valptr);
+uint8_t uiMAIN_SetSwitchEps(uint8_t* valptr);
+uint8_t uiMAIN_GetSwitchEps(uint8_t* valptr);
+uint8_t uiMAIN_SetNumUsbOutputs(uint8_t* valptr);
+uint8_t uiMAIN_GetNumUsbOutputs(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbSpeed(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbSpeed(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice1(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice1(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice2(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice2(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice3(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice3(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice4(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice4(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice5(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice5(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice6(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice6(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice7(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice7(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice8(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice8(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice9(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice9(uint8_t* valptr);
+uint8_t uiMAIN_SetUsbChoice10(uint8_t* valptr);
+uint8_t uiMAIN_GetUsbChoice10(uint8_t* valptr);
+
+
+
 #endif //__MAIN_H

@@ -441,3 +441,30 @@ static uint8_t DRV8353_CheckConnection(void) {
     }
     return RETVAL_FAIL;
 }
+
+uint8_t uiDRV_GetGateStrength(uint8_t* valptr) {
+    data_packet_pack_32b(valptr, DRV8353_GetGateStrength());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiDRV_SetGateStrength(uint8_t* valptr) {
+    return DRV8353_SetGateStrength(data_packet_extract_32b(valptr));
+}
+
+uint8_t uiDRV_GetVdsLimit(uint8_t* valptr) {
+    data_packet_pack_8b(valptr, DRV8353_GetVDSLimit());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiDRV_SetVdsLimit(uint8_t* valptr) {
+    return DRV8353_SetVDSLimit(data_packet_extract_8b(valptr));
+}
+
+uint8_t uiDRV_GetCsaGain(uint8_t* valptr) {
+    data_packet_pack_8b(valptr, DRV8353_GetGain());
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiDRV_SetCsaGain(uint8_t* valptr) {
+    return DRV8353_SetGain(data_packet_extract_8b(valptr));
+}

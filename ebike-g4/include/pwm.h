@@ -60,6 +60,8 @@
 // Default setting is 500ns ... 170MHz / 85 = 2MHz -> 0.5us
 // Setting is therefore 85 -> DTG[7:0] = '01010101' (bits 6, 4, 2, and 0)
 #define PWM_DEFAULT_DT_REG  (TIM_BDTR_DTG_6 | TIM_BDTR_DTG_4 | TIM_BDTR_DTG_2 | TIM_BDTR_DTG_0)
+#define PWM_MIN_DT_NS       10
+#define PWM_MAX_DT_NS       DT_RANGE4_MAX
 
 /********** Functions **************/
 

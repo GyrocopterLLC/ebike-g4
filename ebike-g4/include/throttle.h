@@ -98,6 +98,19 @@ float THROTTLE_GetRise(void);
 uint8_t THROTTLE_SetRatio(float thrratio);
 float THROTTLE_GetRatio(void);
 
+uint8_t uiTHRT_GetMin(uint8_t* valptr);
+uint8_t uiTHRT_SetMin(uint8_t* valptr);
+uint8_t uiTHRT_GetMax(uint8_t* valptr);
+uint8_t uiTHRT_SetMax(uint8_t* valptr);
+uint8_t uiTHRT_GetHyst(uint8_t* valptr);
+uint8_t uiTHRT_SetHyst(uint8_t* valptr);
+uint8_t uiTHRT_GetFilt(uint8_t* valptr);
+uint8_t uiTHRT_SetFilt(uint8_t* valptr);
+uint8_t uiTHRT_GetRise(uint8_t* valptr);
+uint8_t uiTHRT_SetRise(uint8_t* valptr);
+uint8_t uiTHRT_GetRatio(uint8_t* valptr);
+uint8_t uiTHRT_SetRatio(uint8_t* valptr);
+
 void THROTTLE_SaveVariables(void);
 void THROTTLE_LoadVariables(void);
 

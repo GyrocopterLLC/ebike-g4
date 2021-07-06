@@ -185,11 +185,14 @@ void PWM_Init(int32_t freq) {
 }
 
 uint8_t PWM_SetDeadTime(int32_t newDT) {
-    uint32_t temp_bdtr = PWM_TIM->BDTR;
-    temp_bdtr &= 0xFFFFFF00U; // Clear DTG[7:0] bits
-    temp_bdtr |= PWM_DT_ns_to_reg(newDT);
-    PWM_TIM->BDTR = temp_bdtr;
-    return RETVAL_OK;
+    if((newDT >= PWM_MIN_DT_NS) && (newDT <= PWM_MAX_DT_NS)) {
+        uint32_t temp_bdtr = PWM_TIM->BDTR;
+        temp_bdtr &= 0xFFFFFF00U; // Clear DTG[7:0] bits
+        temp_bdtr |= PWM_DT_ns_to_reg(newDT);
+        PWM_TIM->BDTR = temp_bdtr;
+        return RETVAL_OK;
+    }
+    return RETVAL_FAIL;
 }
 int32_t PWM_GetDeadTime(void) {
     uint32_t temp_bdtr = PWM_TIM->BDTR & (0x000000FF);

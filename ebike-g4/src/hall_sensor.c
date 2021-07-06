@@ -11,7 +11,7 @@
  *              flux needed to make the Hall sensor switch.
  *
  *              We need three Hall sensors to determine rotor position. Each
- *              one is usually situated either 60° apart or 120° apart. We
+ *              one is usually situated either 60ï¿½ apart or 120ï¿½ apart. We
  *              can determine the rotor position to an accuracy of 1/6th of
  *              an electrical motor rotation simply by using the current status
  *              of the Hall sensor switches. That is good enough resolution
@@ -381,6 +381,14 @@ void HALL_IncAngle(void) {
        HallSensor.Angle = HALL_ClipToOne(HallSensor.Angle);
 }
 
+uint8_t HALL_IsStopped(void) {
+    if((HallSensor.Status & HALL_STOPPED) != 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 uint16_t HALL_GetAngle(void) {
     if ((HallSensor.Status & HALL_STOPPED) != 0) {
         return (uint16_t) (HallStateAnglesFwdFloat[HALL_GetState()]
@@ -588,7 +596,7 @@ void HALL_CaptureCallback(void) {
         HallSensor.RotationDirection = HALL_ROT_UNKNOWN;
     // Update the angle - just encountered a 60deg marker (the Hall state change)
     // If we're rotating forward, the actual angle will be at the beginning of the state.
-    // For example, if we entered State 5 (210->270°), we will be at 210° if rotating forwards,
+    // For example, if we entered State 5 (210->270ï¿½), we will be at 210ï¿½ if rotating forwards,
     // but at 270 if rotating reverse.
     // If we can't trust which way the motor is turning, just choose the middle of the range.
 

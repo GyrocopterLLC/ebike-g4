@@ -101,6 +101,7 @@ uint8_t HALL_GenRevInvTable(uint8_t* revTab, uint8_t* revInvTab);
 
 uint8_t HALL_GetState(void);
 void HALL_IncAngle(void);
+uint8_t HALL_IsStopped(void);
 uint16_t HALL_GetAngle(void);
 float HALL_GetAngleF(void);
 
