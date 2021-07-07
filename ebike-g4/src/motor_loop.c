@@ -38,7 +38,7 @@ void Motor_Loop(Main_Variables* mvar) {
     Motor_PWMDuties* pwm = mvar->Pwm;
     Motor_Observations* obv = mvar->Obv;
     Motor_Controls* ctrl = mvar->Ctrl;
-    Motor_Settings* sett = mvar->Sett;
+    Config_Main* cfg = mvar->Cfg;
 
     if(mvar->Ctrl->state == Motor_Off) {
         // Reset PIDs so there aren't any weird jumps at the next startup
@@ -93,9 +93,9 @@ void Motor_Loop(Main_Variables* mvar) {
         // Error signals are normalized to 1.0. This allows us to use the same
         // PID gains regardless of current scaling.
         foc->Id_PID->Err = 0.0f
-                - ((foc->Park_D) * (sett->inv_max_phase_current));
+                - ((foc->Park_D) * (cfg->inv_max_phase_current));
         foc->Iq_PID->Err = ctrl->ThrottleCommand
-                - ((foc->Park_Q) * (sett->inv_max_phase_current));
+                - ((foc->Park_Q) * (cfg->inv_max_phase_current));
         // Perform the PID control loop
         FOC_PIDcalc(foc->Id_PID);
         FOC_PIDcalc(foc->Iq_PID);

@@ -152,7 +152,7 @@ typedef struct _main_variables_type {
     Motor_Observations* Obv;
     Motor_PWMDuties* Pwm;
     FOC_StateVariables* Foc;
-    Motor_Settings* Sett;
+    Config_Main* Cfg;
 } Main_Variables;
 
 

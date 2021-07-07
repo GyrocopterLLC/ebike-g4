@@ -45,7 +45,6 @@ Main_Variables Mvar;
 Motor_Controls Mctrl;
 Motor_Observations Mobv;
 Motor_PWMDuties Mpwm;
-Motor_Settings Msett;
 Config_Main Mcfg;
 FOC_StateVariables Mfoc;
 PID_Type Mpid_Id;
@@ -66,6 +65,7 @@ static void MAIN_StartAppTimer(void);
 static void MAIN_StartCalibrateCurrentSensors(void);
 static void MAIN_FinishCalibrateCurrentSensors(void);
 static void MAIN_LoadVariables(void);
+static void MAIN_UpdateVoltsPerEhz(void);
 
 int main (
         __attribute__((unused)) int argc,
@@ -151,16 +151,14 @@ int main (
     Mpwm.tA = 0.0f;
     Mpwm.tB = 0.0f;
     Mpwm.tC = 0.0f;
-    Mvar.Sett = &Msett;
-    Msett.inv_max_phase_current = (1.0f) / (60.0f);
-    Msett.kv_volts_per_ehz = 60.0f /(( 23.0f) * (7.5f)); // 60 (sec/min) / (polepairs*Kv (V/rpm))
+    Mvar.Cfg = &Mcfg;
+    Mcfg.inv_max_phase_current = (1.0f) / (60.0f); // Todo: make programmable through limit settings
 
     Mfoc.Id_PID = &Mpid_Id;
     Mfoc.Iq_PID = &Mpid_Iq;
 
     // Load default values
     MAIN_LoadVariables();
-
 
     // Start the watchdog
     WDT_Init();
@@ -733,6 +731,49 @@ uint8_t uiMAIN_GetUsbChoice10(uint8_t* valptr) {
     return DATA_PACKET_SUCCESS;
 }
 
+uint8_t uiMOTOR_SetPolePairs(uint8_t* valptr) {
+    Mcfg.MotorPolePairs = data_packet_extract_16b(valptr);
+    Mcfg.inv_pole_pairs = 1.0f / ((float)Mcfg.MotorPolePairs);
+    MAIN_UpdateVoltsPerEhz();
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_GetPolePairs(uint8_t* valptr) {
+    data_packet_pack_16b(valptr, Mcfg.MotorPolePairs);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetGearRatio(uint8_t* valptr) {
+    Mcfg.GearRatio = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_GetGearRatio(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.GearRatio);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetWheelSize(uint8_t* valptr) {
+    Mcfg.WheelSizeMM = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_GetWheelSize(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.WheelSizeMM);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetKv(uint8_t* valptr) {
+    Mcfg.MotorKv = data_packet_extract_float(valptr);
+    MAIN_UpdateVoltsPerEhz();
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_GetKv(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MotorKv);
+    return DATA_PACKET_SUCCESS;
+}
+
 static void MAIN_StartCalibrateCurrentSensors(void) {
     // Only do if not rotating
     if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)
@@ -785,4 +826,10 @@ static void MAIN_LoadVariables(void) {
                 DFLT_MOTOR_POLEPAIRS);
     // Derived constants
     Mcfg.inv_pole_pairs = 1.0f / ((float)Mcfg.MotorPolePairs);
+    MAIN_UpdateVoltsPerEhz();
+}
+
+static void MAIN_UpdateVoltsPerEhz(void) {
+    // 60 (sec/min) / (polepairs*Kv (V/rpm))
+    Mcfg.kv_volts_per_ehz = 60.0f /(( (float) Mcfg.MotorPolePairs) * (Mcfg.MotorKv));
 }

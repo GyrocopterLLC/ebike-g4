@@ -124,6 +124,13 @@ uint8_t uiMAIN_GetUsbChoice9(uint8_t* valptr);
 uint8_t uiMAIN_SetUsbChoice10(uint8_t* valptr);
 uint8_t uiMAIN_GetUsbChoice10(uint8_t* valptr);
 
-
+uint8_t uiMOTOR_GetPolePairs(uint8_t* valptr);
+uint8_t uiMOTOR_SetPolePairs(uint8_t* valptr);
+uint8_t uiMOTOR_GetGearRatio(uint8_t* valptr);
+uint8_t uiMOTOR_SetGearRatio(uint8_t* valptr);
+uint8_t uiMOTOR_GetWheelSize(uint8_t* valptr);
+uint8_t uiMOTOR_SetWheelSize(uint8_t* valptr);
+uint8_t uiMOTOR_GetKv(uint8_t* valptr);
+uint8_t uiMOTOR_SetKv(uint8_t* valptr);
 
 #endif //__MAIN_H

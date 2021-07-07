@@ -275,7 +275,6 @@ const Ram_Command_Type LMT_MotorTempHardCap = {CONFIG_LMT_MOTOR_TEMP_HARDCAP,
                                uiLMT_SetMotorTempHardCap};
 #endif
 
-#if 0
 //**************  Motor Commands  **************
 const Ram_Command_Type MOTOR_Hall1 = {CONFIG_MOTOR_HALL1,
                                Data_Type_Float,
@@ -308,7 +307,7 @@ const Ram_Command_Type MOTOR_Hall6 = {CONFIG_MOTOR_HALL6,
                                uiMOTOR_GetHall6,
                                uiMOTOR_SetHall6};
 const Ram_Command_Type MOTOR_PolePairs = {CONFIG_MOTOR_POLEPAIRS,
-                               Data_Type_Int32,
+                               Data_Type_Int16,
                                1,
                                uiMOTOR_GetPolePairs,
                                uiMOTOR_SetPolePairs};
@@ -327,7 +326,7 @@ const Ram_Command_Type MOTOR_Kv = {CONFIG_MOTOR_KV,
                                1,
                                uiMOTOR_GetKv,
                                uiMOTOR_SetKv};
-#endif
+
 //**************  DRV8353 Commands  **************
 const Ram_Command_Type DRV_GateStrength = {CONFIG_DRV_GATE_STRENGTH,
                                Data_Type_Int32,
@@ -344,17 +343,64 @@ const Ram_Command_Type DRV_CsaGain = {CONFIG_DRV_CSA_GAIN,
                                1,
                                uiDRV_GetCsaGain,
                                uiDRV_SetCsaGain};
-#if 0
-const Ram_Command_Type* const Ram_Commands[TOTAL_EE_VARS] = {
+
+const Ram_Command_Type* const Ram_Commands[(CONFIG_ADC_NUMVARS
+                                            + CONFIG_FOC_NUMVARS
+                                            + CONFIG_MAIN_NUMVARS
+                                            + CONFIG_THRT_NUMVARS
+                                            + CONFIG_MOTOR_NUMVARS
+                                            + CONFIG_DRV_NUMVARS)] = {
         &ADC_Rshunt,
         &ADC_VbusRatio,
         &ADC_VphaseRatio,
         &ADC_ThermFixedR,
         &ADC_ThermR25,
-        &ADC_ThermB
+        &ADC_ThermB,
+
+        &FOC_Kp,
+        &FOC_Ki,
+        &FOC_Kd,
+        &FOC_Kc,
+        &FOC_PwmFreq,
+        &FOC_PwmDeadtime,
+
+        &MAIN_CountsToFoc,
+        &MAIN_SpeedToFoc,
+        &MAIN_SwitchEps,
+        &MAIN_NumUsbOutputs,
+        &MAIN_UsbSpeed,
+        &MAIN_UsbChoice1,
+        &MAIN_UsbChoice2,
+        &MAIN_UsbChoice3,
+        &MAIN_UsbChoice4,
+        &MAIN_UsbChoice5,
+        &MAIN_UsbChoice6,
+        &MAIN_UsbChoice7,
+        &MAIN_UsbChoice8,
+        &MAIN_UsbChoice9,
+        &MAIN_UsbChoice10,
+
+        &THRT_Min,
+        &THRT_Max,
+        &THRT_Hyst,
+        &THRT_Filt,
+        &THRT_Rise,
+        &THRT_Ratio,
+
+        &MOTOR_Hall1,
+        &MOTOR_Hall2,
+        &MOTOR_Hall3,
+        &MOTOR_Hall4,
+        &MOTOR_Hall5,
+        &MOTOR_Hall6,
+        &MOTOR_PolePairs,
+        &MOTOR_GearRatio,
+        &MOTOR_WheelSize,
+        &MOTOR_Kv,
+
+        &DRV_GateStrength,
+        &DRV_VdsLimit,
+        &DRV_CsaGain
 };
-
-#endif
-
 
 #endif

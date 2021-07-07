@@ -714,6 +714,60 @@ void HALL_LoadVariables(void) {
 
 }
 
+uint8_t uiMOTOR_GetHall1(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(1));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall1(uint8_t* valptr) {
+    return HALL_SetAngle(1, data_packet_extract_float(valptr));
+}
+
+uint8_t uiMOTOR_GetHall2(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(2));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall2(uint8_t* valptr) {
+    return HALL_SetAngle(2, data_packet_extract_float(valptr));
+}
+
+uint8_t uiMOTOR_GetHall3(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(3));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall3(uint8_t* valptr) {
+    return HALL_SetAngle(3, data_packet_extract_float(valptr));
+}
+
+uint8_t uiMOTOR_GetHall4(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(4));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall4(uint8_t* valptr) {
+    return HALL_SetAngle(4, data_packet_extract_float(valptr));
+}
+
+uint8_t uiMOTOR_GetHall5(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(5));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall5(uint8_t* valptr) {
+    return HALL_SetAngle(5, data_packet_extract_float(valptr));
+}
+
+uint8_t uiMOTOR_GetHall6(uint8_t* valptr) {
+    data_packet_pack_float(valptr, HALL_GetAngleFromTable(6));
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiMOTOR_SetHall6(uint8_t* valptr) {
+    return HALL_SetAngle(6, data_packet_extract_float(valptr));
+}
+
 /**
  * @brief  Creates ordered state tables and lookup tables from a list of angles at each state.
  */

@@ -133,5 +133,17 @@ void HALL_CaptureCallback(void);
 void HALL_SaveVariables(void);
 void HALL_LoadVariables(void);
 
+uint8_t uiMOTOR_GetHall1(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall1(uint8_t* valptr);
+uint8_t uiMOTOR_GetHall2(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall2(uint8_t* valptr);
+uint8_t uiMOTOR_GetHall3(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall3(uint8_t* valptr);
+uint8_t uiMOTOR_GetHall4(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall4(uint8_t* valptr);
+uint8_t uiMOTOR_GetHall5(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall5(uint8_t* valptr);
+uint8_t uiMOTOR_GetHall6(uint8_t* valptr);
+uint8_t uiMOTOR_SetHall6(uint8_t* valptr);
 
 #endif // __HALL_SENSOR_H
