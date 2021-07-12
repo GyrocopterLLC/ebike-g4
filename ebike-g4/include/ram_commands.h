@@ -206,7 +206,7 @@ const Ram_Command_Type THRT_Ratio = {CONFIG_THRT_RATIO,
                                1,
                                uiTHRT_GetRatio,
                                uiTHRT_SetRatio};
-#if 0
+
 //**************  Limit Commands  **************
 const Ram_Command_Type LMT_VoltFaultMin = {CONFIG_LMT_VOLT_FAULT_MIN,
                                Data_Type_Float,
@@ -273,7 +273,6 @@ const Ram_Command_Type LMT_MotorTempHardCap = {CONFIG_LMT_MOTOR_TEMP_HARDCAP,
                                1,
                                uiLMT_GetMotorTempHardCap,
                                uiLMT_SetMotorTempHardCap};
-#endif
 
 //**************  Motor Commands  **************
 const Ram_Command_Type MOTOR_Hall1 = {CONFIG_MOTOR_HALL1,
@@ -344,12 +343,7 @@ const Ram_Command_Type DRV_CsaGain = {CONFIG_DRV_CSA_GAIN,
                                uiDRV_GetCsaGain,
                                uiDRV_SetCsaGain};
 
-const Ram_Command_Type* const Ram_Commands[(CONFIG_ADC_NUMVARS
-                                            + CONFIG_FOC_NUMVARS
-                                            + CONFIG_MAIN_NUMVARS
-                                            + CONFIG_THRT_NUMVARS
-                                            + CONFIG_MOTOR_NUMVARS
-                                            + CONFIG_DRV_NUMVARS)] = {
+const Ram_Command_Type* const Ram_Commands[TOTAL_EE_VARS] = {
         &ADC_Rshunt,
         &ADC_VbusRatio,
         &ADC_VphaseRatio,
@@ -386,6 +380,20 @@ const Ram_Command_Type* const Ram_Commands[(CONFIG_ADC_NUMVARS
         &THRT_Filt,
         &THRT_Rise,
         &THRT_Ratio,
+
+        &LMT_VoltFaultMin,
+        &LMT_VoltFaultMax,
+        &LMT_CurFaultMax,
+        &LMT_VoltSoftCap,
+        &LMT_VoltHardCap,
+        &LMT_PhaseCurMax,
+        &LMT_PhaseRegenMax,
+        &LMT_BattCurMax,
+        &LMT_BattRegenMax,
+        &LMT_FetTempSoftCap,
+        &LMT_FetTempHardCap,
+        &LMT_MotorTempSoftCap,
+        &LMT_MotorTempHardCap,
 
         &MOTOR_Hall1,
         &MOTOR_Hall2,

@@ -133,4 +133,31 @@ uint8_t uiMOTOR_SetWheelSize(uint8_t* valptr);
 uint8_t uiMOTOR_GetKv(uint8_t* valptr);
 uint8_t uiMOTOR_SetKv(uint8_t* valptr);
 
+uint8_t uiLMT_GetVoltFaultMin(uint8_t* valptr);
+uint8_t uiLMT_SetVoltFaultMin(uint8_t* valptr);
+uint8_t uiLMT_GetVoltFaultMax(uint8_t* valptr);
+uint8_t uiLMT_SetVoltFaultMax(uint8_t* valptr);
+uint8_t uiLMT_GetCurFaultMax(uint8_t* valptr);
+uint8_t uiLMT_SetCurFaultMax(uint8_t* valptr);
+uint8_t uiLMT_GetVoltSoftCap(uint8_t* valptr);
+uint8_t uiLMT_SetVoltSoftCap(uint8_t* valptr);
+uint8_t uiLMT_GetVoltHardCap(uint8_t* valptr);
+uint8_t uiLMT_SetVoltHardCap(uint8_t* valptr);
+uint8_t uiLMT_GetPhaseCurMax(uint8_t* valptr);
+uint8_t uiLMT_SetPhaseCurMax(uint8_t* valptr);
+uint8_t uiLMT_GetPhaseRegenMax(uint8_t* valptr);
+uint8_t uiLMT_SetPhaseRegenMax(uint8_t* valptr);
+uint8_t uiLMT_GetBattCurMax(uint8_t* valptr);
+uint8_t uiLMT_SetBattCurMax(uint8_t* valptr);
+uint8_t uiLMT_GetBattRegenMax(uint8_t* valptr);
+uint8_t uiLMT_SetBattRegenMax(uint8_t* valptr);
+uint8_t uiLMT_GetFetTempSoftCap(uint8_t* valptr);
+uint8_t uiLMT_SetFetTempSoftCap(uint8_t* valptr);
+uint8_t uiLMT_GetFetTempHardCap(uint8_t* valptr);
+uint8_t uiLMT_SetFetTempHardCap(uint8_t* valptr);
+uint8_t uiLMT_GetMotorTempSoftCap(uint8_t* valptr);
+uint8_t uiLMT_SetMotorTempSoftCap(uint8_t* valptr);
+uint8_t uiLMT_GetMotorTempHardCap(uint8_t* valptr);
+uint8_t uiLMT_SetMotorTempHardCap(uint8_t* valptr);
+
 #endif //__MAIN_H

@@ -774,6 +774,136 @@ uint8_t uiMOTOR_GetKv(uint8_t* valptr) {
     return DATA_PACKET_SUCCESS;
 }
 
+uint8_t uiLMT_GetVoltFaultMin(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MinVoltFault);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetVoltFaultMin(uint8_t* valptr) {
+    Mcfg.MinVoltFault = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetVoltFaultMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MaxVoltFault);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetVoltFaultMax(uint8_t* valptr) {
+    Mcfg.MaxVoltFault = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetCurFaultMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.CurrentFault);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetCurFaultMax(uint8_t* valptr) {
+    Mcfg.CurrentFault = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetVoltSoftCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.VoltageSoftCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetVoltSoftCap(uint8_t* valptr) {
+    Mcfg.VoltageSoftCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetVoltHardCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.VoltageHardCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetVoltHardCap(uint8_t* valptr) {
+    Mcfg.VoltageHardCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetPhaseCurMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MaxPhaseCurrent);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetPhaseCurMax(uint8_t* valptr) {
+    Mcfg.MaxPhaseCurrent = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetPhaseRegenMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MaxPhaseRegenCurrent);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetPhaseRegenMax(uint8_t* valptr) {
+    Mcfg.MaxPhaseRegenCurrent = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetBattCurMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MaxBatteryCurrent);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetBattCurMax(uint8_t* valptr) {
+    Mcfg.MaxBatteryCurrent = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetBattRegenMax(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MaxBatteryRegenCurrent);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetBattRegenMax(uint8_t* valptr) {
+    Mcfg.MaxBatteryRegenCurrent = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetFetTempSoftCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.FetTempSoftCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetFetTempSoftCap(uint8_t* valptr) {
+    Mcfg.FetTempSoftCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetFetTempHardCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.FetTempHardCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetFetTempHardCap(uint8_t* valptr) {
+    Mcfg.FetTempHardCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetMotorTempSoftCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MotorTempSoftCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetMotorTempSoftCap(uint8_t* valptr) {
+    Mcfg.MotorTempSoftCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_GetMotorTempHardCap(uint8_t* valptr) {
+    data_packet_pack_float(valptr, Mcfg.MotorTempHardCap);
+    return DATA_PACKET_SUCCESS;
+}
+
+uint8_t uiLMT_SetMotorTempHardCap(uint8_t* valptr) {
+    Mcfg.MotorTempHardCap = data_packet_extract_float(valptr);
+    return DATA_PACKET_SUCCESS;
+}
+
 static void MAIN_StartCalibrateCurrentSensors(void) {
     // Only do if not rotating
     if((Mctrl.state == Motor_Off) && (fabsf(Mobv.RotorSpeed_eHz) < 1.0f)

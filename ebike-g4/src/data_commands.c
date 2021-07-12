@@ -28,12 +28,16 @@
 
 #include "main.h"
 #include "ram_commands.h"
-
+/**
+ * Unused old version
 static Data_Type command_get_datatype(uint16_t data_ID);
+***/
+
+static inline Data_Type command_get_datatype(uint16_t id);
 /**
  * @brief  Data Process Command
- *              Interprets the command in a decoded packet. Calls the appropriate
- *              sub-function for the requested command.
+ *              Interprets the command in a decoded packet. Calls the
+ *              appropriate sub-function for the requested command.
  * @param  pkt - Data_Packet_Type pointer with the decoded communication data
  * @retval RETVAL_FAIL - Unable to process the packet
  *         RETVAL_OK - Packet was processed. Check the TxReady flag
@@ -158,7 +162,8 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
  * @brief  Data Command: Get Ram
  *            Interprets the command in a decoded packet. Calls the appropriate
  *            sub-function for the requested command.
- * @param  pktdata - Data field in the incoming packet
+ * @param  pktdata - Pointer to the location with the incoming packet data.
+ *                   Two bytes for variable ID.
  * @param  retval - Pointer to return value from the command request.
  *                  Regardless of the return type, it will be placed into the
  *                  location pointed to by retval. Data can be 8 to 32 bit
@@ -172,294 +177,70 @@ uint16_t data_process_command(Data_Packet_Type* pkt) {
 uint16_t command_get_ram(uint8_t* pktdata, uint8_t* retval) {
     // Data is two bytes for value ID
     uint16_t value_ID = data_packet_extract_16b(pktdata);
-//    uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
-    float retvalf= 0.0f;
-    uint8_t retval8b = 0;
-    uint16_t retval16b = 0;
-    uint32_t retval32b = 0;
     uint16_t errCode = RETVAL_FAIL;
-
-    switch (value_ID) {
-
-    // 8-bit integer values
-    case CONFIG_DRV_VDS_LIMIT:
-        retval8b = DRV8353_GetVDSLimit();
-        break;
-    case CONFIG_DRV_CSA_GAIN:
-        retval8b = DRV8353_GetGain();
-        break;
-    case CONFIG_BMS_ISCONNECTED:
-        retval8b = 0xAAu;
-        break;
-
-    // 16-bit integer values
-    // Not yet implemented
-    case CONFIG_MAIN_NUM_USB_OUTPUTS:
-        retval16b = LIVE_GetNumOutputs();
-        break;
-    case CONFIG_MAIN_USB_SPEED:
-        retval16b = LIVE_GetSpeed();
-        break;
-    case CONFIG_MAIN_USB_CHOICE_1:
-    case CONFIG_MAIN_USB_CHOICE_2:
-    case CONFIG_MAIN_USB_CHOICE_3:
-    case CONFIG_MAIN_USB_CHOICE_4:
-    case CONFIG_MAIN_USB_CHOICE_5:
-    case CONFIG_MAIN_USB_CHOICE_6:
-    case CONFIG_MAIN_USB_CHOICE_7:
-    case CONFIG_MAIN_USB_CHOICE_8:
-    case CONFIG_MAIN_USB_CHOICE_9:
-    case CONFIG_MAIN_USB_CHOICE_10:
-        retval16b = LIVE_GetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1);
-        break;
-    case CONFIG_MOTOR_POLEPAIRS:
-    case CONFIG_BMS_NUMBATTS:
-        retval16b = 0xAAAAu;
-        break;
-
-    // 32 bit integer values
-    case CONFIG_DRV_GATE_STRENGTH:
-        retval32b = DRV8353_GetGateStrength();
-        break;
-    // Not yet implemented
-    case CONFIG_FOC_PWM_FREQ:
-    case CONFIG_FOC_PWM_DEADTIME:
-    case CONFIG_MAIN_COUNTS_TO_FOC:
-    case CONFIG_BMS_GETSTATUS_N:
-        retval32b = 0xAAAAAAAAu;
-        break;
-
-    // 32 bit float values
-    case CONFIG_ADC_RSHUNT:
-        retvalf = ADC_GetRShunt();
-        break;
-    case CONFIG_ADC_VBUS_RATIO:
-        retvalf = ADC_GetVbusRatio();
-        break;
-    case CONFIG_ADC_THERM_FIXED_R:
-        retvalf = ADC_GetThermFixedR();
-        break;
-    case CONFIG_ADC_THERM_R25:
-        retvalf = ADC_GetThermR25();
-        break;
-    case CONFIG_ADC_THERM_B:
-        retvalf = ADC_GetThermBeta();
-        break;
-    case CONFIG_THRT_MIN:
-        retvalf = THROTTLE_GetMin();
-        break;
-    case CONFIG_THRT_MAX:
-        retvalf = THROTTLE_GetMax();
-        break;
-    case CONFIG_THRT_HYST:
-        retvalf = THROTTLE_GetHyst();
-        break;
-    case CONFIG_THRT_FILT:
-        retvalf = THROTTLE_GetFilt();
-        break;
-    case CONFIG_THRT_RISE:
-        retvalf = THROTTLE_GetRise();
-        break;
-    case CONFIG_THRT_RATIO:
-        retvalf = THROTTLE_GetRatio();
-        break;
-    // Not yet implemented
-    case CONFIG_FOC_KP:
-    case CONFIG_FOC_KI:
-    case CONFIG_FOC_KD:
-    case CONFIG_FOC_KC:
-    case CONFIG_MAIN_SPEED_TO_FOC:
-    case CONFIG_MAIN_SWITCH_EPS:
-    case CONFIG_LMT_VOLT_FAULT_MIN:
-    case CONFIG_LMT_VOLT_FAULT_MAX:
-    case CONFIG_LMT_CUR_FAULT_MAX:
-    case CONFIG_LMT_VOLT_SOFTCAP:
-    case CONFIG_LMT_VOLT_HARDCAP:
-    case CONFIG_LMT_PHASE_CUR_MAX:
-    case CONFIG_LMT_PHASE_REGEN_MAX:
-    case CONFIG_LMT_BATT_CUR_MAX:
-    case CONFIG_LMT_BATT_REGEN_MAX:
-    case CONFIG_LMT_FET_TEMP_SOFTCAP:
-    case CONFIG_LMT_FET_TEMP_HARDCAP:
-    case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
-    case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
-    case CONFIG_MOTOR_HALL1:
-    case CONFIG_MOTOR_HALL2:
-    case CONFIG_MOTOR_HALL3:
-    case CONFIG_MOTOR_HALL4:
-    case CONFIG_MOTOR_HALL5:
-    case CONFIG_MOTOR_HALL6:
-    case CONFIG_MOTOR_GEAR_RATIO:
-    case CONFIG_MOTOR_WHEEL_SIZE:
-    case CONFIG_MOTOR_KV:
-    case CONFIG_BMS_GETBAT_N:
-        retvalf = 5.555f;
-        break;
+    Data_Type dtype = Data_Type_None;
+    uint8_t get_rtn_val = DATA_PACKET_FAIL;
+    for(uint16_t i = 0; i < TOTAL_EE_VARS; i++) {
+        if(value_ID == Ram_Commands[i]->id) {
+            dtype = Ram_Commands[i]->dtype;
+            if(Ram_Commands[i]->get != NULL) {
+                get_rtn_val = Ram_Commands[i]->get(retval);
+            }
+            break;
+        }
     }
-
-    switch(command_get_datatype(value_ID)) {
-    case Data_Type_None:
-    case Data_Type_Int8:
-        errCode = RESULT_IS_8B;
-        data_packet_pack_8b(retval, retval8b);
-        break;
-    case Data_Type_Int16:
-        errCode = RESULT_IS_16B;
-        data_packet_pack_16b(retval, retval16b);
-        break;
-    case Data_Type_Int32:
-        errCode = RESULT_IS_32B;
-        data_packet_pack_32b(retval, retval32b);
-        break;
-    case Data_Type_Float:
-        errCode = RESULT_IS_FLOAT;
-        data_packet_pack_float(retval, retvalf);
-        break;
+    if(get_rtn_val == DATA_PACKET_SUCCESS) {
+        switch(dtype) {
+        case Data_Type_Int8:
+            errCode = RESULT_IS_8B;
+            break;
+        case Data_Type_Int16:
+            errCode = RESULT_IS_16B;
+            break;
+        case Data_Type_Int32:
+            errCode = RESULT_IS_32B;
+            break;
+        case Data_Type_Float:
+            errCode = RESULT_IS_FLOAT;
+            break;
+        default:
+            errCode = RETVAL_FAIL;
+            break;
+        }
     }
     return errCode;
 }
 
+/**
+ * Sets the new value of a config variable in ram. The variable is
+ * looked up using the ID to call the correct "set" function
+ * @param pktdata   Pointer to the location with the incoming packet data.
+ *                  First two bytes are the variable ID, then remaining 1
+ *                  to 4 bytes are the new value.
+ * @return  RETVAL_FAIL - Unable to set the new data
+ *          RETVAL_OK - New data set successfully
+ */
 uint16_t command_set_ram(uint8_t* pktdata) {
     // Data is two bytes for value ID
     uint16_t value_ID = data_packet_extract_16b(pktdata);
-    //uint16_t value_ID = (((uint16_t)pktdata[0]) << 8) + pktdata[1];
     pktdata += 2;
-    // Then two to four bytes for value, depending on command
-    float valuef = 0.0f;
-    uint8_t value8b = 0;
-    uint16_t value16b = 0;
-    uint32_t value32b = 0;
+    // Then one to four bytes for value, depending on command
+
     uint16_t errCode = RETVAL_FAIL;
+    uint8_t set_rtn_val = DATA_PACKET_FAIL;
 
-    switch(command_get_datatype(value_ID)) {
-    case Data_Type_None:
-    case Data_Type_Int8:
-        value8b = data_packet_extract_8b(pktdata);
-        break;
-    case Data_Type_Int16:
-        value16b = data_packet_extract_16b(pktdata);
-        break;
-    case Data_Type_Int32:
-        value32b = data_packet_extract_32b(pktdata);
-        break;
-    case Data_Type_Float:
-        valuef = data_packet_extract_float(pktdata);
-        break;
+    for(uint16_t i = 0; i < TOTAL_EE_VARS; i++) {
+        if(value_ID == Ram_Commands[i]->id) {
+            if(Ram_Commands[i]->set != NULL) {
+                set_rtn_val = Ram_Commands[i]->set(pktdata);
+            }
+            break;
+        }
+    }
+    if(set_rtn_val == DATA_PACKET_SUCCESS) {
+        errCode = RETVAL_OK;
     }
 
-    switch (value_ID) {
-
-    // 8-bit integer values
-    case CONFIG_DRV_VDS_LIMIT:
-        errCode = DRV8353_SetVDSLimit((DRV_VDS_Limit)value8b);
-        break;
-    case CONFIG_DRV_CSA_GAIN:
-        errCode = DRV8353_SetGain((DRV_Gain)value8b);
-        break;
-
-    // 16-bit integer values
-    // Not yet implemented
-    case CONFIG_MAIN_NUM_USB_OUTPUTS:
-        errCode = LIVE_SetNumOutputs(value16b);
-        break;
-    case CONFIG_MAIN_USB_SPEED:
-        errCode = LIVE_SetSpeed(value16b);
-        break;
-    case CONFIG_MAIN_USB_CHOICE_1:
-    case CONFIG_MAIN_USB_CHOICE_2:
-    case CONFIG_MAIN_USB_CHOICE_3:
-    case CONFIG_MAIN_USB_CHOICE_4:
-    case CONFIG_MAIN_USB_CHOICE_5:
-    case CONFIG_MAIN_USB_CHOICE_6:
-    case CONFIG_MAIN_USB_CHOICE_7:
-    case CONFIG_MAIN_USB_CHOICE_8:
-    case CONFIG_MAIN_USB_CHOICE_9:
-    case CONFIG_MAIN_USB_CHOICE_10:
-        errCode = LIVE_SetOutput(value_ID-CONFIG_MAIN_USB_CHOICE_1,value16b);
-        break;
-    case CONFIG_MOTOR_POLEPAIRS:
-        errCode = RETVAL_OK;
-        break;
-
-    // 32 bit integer values
-    case CONFIG_DRV_GATE_STRENGTH:
-        errCode = DRV8353_SetGateStrength(value32b);
-        break;
-    // Not yet implemented
-    case CONFIG_FOC_PWM_FREQ:
-    case CONFIG_FOC_PWM_DEADTIME:
-    case CONFIG_MAIN_COUNTS_TO_FOC:
-        errCode = RETVAL_OK;
-        break;
-
-    // 32 bit float values
-    case CONFIG_ADC_RSHUNT:
-        errCode = ADC_SetRShunt(valuef);
-        break;
-    case CONFIG_ADC_VBUS_RATIO:
-        errCode = ADC_SetVbusRatio(valuef);
-        break;
-    case CONFIG_ADC_THERM_FIXED_R:
-        errCode = ADC_SetThermFixedR(valuef);
-        break;
-    case CONFIG_ADC_THERM_R25:
-        errCode = ADC_SetThermR25(valuef);
-        break;
-    case CONFIG_ADC_THERM_B:
-        errCode = ADC_SetThermBeta(valuef);
-        break;
-    case CONFIG_THRT_MIN:
-        errCode = THROTTLE_SetMin(valuef);
-        break;
-    case CONFIG_THRT_MAX:
-        errCode = THROTTLE_SetMax(valuef);
-        break;
-    case CONFIG_THRT_HYST:
-        errCode = THROTTLE_SetHyst(valuef);
-        break;
-    case CONFIG_THRT_FILT:
-        errCode = THROTTLE_SetFilt(valuef);
-        break;
-    case CONFIG_THRT_RISE:
-        errCode = THROTTLE_SetRise(valuef);
-        break;
-    case CONFIG_THRT_RATIO:
-        errCode = THROTTLE_SetRatio(valuef);
-        break;
-    // Not yet implemented
-    case CONFIG_FOC_KP:
-    case CONFIG_FOC_KI:
-    case CONFIG_FOC_KD:
-    case CONFIG_FOC_KC:
-    case CONFIG_MAIN_SPEED_TO_FOC:
-    case CONFIG_MAIN_SWITCH_EPS:
-    case CONFIG_LMT_VOLT_FAULT_MIN:
-    case CONFIG_LMT_VOLT_FAULT_MAX:
-    case CONFIG_LMT_CUR_FAULT_MAX:
-    case CONFIG_LMT_VOLT_SOFTCAP:
-    case CONFIG_LMT_VOLT_HARDCAP:
-    case CONFIG_LMT_PHASE_CUR_MAX:
-    case CONFIG_LMT_PHASE_REGEN_MAX:
-    case CONFIG_LMT_BATT_CUR_MAX:
-    case CONFIG_LMT_BATT_REGEN_MAX:
-    case CONFIG_LMT_FET_TEMP_SOFTCAP:
-    case CONFIG_LMT_FET_TEMP_HARDCAP:
-    case CONFIG_LMT_MOTOR_TEMP_SOFTCAP:
-    case CONFIG_LMT_MOTOR_TEMP_HARDCAP:
-    case CONFIG_MOTOR_HALL1:
-    case CONFIG_MOTOR_HALL2:
-    case CONFIG_MOTOR_HALL3:
-    case CONFIG_MOTOR_HALL4:
-    case CONFIG_MOTOR_HALL5:
-    case CONFIG_MOTOR_HALL6:
-    case CONFIG_MOTOR_GEAR_RATIO:
-    case CONFIG_MOTOR_WHEEL_SIZE:
-    case CONFIG_MOTOR_KV:
-        errCode = RETVAL_OK;
-        break;
-
-
-    }
     return errCode;
 }
 
@@ -621,6 +402,8 @@ uint16_t command_run_routine(uint8_t* pktdata) {
     return errCode;
 }
 
+/***
+ * Unused old version
 static Data_Type command_get_datatype(uint16_t data_ID) {
     Data_Type type = Data_Type_None;
     switch(data_ID) {
@@ -700,4 +483,22 @@ static Data_Type command_get_datatype(uint16_t data_ID) {
         break;
     }
     return type;
+}
+***/
+
+/**
+ * Gets the datatype of a config variable. This is a simple lookup
+ * through the ram commands struct array based on the ID.
+ * @param id An integer used to fetch the particular variable
+ * @return The type ("Data_Type") of the variable
+ */
+static inline Data_Type command_get_datatype(uint16_t id) {
+    for (uint16_t i = 0; i < TOTAL_EE_VARS; i++) {
+        if(id == Ram_Commands[i]->id) {
+            return Ram_Commands[i]->dtype;
+        }
+    }
+
+    // If control flows to here, ID did not match any known variable.
+    return Data_Type_None;
 }
