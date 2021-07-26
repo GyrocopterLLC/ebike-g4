@@ -43,6 +43,7 @@
  */
 
 #include "main.h"
+#include "arm_math.h"
 
 void FOC_SVM(float alpha, float beta, float* tA, float* tB, float* tC) {
     // Sector determination
@@ -146,9 +147,15 @@ void FOC_BiquadLPF(Biquad_Type* biq, float Fs, float f0, float Q) {
     w0 = 2.0f * (f0 / Fs); // Leaving out PI, the CORDIC input is scaled by 1/PI anyway
     // Convert angle from 0->2pi to -pi->+pi
     if(w0 > 1.0f) w0 = w0 - 2.0f;
+/* Cordic is used in an ISR. Not safe to use anywhere else
+ *
     CORDIC_CalcSinCosDeferred_Def(w0);
     CORDIC_GetResults_Def(sinw0, cosw0);
 //    CORDIC_CalcSinCos(w0, &sinw0, &cosw0);
+ *
+ * Need to use slower arm_math sin/cos function
+ */
+    arm_sin_cos_f32(w0, &sinw0, &cosw0);
     alpha = sinw0 / (2.0f * Q);
 
     // Calculate the filter constants
