@@ -1,457 +1,453 @@
 <?xml version="1.0" encoding="utf-8"?>
+<configuration>
 <variables>
     <category name="ADC">
-        <var name="RSHUNT">
-            <format>f32</format>
-            <default>0.002</format> <!-- 2mOhm shunt on flatmcu PCB -->
-            <longname>Shunt Resistance</longname>
-            <description>Shunt resistance in Ohms</description>
-            <min>0.0001</min>
-            <max>100</max>
-        </var>
-        <var name="VBUS_RATIO">
-            <format>f32</format>
-            <default>25.87562</default> <!-- resistive divider, 100kOhm top, 4.02kOhm bottom -->
-            <longname>Vbus Divider Ratio</longname>
-            <description>Resistor divider ratio on Vbus analog input</description>
-            <min>1.0</min>
-            <max>1000</max>
-        </var>
-        <var name="VPHASE_RATIO">
-            <format>f32</format>
-            <default>23.0</default> <!-- resistive divider, 22k top, 1k bottom -->
-            <longname>Vphase Divider Ratio</longname>
-            <description>Resistor divider ratio on phase voltage analog inputs</description>
-            <min>1.0</min>
-            <max>1000</max>
-        </var>
-        <var name="THERM_FIXED_R">
-            <format>f32</format>
-            <default>10000.0</default> <!-- 10k pulldown on flatmcu PCB -->
-            <longname>Thermistor Pulldown Fixed Resistance</longname>
-            <description>Pulldown resistor value in thermistor circuit</description>
-            <min>100</min>
-            <max>1000000</max>
-        </var>
-        <var name="THERM_R25">
-            <format>f32</format>
-            <default>10000.0</default> <!-- 10k resistance at 25degC, Panasonic ERT-J1VR103J-->
-            <longname>Thermistor 25degC Resistance</longname>
-            <description>Thermistor resistance value at 25degC</description>
-            <min>100</min>
-            <max>1000000</max>
-        </var>
-        <var name="THERM_B">
-            <format>f32</format>
-            <default>4250.0</default> <!-- beta=4250 at 25/50degC, Panasonic ERT-J1VR103J-->
-            <longname>Thermistor B25/50 Ratio</longname>
-            <description>Thermistor Beta value at 25/50degC</description>
-            <min>100</min>
-            <max>1000000</max>
-        </var>
+        <var name="RSHUNT"
+            format="f32"
+            default="0.002"
+            longname="Shunt Resistance"
+            description="Shunt resistance in Ohms"
+            min="0.0001"
+            max="100.0"/>
+        <var name="VBUS_RATIO"
+            format="f32"
+            default="25.87562"
+            longname="Vbus Divider Ratio" 
+            description="Resistor divider ratio on Vbus analog input" 
+            min="1.0"
+            max="1000.0"/>
+            <!-- resistive divider, 100kOhm top, 4.02kOhm bottom, (100+4.02)/(4.02) = 25.87562 -->
+        <var name="VPHASE_RATIO"
+            format="f32"
+            default="23.0" 
+            longname="Vphase Divider Ratio"
+            description="Resistor divider ratio on phase voltage analog inputs"
+            min="1.0"
+            max="1000"/>
+            <!-- resistive divider, 22k top, 1k bottom, (22+1)/(1)=23 -->
+        <var name="THERM_FIXED_R"
+            format="f32"
+            default="10000.0"
+            longname="Thermistor Pulldown Fixed Resistance"
+            description="Pulldown resistor value in thermistor circuit"
+            min="100"
+            max="1000000"/>
+         <!-- 10k pulldown on flatmcu PCB -->
+        <var name="THERM_R25"
+            format="f32"
+            default="10000.0"
+            longname="Thermistor 25degC Resistance"
+            description="Thermistor resistance value at 25degC"
+            min="100"
+            max="1000000"/>
+         <!-- 10k resistance at 25degC, Panasonic ERT-J1VR103J-->
+        <var name="THERM_B"
+            format="f32"
+            default="4250.0"
+            longname="Thermistor B25/50 Ratio"
+            description="Thermistor Beta value at 25/50degC"
+            min="100"
+            max="1000000"/>
+        <!-- beta=4250 at 25/50degC, Panasonic ERT-J1VR103J-->
     </category>
     <category name="FOC">
-        <var name="KP">
-            <format>f32</format>
-            <default>0.1</default>
-            <longname>Proportional Gain</longname>
-            <description>Current PID loop proportional gain</description>
-            <min>0.0001</min>
-            <max>1000</max>
-        </var>
-        <var name="KI">
-            <format>f32</format>
-            <default>0.001</default>
-            <longname>Integral Gain</longname>
-            <description>Current PID loop integral gain</description>
-            <min>0.000001</min>
-            <max>1.0</max>
-        </var>
-        <var name="KD">
-            <format>f32</format>
-            <default>0.0</default>
-            <longname>Derivative Gain</longname>
-            <description>Current PID loop derivative gain</description>
-            <min>0.000001</min>
-            <max>1000.0</max>
-        </var>
-        <var name="KC">
-            <format>f32</format>
-            <default>0.05</default>
-            <longname>Windup Gain</longname>
-            <description>Current PID loop correctional or windup gain</description>
-            <min>0.000001</min>
-            <max>1000.0</max>
-        </var>
-        <var name="PWM_FREQ">
-            <format>i32</format>
-            <default>20000</format>
-            <longname>PWM Frequency</longname>
-            <description>Switching frequency of PWM outputs</description>
-            <min>5000</min>
-            <max>40000</max>
-        </var>
-        <var name="PWM_DEADTIME">
-            <format>i32</format>
-            <default>750</default>
-            <longname>PWM Deadtime</longname>
-            <description>Deadtime (time when both pos and neg outputs are off) in nanoseconds</description>
-            <min>25</min>
-            <max>1500</max>
-        </var>
+        <var name="KP"
+            format="f32"
+            default="0.1"
+            longname="Proportional Gain"
+            description="Current PID loop proportional gain"
+            min="0.0001"
+            max="1000"/>
+        <var name="KI"
+            format="f32"
+            default="0.001"
+            longname="Integral Gain"
+            description="Current PID loop integral gain"
+            min="0.000001"
+            max="1.0"/>
+        <var name="KD"
+            format="f32"
+            default="0.0"
+            longname="Derivative Gain"
+            description="Current PID loop derivative gain"
+            min="0.000001"
+            max="1000.0"/>
+        <var name="KC"
+            format="f32"
+            default="0.05"
+            longname="Windup Gain"
+            description="Current PID loop correctional or windup gain"
+            min="0.000001"
+            max="1000.0"/>
+        <var name="PWM_FREQ"
+            format="i32"
+            default="20000"
+            longname="PWM Frequency"
+            description="Switching frequency of PWM outputs"
+            min="5000"
+            max="40000"/>
+        <var name="PWM_DEADTIME"
+            format="i32"
+            default="750"
+            longname="PWM Deadtime"
+            description="Deadtime (time when both pos and neg outputs are off) in nanoseconds"
+            min="25"
+            max="1500"/>
     </category>
     <category name="MAIN">
-        <var name="COUNTS_TO_FOC">
-            <format>i32</format>
-            <default>200</default>
-            <longname>Counts until FOC</longname>
-            <description>Number of PWM cycles above speed to switch to FOC</description>
-            <min>1</min>
-            <max>10000</max>
-        </var>
-        <var name="SPEED_TO_FOC">
-            <format>f32</format>
-            <default>5.0</default>
-            <longname>Speed at FOC</longname>
-            <description>Speed above which to switch to FOC (Hz)</description>
-            <min>0.1</min>
-            <max>100</max>
-        </var>
-        <var name="SWITCH_EPS">
-            <format>f32</format>
-            <default>0.00833333</default> <!-- About 3 degrees -->
-            <longname>Switch Espilon</longname>
-            <description>Largest difference in angle when switching to FOC</description>
-            <min>0.00001</min>
-            <max>1.0</max>
-        </var>
-        <var name="NUM_USB_OUTPUTS">
-            <format>i16</format>
-            <default>5</default>
-            <longname>Number of USB outputs</longname>
-            <description>Number of simultaneous debugging outputs sent over USB</description>
-            <min>1</min>
-            <max>10</max>
-        </var>
-        <var name="USB_SPEED">
-            <format>i16</format>
-            <default>0</default>
-            <longname>USB Debugging Data Rate</longname>
-            <description>Speed at which data is sent over USB. 0=50Hz, 1=100Hz, 2=200Hz, 3=500Hz, 4=1kHz, 5=5kHz</description>
-            <min>0</min>
-            <max>5</max>
-        <var name="USB_CHOICE_1">
-            <format>i16</format>
-            <default>1</default> <!-- Ia -->
-            <longname>USB Choice 1</longname>
-            <description>Choice of USB debugging output number 1</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_2">
-            <format>i16</format>
-            <default>2</default> <!-- Ib -->
-            <longname>USB Choice 2</longname>
-            <description>Choice of USB debugging output number 2</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_3">
-            <format>i16</format>
-            <default>3</default> <!-- Ic -->
-            <longname>USB Choice 3</longname>
-            <description>Choice of USB debugging output number 3</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_4">
-            <format>i16</format>
-            <default>7</default> <!-- Throttle -->
-            <longname>USB Choice 4</longname>
-            <description>Choice of USB debugging output number 4</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_5">
-            <format>i16</format>
-            <default>11</default> <!-- Vbus -->
-            <longname>USB Choice 5</longname>
-            <description>Choice of USB debugging output number 5</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_6">
-            <format>i16</format>
-            <default>4</default> <!-- Ta -->
-            <longname>USB Choice 6</longname>
-            <description>Choice of USB debugging output number 6</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_7">
-            <format>i16</format>
-            <default>5</default> <!-- Tb -->
-            <longname>USB Choice 17/longname>
-            <description>Choice of USB debugging output number 7</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_8">
-            <format>i16</format>
-            <default>6</default> <!-- Tc -->
-            <longname>USB Choice 8</longname>
-            <description>Choice of USB debugging output number 8</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_9">
-            <format>i16</format>
-            <default>9</default> <!-- Hall Angle -->
-            <longname>USB Choice 9</longname>
-            <description>Choice of USB debugging output number 9</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
-        <var name="USB_CHOICE_10">
-            <format>i16</format>
-            <default>18</default> <!-- Hall State -->
-            <longname>USB Choice 10</longname>
-            <description>Choice of USB debugging output number 10</description>
-            <min>0</min>
-            <max>22</max>
-        </var>
+        <var name="COUNTS_TO_FOC"
+            format="i32"
+            default="200"
+            longname="Counts until FOC"
+            description="Number of PWM cycles above speed to switch to FOC"
+            min="1"
+            max="10000"/>
+        <var name="SPEED_TO_FOC"
+            format="f32"
+            default="5.0"
+            longname="Speed at FOC"
+            description="Speed above which to switch to FOC (Hz)"
+            min="0.1"
+            max="100"/>
+        <var name="SWITCH_EPS"
+            format="f32"
+            default="0.00833333"
+            longname="Switch Espilon"
+            description="Largest difference in angle when switching to FOC"
+            min="0.00001"
+            max="1.0"/>
+        <!-- About 3 degrees -->
+        <var name="NUM_USB_OUTPUTS"
+            format="i16"
+            default="5"
+            longname="Number of USB outputs"
+            description="Number of simultaneous debugging outputs sent over USB"
+            min="1"
+            max="10"/>
+        <var name="USB_SPEED"
+            format="i16"
+            default="0"
+            longname="USB Debugging Data Rate"
+            description="Speed at which data is sent over USB. 0=50Hz, 1=100Hz, 2=200Hz, 3=500Hz, 4=1kHz, 5=5kHz"
+            min="0"
+            max="5"/>
+        <var name="USB_CHOICE_1"
+            format="i16"
+            default="1"
+            longname="USB Choice 1"
+            description="Choice of USB debugging output number 1"
+            min="0"
+            max="22"/>
+            <!-- Ia -->
+        <var name="USB_CHOICE_2"
+            format="i16"
+            default="2"
+            longname="USB Choice 2"
+            description="Choice of USB debugging output number 2"
+            min="0"
+            max="22"/>
+            <!-- Ib -->
+        <var name="USB_CHOICE_3"
+            format="i16"
+            default="3"
+            longname="USB Choice 3"
+            description="Choice of USB debugging output number 3"
+            min="0"
+            max="22"/>
+            <!-- Ic -->
+        <var name="USB_CHOICE_4"
+            format="i16"
+            default="7"
+            longname="USB Choice 4"
+            description="Choice of USB debugging output number 4"
+            min="0"
+            max="22"/>
+            <!-- Throttle -->
+        <var name="USB_CHOICE_5"
+            format="i16"
+            default="11"
+            longname="USB Choice 5"
+            description="Choice of USB debugging output number 5"
+            min="0"
+            max="22"/>
+            <!-- Vbus -->
+        <var name="USB_CHOICE_6"
+            format="i16"
+            default="4"
+            longname="USB Choice 6"
+            description="Choice of USB debugging output number 6"
+            min="0"
+            max="22"/>
+            <!-- Ta -->
+        <var name="USB_CHOICE_7"
+            format="i16"
+            default="5"
+            longname="USB Choice 7"
+            description="Choice of USB debugging output number 7"
+            min="0"
+            max="22"/>
+            <!-- Tb -->
+        <var name="USB_CHOICE_8"
+            format="i16"
+            default="6"
+            longname="USB Choice 8"
+            description="Choice of USB debugging output number 8"
+            min="0"
+            max="22"/>
+            <!-- Tc -->
+        <var name="USB_CHOICE_9"
+            format="i16"
+            default="9"
+            longname="USB Choice 9"
+            description="Choice of USB debugging output number 9"
+            min="0"
+            max="22"/>
+            <!-- Hall Angle -->
+        <var name="USB_CHOICE_10"
+            format="i16"
+            default="18"
+            longname="USB Choice 10"
+            description="Choice of USB debugging output number 10"
+            min="0"
+            max="22"/>
+            <!-- Hall State -->
     </category>
     <category name="THRT">
-        <var name="MIN">
-            <format>f32</format>
-            <default>0.90</default> <!-- Throttle at zero, 5V power -->
-            <longname>Throttle Minimum</longname>
-            <description>Voltage on ADC when throttle is at minimum position</description>
-            <min>0</min>
-            <max>10</max>
-        </var>
-        <var name="MAX">
-            <format>f32</format>
-            <default>4.0</default> <!-- Throttle at wide open, 5V power -->
-            <longname>Throttle Maximum</longname>
-            <description>Voltage on ADC when throttle is at maximum position</description>
-            <min>0</min>
-            <max>10</max>
-        </var>
-        <var name="HYST">
-            <format>f32</format>
-            <default>0.025</default>
-            <longname>Throttle Hysteresis</longname>
-            <description>Hysteresis when switching on or off in volts</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="FILT">
-            <format>f32</format>
-            <default>2.0</default>
-            <longname>Throttle Low-pass Filter</longname>
-            <description>Low-pass filter cutoff frequency in Hz</description>
-            <min>0.1</min>
-            <max>1000</max>
-        </var>
-        <var name="RISE">
-            <format>f32</format>
-            <default>0.0005</default> <!-- 0 to 100 in 2 seconds -->
-            <longname>Throttle Rise Limit</longname>
-            <description>Maximum amount of throttle percent rise per 1KHz count</description>
-            <min>0.0001</min> <!-- 0 to 100 in 10 seconds -->
-            <max>0.1</max> <!-- 0 to 100 in 0.01 seconds -->
-        </var>
-        <var name="RATIO">
-            <format>f32</format>
-            <default>1.499</default> <!-- resistor divider 4.99k top, 10k bottom -->
-            <longname>Throttle Resistor Ratio</longname>
-            <description>Resistor divider ratio for throttle analog input</description>
-            <min>1.0</min>
-            <max>1000</max>
-        </var>
+        <var name="MIN"
+            format="f32"
+            default="0.90"
+            longname="Throttle Minimum"
+            description="Voltage on ADC when throttle is at minimum position"
+            min="0"
+            max="10"/>
+            <!-- Throttle at zero, 5V power -->
+        <var name="MAX"
+            format="f32"
+            default="4.0"
+            longname="Throttle Maximum"
+            description="Voltage on ADC when throttle is at maximum position"
+            min="0"
+            max="10"/>
+            <!-- Throttle at wide open, 5V power -->
+        <var name="HYST"
+            format="f32"
+            default="0.025"
+            longname="Throttle Hysteresis"
+            description="Hysteresis when switching on or off in volts"
+            min="0"
+            max="1"/>
+        <var name="FILT"
+            format="f32"
+            default="2.0"
+            longname="Throttle Low-pass Filter"
+            description="Low-pass filter cutoff frequency in Hz"
+            min="0.1"
+            max="1000"/>
+        <var name="RISE"
+            format="f32"
+            default="0.0005"
+            longname="Throttle Rise Limit"
+            description="Maximum amount of throttle percent rise per 1KHz count"
+            min="0.0001"
+            max="0.1"/>
+            <!-- default = 0 to 100 in 2 seconds, min = 0 to 100 in 10 seconds, max = 0 to 100 in 0.01 seconds -->
+        <var name="RATIO"
+            format="f32"
+            default="1.499"
+            longname="Throttle Resistor Ratio"
+            description="Resistor divider ratio for throttle analog input"
+            min="1.0"
+            max="1000"/>
+            <!-- resistor divider 4.99k top, 10k bottom -->
     </category>
     <category name="LMT">
-        <var name="VOLT_FAULT_MIN">
-            <format>f32</format>
-            <default>44.8</default> <!-- 2.8V x 16 cells -->
-            <longname>Minimum Battery Voltage</longname>
-            <description>Fault when voltage below this</description>
-            <min>1</min>
-            <max>250</max>
-        </var>
-        <var name="VOLT_FAULT_MAX">
-            <format>f32</format>
-            <default>70.4</default> <!-- 4.4V x 16 cells -->
-            <longname>Maximum Battery Voltage</longname>
-            <description>Fault when voltage above this</description>
-            <min>1</min>
-            <max>250</max>
-        </var>
-        <var name="CUR_FAULT_MAX">
-            <format>f32</format>
-            <default>74</default> <!-- just below max sensing level -->
-            <longname></longname>
-            <description></description>
-            <min></min>
-            <max></max>
-        </var>
-        <var name="VOLT_SOFTCAP">
-            <format>f32</format>
-            <default>10</default> <!-- for testing, just apply 12V or more -->
-            <longname>Limp-Home Low Voltage</longname>
-            <description>Motor begins lowering power when voltage below this</description>
-            <min>1</min>
-            <max>250</max>
-        </var>
-        <var name="VOLT_HARDCAP">
-            <format>f32</format>
-            <default>8</default> <!--  -->
-            <longname>Shutoff Low Voltage</longname>
-            <description>Motor no longer functions when voltage below this</description>
-            <min>1</min>
-            <max>250</max>
-        </var>
-        <var name="PHASE_CUR_MAX">
-            <format>f32</format>
-            <default>60</default> <!--  -->
-            <longname>Phase Current Maximum</longname>
-            <description>Maximum current at motor phase</description>
-            <min>1</min>
-            <max>75</max>
-        </var>
-        <var name="PHASE_REGEN_MAX">
-            <format>f32</format>
-            <default>5</default> <!--  -->
-            <longname>Phase Regen Maximum</longname>
-            <description>Maximum reverse current at motor phase</description>
-            <min>1</min>
-            <max>75</max>
-        </var>
-        <var name="BATT_CUR_MAX">
-            <format>f32</format>
-            <default>30</default> <!--  -->
-            <longname>Battery Max Current</longname>
-            <description>Maximum current at batter</description>
-            <min>1</min>
-            <max>75</max>
-        </var>
-        <var name="BATT_REGEN_MAX">
-            <format>f32</format>
-            <default>5</default> <!--  -->
-            <longname>Battery Regen Max</longname>
-            <description>Maximum reverse current at battery</description>
-            <min>1</min>
-            <max>75</max>
-        </var>
-        <var name="FET_TEMP_SOFTCAP">
-            <format>f32</format>
-            <default>75</default> <!--  -->
-            <longname>Controller Limp-Home Temperature</longname>
-            <description>Motor power reduced when controller temp above this</description>
-            <min>20</min>
-            <max>150</max>
-        </var>
-        <var name="FET_TEMP_HARDCAP">
-            <format>f32</format>
-            <default>90</default> <!--  -->
-            <longname>Controller Shutdown Temperature</longname>
-            <description>Motor disabled when controller temp above this</description>
-            <min>20</min>
-            <max>150</max>
-        </var>
-        <var name="MOTOR_TEMP_SOFTCAP">
-            <format>f32</format>
-            <default>75</default> <!--  -->
-            <longname>Motor Limp-Home Temperature</longname>
-            <description>Motor power reduced when motor temp above this</description>
-            <min>20</min>
-            <max>150</max>
-        </var>
-        <var name="MOTOR_TEMP_HARDCAP">
-            <format>f32</format>
-            <default>90</default> <!--  -->
-            <longname>Motor Shutdown Temperature</longname>
-            <description>Motor disabled when motor temp above this</description>
-            <min>20</min>
-            <max>150</max>
-        </var>
+        <var name="VOLT_FAULT_MIN"
+            format="f32"
+            default="44.8"
+            longname="Minimum Battery Voltage"
+            description="Fault when voltage below this"
+            min="1"
+            max="250"/>
+            <!-- 2.8V x 16 cells -->
+        <var name="VOLT_FAULT_MAX"
+            format="f32"
+            default="70.4"
+            longname="Maximum Battery Voltage"
+            description="Fault when voltage above this"
+            min="1"
+            max="250"/>
+            <!-- 4.4V x 16 cells -->
+        <var name="CUR_FAULT_MAX"
+            format="f32"
+            default="74"
+            longname="Maximum Battery Current"
+            description="Fault when current above this"
+            min="1"
+            max="75"/>
+            <!-- just below max sensing level -->
+        <var name="VOLT_SOFTCAP"
+            format="f32"
+            default="10"
+            longname="Limp-Home Low Voltage"
+            description="Motor begins lowering power when voltage below this"
+            min="1"
+            max="250"/>
+            <!-- for testing, just apply 12V or more -->
+        <var name="VOLT_HARDCAP"
+            format="f32"
+            default="8"
+            longname="Shutoff Low Voltage"
+            description="Motor no longer functions when voltage below this"
+            min="1"
+            max="250"/>
+        <var name="PHASE_CUR_MAX"
+            format="f32"
+            default="60"
+            longname="Phase Current Maximum"
+            description="Maximum current at motor phase"
+            min="1"
+            max="75"/>
+        <var name="PHASE_REGEN_MAX"
+            format="f32"
+            default="5"
+            longname="Phase Regen Maximum"
+            description="Maximum reverse current at motor phase"
+            min="1"
+            max="75"/>
+        <var name="BATT_CUR_MAX"
+            format="f32"
+            default="30"
+            longname="Battery Max Current"
+            description="Maximum current at batter"
+            min="1"
+            max="75"/>
+        <var name="BATT_REGEN_MAX"
+            format="f32"
+            default="5"
+            longname="Battery Regen Max"
+            description="Maximum reverse current at battery"
+            min="1"
+            max="75"/>
+        <var name="FET_TEMP_SOFTCAP"
+            format="f32"
+            default="75"
+            longname="Controller Limp-Home Temperature"
+            description="Motor power reduced when controller temp above this"
+            min="20"
+            max="150"/>
+        <var name="FET_TEMP_HARDCAP"
+            format="f32"
+            default="90"
+            longname="Controller Shutdown Temperature"
+            description="Motor disabled when controller temp above this"
+            min="20"
+            max="150"/>
+        <var name="MOTOR_TEMP_SOFTCAP"
+            format="f32"
+            default="75"
+            longname="Motor Limp-Home Temperature"
+            description="Motor power reduced when motor temp above this"
+            min="20"
+            max="150"/>
+        <var name="MOTOR_TEMP_HARDCAP"
+            format="f32"
+            default="90"
+            longname="Motor Shutdown Temperature"
+            description="Motor disabled when motor temp above this"
+            min="20"
+            max="150"/>
     </category>
     <category name="MOTOR">
-        <var name="HALL1">
-            <format>f32</format>
-            <default>0.721090</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 1 Position</longname>
-            <description>Angle when switching into hall state 1, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="HALL2">
-            <format>f32</format>
-            <default>0.0691474f</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 2 Position</longname>
-            <description>Angle when switching into hall state 2, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="HALL3">
-            <format>f32</format>
-            <default>0.896364f</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 3 Position</longname>
-            <description>Angle when switching into hall state 3, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="HALL4">
-            <format>f32</format>
-            <default>0.396317f</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 4 Position</longname>
-            <description>Angle when switching into hall state 4, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="HALL5">
-            <format>f32</format>
-            <default>0.569599f</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 5 Position</longname>
-            <description>Angle when switching into hall state 5, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="HALL6">
-            <format>f32</format>
-            <default>0.220085f</default> <!-- for ebikeling 700C dd motor -->
-            <longname>Hall 6 Position</longname>
-            <description>Angle when switching into hall state 6, forward rotation</description>
-            <min>0</min>
-            <max>1</max>
-        </var>
-        <var name="POLEPAIRS">
-            <format>i16</format>
-            <default>23</default> <!--  -->
-            <longname>Motor Pole Pairs</longname>
-            <description>Electrical to mechanical turns ratio</description>
-            <min>1</min>
-            <max>1000</max>
-        </var>
-        <var name="GEAR_RATIO">
-            <format>f32</format>
-            <default>1.0</default> <!-- direct drive -->
-            <longname>Motor Gear Ratio</longname>
-            <description>Motor to wheel gear ratio</description>
-            <min>1</min>
-            <max>1000</max>
-        </var>
-        <var name="WHEEL_SIZE">
-            <format>f32</format>
-            <default>700.28</default> <!-- 700C-40 according to www.cateye.com tire size chart -->
-            <longname>Wheel Size</longname>
-            <description>Wheel Diameter in mm</description>
-            <min>100</min>
-            <max>2000</max>
-        </var>
+        <var name="HALL1"
+            format="f32"
+            default="0.721090"
+            longname="Hall 1 Position"
+            description="Angle when switching into hall state 1, forward rotation"
+            min="0"
+            max="1"/>
+            <!-- for ebikeling 700C dd motor -->
+        <var name="HALL2"
+            format="f32"
+            default="0.0691474"
+            longname="Hall 2 Position"
+            description="Angle when switching into hall state 2, forward rotation"
+            min="0"
+            max="1"/>
+        <var name="HALL3"
+            format="f32"
+            default="0.896364"
+            longname="Hall 3 Position"
+            description="Angle when switching into hall state 3, forward rotation"
+            min="0"
+            max="1"/>
+        <var name="HALL4"
+            format="f32"
+            default="0.396317"
+            longname="Hall 4 Position"
+            description="Angle when switching into hall state 4, forward rotation"
+            min="0"
+            max="1"/>
+        <var name="HALL5"
+            format="f32"
+            default="0.569599"
+            longname="Hall 5 Position"
+            description="Angle when switching into hall state 5, forward rotation"
+            min="0"
+            max="1"/>
+        <var name="HALL6"
+            format="f32"
+            default="0.220085"
+            longname="Hall 6 Position"
+            description="Angle when switching into hall state 6, forward rotation"
+            min="0"
+            max="1"/>
+        <var name="POLEPAIRS"
+            format="i16"
+            default="23"
+            longname="Motor Pole Pairs"
+            description="Electrical to mechanical turns ratio"
+            min="1"
+            max="1000"/>
+        <var name="GEAR_RATIO"
+            format="f32"
+            default="1.0 "
+            longname="Motor Gear Ratio"
+            description="Motor to wheel gear ratio"
+            min="1"
+            max="1000"/>
+            <!-- direct drive -->
+        <var name="WHEEL_SIZE"
+            format="f32"
+            default="700.28"
+            longname="Wheel Size"
+            description="Wheel Diameter in mm"
+            min="100"
+            max="2000"/>
+            <!-- 700C-40 according to www.cateye.com tire size chart -->
     </category>
-<variables>
+</variables>
 <debugoutputs>
-
+    <var name="IA" longname="Phase A current (amps)"/>
+    <var name="IB" longname="Phase B current (amps)"/>
+    <var name="IC" longname="Phase C current (amps)"/>
+    <var name="TA" longname="Phase A PWM duty cycle (percent)"/>
+    <var name="TB" longname="Phase B PWM duty cycle (percent)"/>
+    <var name="TC" longname="Phase C PWM duty cycle (percent)"/>
+    <var name="THROTTLE" longname="Throttle position (percent)"/>
+    <var name="HALLANGLE" longname="Hall sensor angle (zero to one)"/>
+    <var name="HALLSPEED" longname="Hall sensor speed (Hz)"/>
+    <var name="HALLACCEL" longname="Hall sensor acceleration (Hz/s)"/>
+    <var name="HALLSTATE" longname="Hall sensor state (1 to 6)"/>
+    <var name="VBUS" longname="Battery voltage"/>
+    <var name="ID" longname="D phase current (amps)"/>
+    <var name="IQ" longname="Q phase current (amps)"/>
+    <var name="TD" longname="D phase duty cycle (percent)"/>
+    <var name="TQ" longname="Q phase duty cycle (percent)"/>
+    <var name="VA" longname="Phase A voltage"/>
+    <var name="VB" longname="Phase B voltage"/>
+    <var name="VC" longname="Phase C voltage"/>
+    <var name="FTEMP" longname="Motor controller (MOSFET) temperature (degC)"/>
+    <var name="ERRORCODE" longname="Error code (packed binary)"/>
+    <var name="RAWTHROTTLE" longname="Raw throttle voltage"/>
 </debugoutputs>
+</configuration>
