@@ -24,6 +24,11 @@
  SOFTWARE.
  */
  
+
+// Auto-generated file. Do not edit!
+// If changes are needed, edit the variable settings in 'datavars.xml' and
+// re-run 'datavar_codegen.py' to recreate this file.
+
 #ifndef PROJECT_LIVE_DATA_IDS_H_
 #define PROJECT_LIVE_DATA_IDS_H_
 

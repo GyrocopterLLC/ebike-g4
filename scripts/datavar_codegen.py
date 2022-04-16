@@ -77,6 +77,11 @@ def generate_c_header_vars(fullvars):
 
         f.write(
 '''
+
+// Auto-generated file. Do not edit!
+// If changes are needed, edit the variable settings in 'datavars.xml' and
+// re-run 'datavar_codegen.py' to recreate this file.
+
 #ifndef PROJECT_CONFIGURATION_VARIABLES_H_
 #define PROJECT_CONFIGURATION_VARIABLES_H_
 \n\n''')
@@ -142,6 +147,11 @@ def generate_c_header_debugs(all_debugs):
 
         f.write(
 '''
+
+// Auto-generated file. Do not edit!
+// If changes are needed, edit the variable settings in 'datavars.xml' and
+// re-run 'datavar_codegen.py' to recreate this file.
+
 #ifndef PROJECT_LIVE_DATA_IDS_H_
 #define PROJECT_LIVE_DATA_IDS_H_
 \n\n''')
@@ -154,11 +164,77 @@ def generate_c_header_debugs(all_debugs):
 
         f.write('\n#endif // PROJECT_LIVE_DATA_IDS_H_\n')
 
+def generate_python_header_variables(fullvars):
+    with open('config_vars.py','w') as f:
+        f.write(
+'''
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+Auto-generated file. Do not edit!
+If changes are needed, edit the variable settings in 'datavars.xml' and
+re-run 'datavar_codegen.py' to recreate this file.
+
+Defines the configuration variables in the motor controller
+"""
+
+from collections import namedtuple
+
+Config_Var = namedtuple('Config_Var', ['name','id','format','longname','description','default','min','max'])
+
+MCU_Config_Vars = {
+''')
+        all_categories = fullvars.keys()
+        for category in all_categories:
+            f.write("\t'{}':[\n".format(category))
+            category_variables = fullvars[category]
+            for each_var in category_variables:
+                if(each_var['format']=='f32'):
+                    default_val=float(each_var['default'])
+                    min_val=float(each_var['min'])
+                    max_val=float(each_var['max'])
+                else:
+                    default_val=int(each_var['default'])
+                    min_val=int(each_var['min'])
+                    max_val=int(each_var['max'])
+                f.write("""
+            Config_Var(name='{}',id=0x{:04X},format='{}',
+            default={},min={},max={},
+            longname='{}',
+            description='{}'),
+""".format(each_var['name'],each_var['id'],each_var['format'],
+                default_val, min_val, max_val,
+                each_var['longname'],each_var['description']))
+            f.write('\t],\n')
+        f.write('}\n')
+def generate_python_header_debugs(all_debug):
+    with open('live_data_ids.py','w') as f:
+        f.write(
+'''
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+"""
+Auto-generated file. Do not edit!
+If changes are needed, edit the variable settings in 'datavars.xml' and
+re-run 'datavar_codegen.py' to recreate this file.
+
+Defines the ID codes for debugging outputs.
+"""
+
+class Debug_IDs:
+    variables = [
+'''
+        )
+        for debug in all_debugs:
+            f.write("\t\t{{'name':'{}', 'id': {}, 'longname': '{}'}},\n".format(debug['name'],debug['id'],debug['longname']))
+        f.write('\t]\n\n')
 if __name__ == '__main__':
     for item in var_config:
         if(item.tag == 'variables'):
             all_variables = decode_variables(item)
             generate_c_header_vars(all_variables)
+            generate_python_header_variables(all_variables)
         if(item.tag == 'debugoutputs'):
             all_debugs = decode_debugoutputs(item)
             generate_c_header_debugs(all_debugs)
+            generate_python_header_debugs(all_debugs)
