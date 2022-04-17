@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ParamsForm</class>
+ <widget class="QWidget" name="ParamsForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>286</width>
+    <height>491</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Set Parameters</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0">
+    <widget class="QLabel" name="lbDataRate">
+     <property name="text">
+      <string>Data Rate: 50Hz</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1">
+    <widget class="QComboBox" name="cbVar7"/>
+   </item>
+   <item row="12" column="0">
+    <widget class="QLabel" name="lbVar10">
+     <property name="text">
+      <string>Param10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="lbNumVar">
+     <property name="minimumSize">
+      <size>
+       <width>120</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="text">
+      <string>Number of Variables</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="spinNumVar">
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>10</number>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QComboBox" name="cbVar4"/>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="cbVar3"/>
+   </item>
+   <item row="4" column="1">
+    <widget class="QComboBox" name="cbVar2"/>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="cbVar1"/>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="lbVar2">
+     <property name="text">
+      <string>Param2</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QComboBox" name="cbVar9"/>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="lbVar3">
+     <property name="text">
+      <string>Param3</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="0">
+    <widget class="QLabel" name="lbVar9">
+     <property name="text">
+      <string>Param9</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QComboBox" name="cbVar5"/>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="lbVar7">
+     <property name="text">
+      <string>Param7</string>
+     </property>
+    </widget>
+   </item>
+   <item row="13" column="1">
+    <widget class="QPushButton" name="btnCancel">
+     <property name="text">
+      <string>Cancel</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0">
+    <widget class="QLabel" name="lbVar8">
+     <property name="text">
+      <string>Param8</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QDial" name="dialDataRate">
+     <property name="maximum">
+      <number>5</number>
+     </property>
+     <property name="pageStep">
+      <number>1</number>
+     </property>
+     <property name="notchesVisible">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1">
+    <widget class="QComboBox" name="cbVar8"/>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="lbVar4">
+     <property name="text">
+      <string>Param4</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="lbVar5">
+     <property name="text">
+      <string>Param5</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="lbVar1">
+     <property name="text">
+      <string>Param1</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="lbVar6">
+     <property name="text">
+      <string>Param6</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="1">
+    <widget class="QComboBox" name="cbVar10"/>
+   </item>
+   <item row="8" column="1">
+    <widget class="QComboBox" name="cbVar6"/>
+   </item>
+   <item row="13" column="0">
+    <widget class="QPushButton" name="btnOk">
+     <property name="text">
+      <string>Ok</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
