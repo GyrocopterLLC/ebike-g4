@@ -57,12 +57,12 @@
 #define MIN_ADC_THERM_R25               (100.0f)
 #define MIN_ADC_THERM_B                 (100.0f)
 /***  ADC Maximum Values ***/
-#define MIN_ADC_RSHUNT                  (100.0f)
-#define MIN_ADC_VBUS_RATIO              (1000.0f)
-#define MIN_ADC_VPHASE_RATIO            (1000.0f)
-#define MIN_ADC_THERM_FIXED_R           (1000000.0f)
-#define MIN_ADC_THERM_R25               (1000000.0f)
-#define MIN_ADC_THERM_B                 (1000000.0f)
+#define MAX_ADC_RSHUNT                  (100.0f)
+#define MAX_ADC_VBUS_RATIO              (1000.0f)
+#define MAX_ADC_VPHASE_RATIO            (1000.0f)
+#define MAX_ADC_THERM_FIXED_R           (1000000.0f)
+#define MAX_ADC_THERM_R25               (1000000.0f)
+#define MAX_ADC_THERM_B                 (1000000.0f)
 
 
 /***  FOC Configuration Variable IDs ***/
@@ -89,12 +89,12 @@
 #define MIN_FOC_PWM_FREQ                (5000)
 #define MIN_FOC_PWM_DEADTIME            (25)
 /***  FOC Maximum Values ***/
-#define MIN_FOC_KP                      (1000.0f)
-#define MIN_FOC_KI                      (1.0f)
-#define MIN_FOC_KD                      (1000.0f)
-#define MIN_FOC_KC                      (1000.0f)
-#define MIN_FOC_PWM_FREQ                (40000)
-#define MIN_FOC_PWM_DEADTIME            (1500)
+#define MAX_FOC_KP                      (1000.0f)
+#define MAX_FOC_KI                      (1.0f)
+#define MAX_FOC_KD                      (1000.0f)
+#define MAX_FOC_KC                      (1000.0f)
+#define MAX_FOC_PWM_FREQ                (40000)
+#define MAX_FOC_PWM_DEADTIME            (1500)
 
 
 /***  MAIN Configuration Variable IDs ***/
@@ -148,21 +148,21 @@
 #define MIN_MAIN_USB_CHOICE_9           (0)
 #define MIN_MAIN_USB_CHOICE_10          (0)
 /***  MAIN Maximum Values ***/
-#define MIN_MAIN_COUNTS_TO_FOC          (10000)
-#define MIN_MAIN_SPEED_TO_FOC           (100.0f)
-#define MIN_MAIN_SWITCH_EPS             (1.0f)
-#define MIN_MAIN_NUM_USB_OUTPUTS        (10)
-#define MIN_MAIN_USB_SPEED              (5)
-#define MIN_MAIN_USB_CHOICE_1           (22)
-#define MIN_MAIN_USB_CHOICE_2           (22)
-#define MIN_MAIN_USB_CHOICE_3           (22)
-#define MIN_MAIN_USB_CHOICE_4           (22)
-#define MIN_MAIN_USB_CHOICE_5           (22)
-#define MIN_MAIN_USB_CHOICE_6           (22)
-#define MIN_MAIN_USB_CHOICE_7           (22)
-#define MIN_MAIN_USB_CHOICE_8           (22)
-#define MIN_MAIN_USB_CHOICE_9           (22)
-#define MIN_MAIN_USB_CHOICE_10          (22)
+#define MAX_MAIN_COUNTS_TO_FOC          (10000)
+#define MAX_MAIN_SPEED_TO_FOC           (100.0f)
+#define MAX_MAIN_SWITCH_EPS             (1.0f)
+#define MAX_MAIN_NUM_USB_OUTPUTS        (10)
+#define MAX_MAIN_USB_SPEED              (5)
+#define MAX_MAIN_USB_CHOICE_1           (22)
+#define MAX_MAIN_USB_CHOICE_2           (22)
+#define MAX_MAIN_USB_CHOICE_3           (22)
+#define MAX_MAIN_USB_CHOICE_4           (22)
+#define MAX_MAIN_USB_CHOICE_5           (22)
+#define MAX_MAIN_USB_CHOICE_6           (22)
+#define MAX_MAIN_USB_CHOICE_7           (22)
+#define MAX_MAIN_USB_CHOICE_8           (22)
+#define MAX_MAIN_USB_CHOICE_9           (22)
+#define MAX_MAIN_USB_CHOICE_10          (22)
 
 
 /***  THRT Configuration Variable IDs ***/
@@ -189,12 +189,12 @@
 #define MIN_THRT_RISE                   (0.0001f)
 #define MIN_THRT_RATIO                  (1.0f)
 /***  THRT Maximum Values ***/
-#define MIN_THRT_MIN                    (10.0f)
-#define MIN_THRT_MAX                    (10.0f)
-#define MIN_THRT_HYST                   (1.0f)
-#define MIN_THRT_FILT                   (1000.0f)
-#define MIN_THRT_RISE                   (0.1f)
-#define MIN_THRT_RATIO                  (1000.0f)
+#define MAX_THRT_MIN                    (10.0f)
+#define MAX_THRT_MAX                    (10.0f)
+#define MAX_THRT_HYST                   (1.0f)
+#define MAX_THRT_FILT                   (1000.0f)
+#define MAX_THRT_RISE                   (0.1f)
+#define MAX_THRT_RATIO                  (1000.0f)
 
 
 /***  LMT Configuration Variable IDs ***/
@@ -242,19 +242,19 @@
 #define MIN_LMT_MOTOR_TEMP_SOFTCAP      (20.0f)
 #define MIN_LMT_MOTOR_TEMP_HARDCAP      (20.0f)
 /***  LMT Maximum Values ***/
-#define MIN_LMT_VOLT_FAULT_MIN          (250.0f)
-#define MIN_LMT_VOLT_FAULT_MAX          (250.0f)
-#define MIN_LMT_CUR_FAULT_MAX           (75.0f)
-#define MIN_LMT_VOLT_SOFTCAP            (250.0f)
-#define MIN_LMT_VOLT_HARDCAP            (250.0f)
-#define MIN_LMT_PHASE_CUR_MAX           (75.0f)
-#define MIN_LMT_PHASE_REGEN_MAX         (75.0f)
-#define MIN_LMT_BATT_CUR_MAX            (75.0f)
-#define MIN_LMT_BATT_REGEN_MAX          (75.0f)
-#define MIN_LMT_FET_TEMP_SOFTCAP        (150.0f)
-#define MIN_LMT_FET_TEMP_HARDCAP        (150.0f)
-#define MIN_LMT_MOTOR_TEMP_SOFTCAP      (150.0f)
-#define MIN_LMT_MOTOR_TEMP_HARDCAP      (150.0f)
+#define MAX_LMT_VOLT_FAULT_MIN          (250.0f)
+#define MAX_LMT_VOLT_FAULT_MAX          (250.0f)
+#define MAX_LMT_CUR_FAULT_MAX           (75.0f)
+#define MAX_LMT_VOLT_SOFTCAP            (250.0f)
+#define MAX_LMT_VOLT_HARDCAP            (250.0f)
+#define MAX_LMT_PHASE_CUR_MAX           (75.0f)
+#define MAX_LMT_PHASE_REGEN_MAX         (75.0f)
+#define MAX_LMT_BATT_CUR_MAX            (75.0f)
+#define MAX_LMT_BATT_REGEN_MAX          (75.0f)
+#define MAX_LMT_FET_TEMP_SOFTCAP        (150.0f)
+#define MAX_LMT_FET_TEMP_HARDCAP        (150.0f)
+#define MAX_LMT_MOTOR_TEMP_SOFTCAP      (150.0f)
+#define MAX_LMT_MOTOR_TEMP_HARDCAP      (150.0f)
 
 
 /***  MOTOR Configuration Variable IDs ***/
@@ -290,15 +290,35 @@
 #define MIN_MOTOR_GEAR_RATIO            (1.0f)
 #define MIN_MOTOR_WHEEL_SIZE            (100.0f)
 /***  MOTOR Maximum Values ***/
-#define MIN_MOTOR_HALL1                 (1.0f)
-#define MIN_MOTOR_HALL2                 (1.0f)
-#define MIN_MOTOR_HALL3                 (1.0f)
-#define MIN_MOTOR_HALL4                 (1.0f)
-#define MIN_MOTOR_HALL5                 (1.0f)
-#define MIN_MOTOR_HALL6                 (1.0f)
-#define MIN_MOTOR_POLEPAIRS             (1000)
-#define MIN_MOTOR_GEAR_RATIO            (1000.0f)
-#define MIN_MOTOR_WHEEL_SIZE            (2000.0f)
+#define MAX_MOTOR_HALL1                 (1.0f)
+#define MAX_MOTOR_HALL2                 (1.0f)
+#define MAX_MOTOR_HALL3                 (1.0f)
+#define MAX_MOTOR_HALL4                 (1.0f)
+#define MAX_MOTOR_HALL5                 (1.0f)
+#define MAX_MOTOR_HALL6                 (1.0f)
+#define MAX_MOTOR_POLEPAIRS             (1000)
+#define MAX_MOTOR_GEAR_RATIO            (1000.0f)
+#define MAX_MOTOR_WHEEL_SIZE            (2000.0f)
+
+
+/***  DRV Configuration Variable IDs ***/
+#define CONFIG_DRV_NUMVARS              (3)
+#define CONFIG_DRV_PREFIX               (0x0700)
+#define CONFIG_DRV_GATE_STRENGTH        (0x0701) //i32:Bitmapped field, sets high and low side, up and down drivers. 50-1000mA pull-up, 100-2000mA pull-down.  Bits [3:0] = IDRIVEN_LS, bits [7:4] = IDRIVEP_LS, bits [11:8] = IDRIVEN_HS, bits [15:12] = IDRIVEP_HS.  See DRV8353 datasheet.
+#define CONFIG_DRV_VDS_LIMIT            (0x0702) //i8:Setting between 0.06V and 2.0V for Vds fault threshold. See DRV8353 datasheet.
+#define CONFIG_DRV_CSA_GAIN             (0x0703) //i8:Setting between x5 and x40 for analog gain of current sense amplifiers.  0 = x5, 1 = x10, 2 = x20, 3 = x40
+/***  DRV Default Values ***/
+#define DFLT_DRV_GATE_STRENGTH          (17476)
+#define DFLT_DRV_VDS_LIMIT              (5)
+#define DFLT_DRV_CSA_GAIN               (1)
+/***  DRV Minimum Values ***/
+#define MIN_DRV_GATE_STRENGTH           (0)
+#define MIN_DRV_VDS_LIMIT               (0)
+#define MIN_DRV_CSA_GAIN                (0)
+/***  DRV Maximum Values ***/
+#define MAX_DRV_GATE_STRENGTH           (65535)
+#define MAX_DRV_VDS_LIMIT               (15)
+#define MAX_DRV_CSA_GAIN                (3)
 
 
 #endif // PROJECT_CONFIGURATION_VARIABLES_H_

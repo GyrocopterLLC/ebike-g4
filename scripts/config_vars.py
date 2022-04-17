@@ -301,4 +301,21 @@ MCU_Config_Vars = {
             longname='Wheel Size',
             description='Wheel Diameter in mm'),
 	],
+	'DRV':[
+
+            Config_Var(name='GATE_STRENGTH',id=0x0701,format='i32',
+            default=17476,min=0,max=65535,
+            longname='Drive strength of FET gate drivers',
+            description='Bitmapped field, sets high and low side, up and down drivers. 50-1000mA pull-up, 100-2000mA pull-down.  Bits [3:0] = IDRIVEN_LS, bits [7:4] = IDRIVEP_LS, bits [11:8] = IDRIVEN_HS, bits [15:12] = IDRIVEP_HS.  See DRV8353 datasheet.'),
+
+            Config_Var(name='VDS_LIMIT',id=0x0702,format='i8',
+            default=5,min=0,max=15,
+            longname='Mosfet Vds fault threshold.',
+            description='Setting between 0.06V and 2.0V for Vds fault threshold. See DRV8353 datasheet.'),
+
+            Config_Var(name='CSA_GAIN',id=0x0703,format='i8',
+            default=1,min=0,max=3,
+            longname='Current sense amplifier gain',
+            description='Setting between x5 and x40 for analog gain of current sense amplifiers.  0 = x5, 1 = x10, 2 = x20, 3 = x40'),
+	],
 }

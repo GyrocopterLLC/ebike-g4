@@ -425,6 +425,64 @@
                 max="2000"/>
                 <!-- 700C-40 according to www.cateye.com tire size chart -->
         </category>
+        <category name="DRV">
+            <var name="GATE_STRENGTH"
+                format="i32"
+                default="0x4444"
+                longname="Drive strength of FET gate drivers"
+                description="Bitmapped field, sets high and low side, up and down drivers. 50-1000mA pull-up, 100-2000mA pull-down. 
+Bits [3:0] = IDRIVEN_LS, bits [7:4] = IDRIVEP_LS, bits [11:8] = IDRIVEN_HS, bits [15:12] = IDRIVEP_HS. 
+See DRV8353 datasheet."
+                min="0x0000"
+                max="0xFFFF"/>
+            <var name="VDS_LIMIT"
+                format="i8"
+                default="0x05"
+                longname="Mosfet Vds fault threshold."
+                description="Setting between 0.06V and 2.0V for Vds fault threshold. See DRV8353 datasheet."
+                min="0x00"
+                max="0x0F"/>
+            <var name="CSA_GAIN"
+                format="i8"
+                default="1"
+                longname="Current sense amplifier gain"
+                description="Setting between x5 and x40 for analog gain of current sense amplifiers. 
+0 = x5, 1 = x10, 2 = x20, 3 = x40"
+                min="0"
+                max="3"/>
+        </category>
+        <!--
+        <category name="BMS">
+            <var name="IS_CONNECTED"
+                format="i8"
+                default="0"
+                longname="Battery Management System connection indication"
+                description="Read-only. 0 if BMS not present, 1 if connected successfully"
+                min="0"
+                max="1"/>
+            <var name="NUMBATTS"
+                format="i16"
+                default="0"
+                longname="Number of batteries"
+                description="Read-only. Total number of battery cells connected in the chain"
+                min="0"
+                max="65536"/>
+            <var name="GETBAT_N"
+                format="f32"
+                default="0.0"
+                longname="Get battery n voltage"
+                description="Read-only. Gets the voltage on battery N. Requires two-byte cell number, zero indexed."
+                min="0.0"
+                max="100.0"/>
+            <var name="GETSTATUS_N"
+                format="i32"
+                default="0x00000000"
+                longname="Get battery n status"
+                description="Read-only. Gets the status of battery N. Requires two-byte cell number, zero indexed."
+                min="0x00000000"
+                max="0xFFFFFFFF"/>
+        <category/>
+        -->
     </variables>
     <debugoutputs>
         <var name="IA" longname="Phase A current (amps)"/>

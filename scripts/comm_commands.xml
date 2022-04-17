@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+    <special_codes>
+        <code name='SOP0' id='0x9A'/>
+        <code name='SOP1' id='0xCC'/>
+    </special_codes>
+    <packet_types>
+        <!-- Host to Controller packet types -->
+        <type name='GET_RAM_VARIABLE' id='0x01'/>
+        <type name='SET_RAM_VARIABLE' id='0x02'/>
+        <type name='GET_EEPROM_VARIABLE' id='0x03'/>
+        <type name='SET_RAM_VARIABLE' id='0x04'/>
+        <type name='ENABLE_FEATURE' id='0x05'/>
+        <type name='DISABLE_FEATURE' id='0x06'/>
+        <type name='RUN_ROUTINE' id='0x07'/>
+        <type name='HOST_STREAM_DATA' id='0x08'/>
+        <type name='HOST_ACK' id='0x11'/>
+        <type name='HOST_NACK' id='0x12'/>
+        <type name='REQUEST_DASHBOARD_DATA' id='0x27'/>
+        <!-- Controller to Host packet types -->
+        <type name='GET_RAM_RESULT' id='0x81'/>
+        <type name='GET_EEPROM_RESULT' id='0x83'/>
+        <type name='ROUTINE_RESULT' id='0x87'/>
+        <type name='CONTROLLER_STREAM_DATA' id='0x88'/>
+        <type name='CONTROLLER_ACK' id='0x91'/>
+        <type name='CONTROLLER_NACK' id='0x92'/>
+        <type name='DASHBOARD_DATA_RESULT' id='0xA7'/>
+    </packet_types>
+    <fault_codes>
+        <code name='NO_FAULT' id='0x00'/>
+        <code name='BAD_CRC' id='0x01'/>
+        <code name='BAD_PACKET_TYPE' id='0x02'/>
+        <code name='NO_START_DETECTED' id='0x04'/>
+        <code name='INVALID_PACKET_LENGTH' id='0x08'/>
+    </fault_codes>
+    <routines>
+        <routine name='SAVE_ALL_EEPROM' id='0x0101'/>
+        <routine name='LOAD_ALL_EEPROM' id='0x0102'/>
+        <routine name='HALL_DETECT' id='0x0201'/>
+        <routine name='SOFT_RESET' id='0x0301'/>
+        <routine name='BOOTLOADER_RESET' id='0x0302'/>
+    </routines>
+    <features>
+        <feature name='SERIAL_DATA' id='0x0001'/>
+        <feature name='BLDC_MODE' id='0x0002'/>
+        <feature name='SINE_MODE' id='0x0003'/>
+        <feature name='DEBUG_PWM' id='0x0004'/>
+    </features>
+</configuration>

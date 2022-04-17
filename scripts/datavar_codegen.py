@@ -3,9 +3,11 @@ from time import localtime, strftime
 
 from numpy import full
 
-vars = ET.parse('datavars.xml')
-
-var_config = vars.getroot()
+def get_int_or_hex(input_str):
+    if(input_str.startswith('0x')):
+        return int(input_str, 16)
+    else:
+        return int(input_str)
 
 def decode_debugoutputs(xmlitem):
     fulldebugarray = []
@@ -99,20 +101,20 @@ def generate_c_header_vars(fullvars):
                 if(each_var['format'] == 'f32'):
                     f.write('#define {:32}({}f)\n'.format('DFLT_'+category+'_'+each_var['name'], float(each_var['default'])))
                 else:
-                    f.write('#define {:32}({})\n'.format('DFLT_'+category+'_'+each_var['name'], int(each_var['default'])))
+                    f.write('#define {:32}({})\n'.format('DFLT_'+category+'_'+each_var['name'], get_int_or_hex(each_var['default'])))
             f.write('/***  {} Minimum Values ***/\n'.format(category))
             for each_var in category_variables:
                 if(each_var['format'] == 'f32'):
                     f.write('#define {:32}({}f)\n'.format('MIN_'+category+'_'+each_var['name'], float(each_var['min'])))
                 else:
-                    f.write('#define {:32}({})\n'.format('MIN_'+category+'_'+each_var['name'], int(each_var['min'])))
+                    f.write('#define {:32}({})\n'.format('MIN_'+category+'_'+each_var['name'], get_int_or_hex(each_var['min'])))
                 
             f.write('/***  {} Maximum Values ***/\n'.format(category))
             for each_var in category_variables:
                 if(each_var['format'] == 'f32'):
-                    f.write('#define {:32}({}f)\n'.format('MIN_'+category+'_'+each_var['name'], float(each_var['max'])))
+                    f.write('#define {:32}({}f)\n'.format('MAX_'+category+'_'+each_var['name'], float(each_var['max'])))
                 else:
-                    f.write('#define {:32}({})\n'.format('MIN_'+category+'_'+each_var['name'], int(each_var['max'])))
+                    f.write('#define {:32}({})\n'.format('MAX_'+category+'_'+each_var['name'], get_int_or_hex(each_var['max'])))
             f.write('\n\n')
         f.write('#endif // PROJECT_CONFIGURATION_VARIABLES_H_\n')
 
@@ -194,9 +196,9 @@ MCU_Config_Vars = {
                     min_val=float(each_var['min'])
                     max_val=float(each_var['max'])
                 else:
-                    default_val=int(each_var['default'])
-                    min_val=int(each_var['min'])
-                    max_val=int(each_var['max'])
+                    default_val=get_int_or_hex(each_var['default'])
+                    min_val=get_int_or_hex(each_var['min'])
+                    max_val=get_int_or_hex(each_var['max'])
                 f.write("""
             Config_Var(name='{}',id=0x{:04X},format='{}',
             default={},min={},max={},
@@ -229,6 +231,10 @@ class Debug_IDs:
             f.write("\t\t{{'name':'{}', 'id': {}, 'longname': '{}'}},\n".format(debug['name'],debug['id'],debug['longname']))
         f.write('\t]\n\n')
 if __name__ == '__main__':
+    vars = ET.parse('datavars.xml')
+
+    var_config = vars.getroot()
+
     for item in var_config:
         if(item.tag == 'variables'):
             all_variables = decode_variables(item)
